@@ -2,9 +2,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 from gsfit_rs import Isoflux
 
-from ...settings_schema.python.equilibrium.constraints_isoflux import ConstraintsIsoflux as ConstraintsIsofluxSettings
+from ...settings_schema.python.equilibrium.constraints_isoflux import Isoflux as IsofluxSettings
 from ...settings_schema.python.magnetics.magnetics import MagneticsSettings
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ def setup_isoflux_sensors(
     self: "DatabaseReader",
     pulseNo: int,
     settings: MagneticsSettings,
-    settings_isoflux_sensors: ConstraintsIsofluxSettings,
+    settings_isoflux_sensors: KeyedList[IsofluxSettings],
     times_to_reconstruct: npt.NDArray[np.float64],
 ) -> Isoflux:
     """
@@ -23,7 +24,7 @@ def setup_isoflux_sensors(
 
     :param pulseNo: Pulse number, used to read from the database
     :param settings: `MagneticsSettings` object, read from `magnetics/magnetics.xml`; not used
-    :param settings_isoflux_sensors: `ConstraintsIsoflux` object, read from `equilibrium/constraints_isoflux.xml`, which lists the isoflux constraints
+    :param settings_isoflux_sensors: The isoflux constraints, one `Isoflux` settings object each, read from `equilibrium/constraints_isoflux.xml`
     :param times_to_reconstruct: Times the equilibrium will be solved at [second]
 
     No isoflux constraints are made at present, as no settings say where to read their points from.
@@ -37,7 +38,7 @@ def setup_isoflux_sensors(
     # Initialise the Isoflux Rust class
     isoflux = Isoflux()
 
-    if len(settings_isoflux_sensors.isoflux) == 0:
+    if len(settings_isoflux_sensors) == 0:
         return isoflux
 
     # TODO: need to check that this is working!

@@ -2423,31 +2423,43 @@ impl Default for EquilibriumCodeParametersParsedPassive {
 }
 
 /// The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
+/// That root element holds only the elements named as the link, e.g. one `flux_loop` per flux loop, so the link is collapsed: `constraints.flux_loop` holds the flux loops.
 /// Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraints {
     /// How each poloidal field probe (Mirnov coil) is fitted.
-    pub b_field_pol_probe: EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe,
-    /// How each flux loop is fitted.
-    pub flux_loop: EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop,
-    /// How each Rogowski coil is fitted.
-    pub rogowski_coil: EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil,
-    /// How the diamagnetic loop is fitted.
-    pub diamagnetic_flux: EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux,
-    /// The isoflux constraints: pairs of points on the same flux surface.
-    pub isoflux: EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux,
-    /// How pressure sensors are fitted.
-    pub pressure: EquilibriumCodeParametersParsedEquilibriumConstraintsPressure,
-}
-
-/// Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
-/// A probe read by the `database_reader` which is not listed here is not included in the fit.
-/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe {
-    /// Fitting settings for one probe.
+    /// Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
+    /// A probe read by the `database_reader` which is not listed here is not included in the fit.
     /// Optional in the settings: unset when it is left out
     pub b_field_pol_probe: Vec<EquilibriumCodeParametersParsedBFieldPolProbe>,
+    /// How each flux loop is fitted.
+    /// Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
+    /// A flux loop read by the `database_reader` which is not listed here is not included in the fit.
+    /// Optional in the settings: unset when it is left out
+    pub flux_loop: Vec<EquilibriumCodeParametersParsedFluxLoop>,
+    /// How each Rogowski coil is fitted.
+    /// Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
+    /// A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
+    /// A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
+    /// Not read by the freegs reader.
+    /// Optional in the settings: unset when it is left out
+    pub rogowski_coil: Vec<EquilibriumCodeParametersParsedRogowskiCoil>,
+    /// How the diamagnetic loop is fitted.
+    /// Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
+    /// GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
+    /// A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
+    /// Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
+    /// With one, the magnetics IDS must hold the diamagnetic flux.
+    /// Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
+    /// Optional in the settings: unset when it is left out
+    pub diamagnetic_flux: EquilibriumCodeParametersParsedDiamagneticFlux,
+    /// The isoflux constraints: pairs of points on the same flux surface.
+    /// The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
+    /// Optional in the settings: unset when it is left out
+    pub isoflux: Vec<EquilibriumCodeParametersParsedIsoflux>,
+    /// How pressure sensors are fitted.
+    /// Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
+    pub pressure: EquilibriumCodeParametersParsedPressure,
 }
 
 /// Fitting settings for one probe.
@@ -2481,16 +2493,6 @@ impl Default for EquilibriumCodeParametersParsedBFieldPolProbe {
     }
 }
 
-/// Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
-/// A flux loop read by the `database_reader` which is not listed here is not included in the fit.
-/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop {
-    /// Fitting settings for one flux loop.
-    /// Optional in the settings: unset when it is left out
-    pub flux_loop: Vec<EquilibriumCodeParametersParsedFluxLoop>,
-}
-
 /// Fitting settings for one flux loop.
 /// Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
 #[derive(Debug, Clone)]
@@ -2520,18 +2522,6 @@ impl Default for EquilibriumCodeParametersParsedFluxLoop {
             comment: String::new(),
         }
     }
-}
-
-/// Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
-/// A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
-/// A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
-/// Not read by the freegs reader.
-/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil {
-    /// Fitting settings for one Rogowski coil.
-    /// Optional in the settings: unset when it is left out
-    pub rogowski_coil: Vec<EquilibriumCodeParametersParsedRogowskiCoil>,
 }
 
 /// Fitting settings for one Rogowski coil.
@@ -2565,20 +2555,6 @@ impl Default for EquilibriumCodeParametersParsedRogowskiCoil {
     }
 }
 
-/// Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
-/// GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
-/// A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
-/// Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
-/// With one, the magnetics IDS must hold the diamagnetic flux.
-/// Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
-/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux {
-    /// Fitting settings for the diamagnetic flux.
-    /// Optional in the settings: unset when it is left out
-    pub diamagnetic_flux: EquilibriumCodeParametersParsedDiamagneticFlux,
-}
-
 /// Fitting settings for the diamagnetic flux.
 /// Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
 #[derive(Debug, Clone)]
@@ -2604,15 +2580,6 @@ impl Default for EquilibriumCodeParametersParsedDiamagneticFlux {
             comment: String::new(),
         }
     }
-}
-
-/// The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
-/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux {
-    /// One isoflux constraint.
-    /// Optional in the settings: unset when it is left out
-    pub isoflux: Vec<EquilibriumCodeParametersParsedIsoflux>,
 }
 
 /// One isoflux constraint.
@@ -2642,14 +2609,6 @@ impl Default for EquilibriumCodeParametersParsedIsoflux {
             comment: String::new(),
         }
     }
-}
-
-/// Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
-/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsPressure {
-    /// Whether pressure is fitted, and how the pressure constraints are made.
-    pub pressure: EquilibriumCodeParametersParsedPressure,
 }
 
 /// Whether pressure is fitted, and how the pressure constraints are made.
@@ -7476,7 +7435,7 @@ impl EquilibriumCodeParametersParsedPfPassiveDof {
     }
 }
 
-impl EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe {
+impl EquilibriumCodeParametersParsedEquilibriumConstraints {
     /// Select from `b_field_pol_probe`. A range, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.b_field_pol_probe(name)`, gives the one element with that `name`.
@@ -7495,7 +7454,7 @@ impl EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe {
     }
 }
 
-impl EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop {
+impl EquilibriumCodeParametersParsedEquilibriumConstraints {
     /// Select from `flux_loop`. A range, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.flux_loop(name)`, gives the one element with that `name`.
@@ -7514,7 +7473,7 @@ impl EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop {
     }
 }
 
-impl EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil {
+impl EquilibriumCodeParametersParsedEquilibriumConstraints {
     /// Select from `rogowski_coil`. A range, e.g. `.rogowski_coil(0..2)` or `.rogowski_coil(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.rogowski_coil(name)`, gives the one element with that `name`.
@@ -7533,7 +7492,7 @@ impl EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil {
     }
 }
 
-impl EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux {
+impl EquilibriumCodeParametersParsedEquilibriumConstraints {
     /// Select from `isoflux`. A range, e.g. `.isoflux(0..2)` or `.isoflux(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.isoflux(name)`, gives the one element with that `name`.

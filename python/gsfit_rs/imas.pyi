@@ -71,8 +71,7 @@ class Equilibrium:
 # ==========================================================================
 
 class _EquilibriumBTorVacuum1Item:
-    """Characteristics of the vacuum toroidal field. Time coordinate at the root of the IDS
-    """
+    """Characteristics of the vacuum toroidal field. Time coordinate at the root of the IDS"""
 
     @property
     def r0(self) -> Path[float]:
@@ -88,8 +87,7 @@ class _EquilibriumBTorVacuum1Item:
         """
 
 class _EquilibriumBTorVacuum1Many:
-    """Characteristics of the vacuum toroidal field. Time coordinate at the root of the IDS
-    """
+    """Characteristics of the vacuum toroidal field. Time coordinate at the root of the IDS"""
 
     @property
     def r0(self) -> Path[npt.NDArray[np.float64]]:
@@ -105,107 +103,86 @@ class _EquilibriumBTorVacuum1Many:
         """
 
 class _EquilibriumCodeItem:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _EquilibriumLibraryArrayFromItem:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
     @property
     def parameters_parsed(self) -> _EquilibriumCodeParametersParsedItem:
         """GSFit's settings, `code/parameters`, read into structs. The XML of `code/parameters` is
-`equilibrium.xml` with each file it links to written in its link's place, so each element
-is the key of the same name, e.g. `<grid><n_r>` is `code/parameters_parsed/grid/n_r`. Its
-structs are generated from GSFit's XML schema of the settings,
-`python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`, rather than declared here
+        `equilibrium.xml` with each file it links to written in its link's place, so each element
+        is the key of the same name, e.g. `<grid><n_r>` is `code/parameters_parsed/grid/n_r`. Its
+        structs are generated from GSFit's XML schema of the settings,
+        `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`, rather than declared here
         """
 
 class _EquilibriumCodeMany:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _EquilibriumLibraryArrayFromMany:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
     @property
     def parameters_parsed(self) -> _EquilibriumCodeParametersParsedMany:
         """GSFit's settings, `code/parameters`, read into structs. The XML of `code/parameters` is
-`equilibrium.xml` with each file it links to written in its link's place, so each element
-is the key of the same name, e.g. `<grid><n_r>` is `code/parameters_parsed/grid/n_r`. Its
-structs are generated from GSFit's XML schema of the settings,
-`python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`, rather than declared here
+        `equilibrium.xml` with each file it links to written in its link's place, so each element
+        is the key of the same name, e.g. `<grid><n_r>` is `code/parameters_parsed/grid/n_r`. Its
+        structs are generated from GSFit's XML schema of the settings,
+        `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`, rather than declared here
         """
 
 class _EquilibriumBoundaryItem:
-    """Geometry of the plasma boundary
-    """
+    """Geometry of the plasma boundary"""
 
     @property
     def type(self) -> Path[int]:
-        """0 (limiter) or 1 (diverted)
-        """
+        """0 (limiter) or 1 (diverted)"""
     @property
     def outline(self) -> _EquilibriumRz1dDynamicAosItem:
-        """RZ outline of the plasma boundary
-        """
+        """RZ outline of the plasma boundary"""
     @property
     def psi_norm(self) -> Path[float]:
         """Value of the normalized poloidal flux at which the boundary is taken, the flux being normalized to its value at the separatrix (so psi_norm = 1 if the boundary is the separatrix)
@@ -220,8 +197,7 @@ class _EquilibriumBoundaryItem:
         """
     @property
     def geometric_axis(self) -> _EquilibriumRz0dDynamicAosItem:
-        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)
-        """
+        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)"""
     @property
     def minor_radius(self) -> Path[float]:
         """Minor radius of the plasma boundary (defined as (Rmax-Rmin) / 2 of the boundary)
@@ -278,16 +254,13 @@ class _EquilibriumBoundaryItem:
         """
     @property
     def closest_wall_point(self) -> _EquilibriumBoundaryClosestItem:
-        """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary
-        """
+        """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary"""
     @property
     def dr_dz_zero_point(self) -> _EquilibriumRz0dDynamicAosItem:
-        """Outboard point on the separatrix on which dr/dz = 0 (local maximum of the major radius of the separatrix). In case of multiple local maxima, the closest one from z=z_magnetic_axis is chosen.
-        """
+        """Outboard point on the separatrix on which dr/dz = 0 (local maximum of the major radius of the separatrix). In case of multiple local maxima, the closest one from z=z_magnetic_axis is chosen."""
     @property
     def gap(self) -> _EquilibriumGapArrayFromItem:
-        """Set of gaps, defined by a reference point and a direction.
-        """
+        """Set of gaps, defined by a reference point and a direction."""
     @property
     def rho_tor(self) -> Path[float]:
         """Toroidal flux coordinate at the selected plasma boundary
@@ -309,21 +282,18 @@ class _EquilibriumBoundaryItem:
     @property
     def bounding(self) -> _EquilibriumBoundaryBoundingItem:
         """Point which defines the plasma boundary: the limiter point when the plasma is limited, or
-the X-point when it is diverted
+        the X-point when it is diverted
         """
 
 class _EquilibriumBoundaryMany:
-    """Geometry of the plasma boundary
-    """
+    """Geometry of the plasma boundary"""
 
     @property
     def type(self) -> Path[npt.NDArray[np.int32]]:
-        """0 (limiter) or 1 (diverted)
-        """
+        """0 (limiter) or 1 (diverted)"""
     @property
     def outline(self) -> _EquilibriumRz1dDynamicAosMany:
-        """RZ outline of the plasma boundary
-        """
+        """RZ outline of the plasma boundary"""
     @property
     def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
         """Value of the normalized poloidal flux at which the boundary is taken, the flux being normalized to its value at the separatrix (so psi_norm = 1 if the boundary is the separatrix)
@@ -338,8 +308,7 @@ class _EquilibriumBoundaryMany:
         """
     @property
     def geometric_axis(self) -> _EquilibriumRz0dDynamicAosMany:
-        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)
-        """
+        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)"""
     @property
     def minor_radius(self) -> Path[npt.NDArray[np.float64]]:
         """Minor radius of the plasma boundary (defined as (Rmax-Rmin) / 2 of the boundary)
@@ -396,16 +365,13 @@ class _EquilibriumBoundaryMany:
         """
     @property
     def closest_wall_point(self) -> _EquilibriumBoundaryClosestMany:
-        """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary
-        """
+        """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary"""
     @property
     def dr_dz_zero_point(self) -> _EquilibriumRz0dDynamicAosMany:
-        """Outboard point on the separatrix on which dr/dz = 0 (local maximum of the major radius of the separatrix). In case of multiple local maxima, the closest one from z=z_magnetic_axis is chosen.
-        """
+        """Outboard point on the separatrix on which dr/dz = 0 (local maximum of the major radius of the separatrix). In case of multiple local maxima, the closest one from z=z_magnetic_axis is chosen."""
     @property
     def gap(self) -> _EquilibriumGapArrayFromMany:
-        """Set of gaps, defined by a reference point and a direction.
-        """
+        """Set of gaps, defined by a reference point and a direction."""
     @property
     def rho_tor(self) -> Path[npt.NDArray[np.float64]]:
         """Toroidal flux coordinate at the selected plasma boundary
@@ -427,12 +393,11 @@ class _EquilibriumBoundaryMany:
     @property
     def bounding(self) -> _EquilibriumBoundaryBoundingMany:
         """Point which defines the plasma boundary: the limiter point when the plasma is limited, or
-the X-point when it is diverted
+        the X-point when it is diverted
         """
 
 class _EquilibriumBoundaryBoundingItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[float]:
@@ -448,8 +413,7 @@ class _EquilibriumBoundaryBoundingItem:
         """
 
 class _EquilibriumBoundaryBoundingMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -465,8 +429,7 @@ class _EquilibriumBoundaryBoundingMany:
         """
 
 class _EquilibriumBoundaryClosestItem:
-    """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary
-    """
+    """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary"""
 
     @property
     def r(self) -> Path[float]:
@@ -488,8 +451,7 @@ class _EquilibriumBoundaryClosestItem:
         """
 
 class _EquilibriumBoundaryClosestMany:
-    """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary
-    """
+    """Position and distance to the plasma boundary of the point of the first wall which is the closest to plasma boundary"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -512,94 +474,77 @@ class _EquilibriumBoundaryClosestMany:
 
 class _EquilibriumCodeParametersParsedItem:
     """Settings to make the equilibrium IDS.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
     """
 
     @property
     def timeslices(self) -> _EquilibriumCodeParametersParsedTimeslicesItem:
-        """The times to reconstruct.
-        """
+        """The times to reconstruct."""
     @property
     def numerics(self) -> _EquilibriumCodeParametersParsedNumericsItem:
-        """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
-        """
+        """Settings for the Grad-Shafranov solve, and the number of threads it runs on."""
     @property
     def grid(self) -> _EquilibriumCodeParametersParsedGridItem:
-        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
-        """
+        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles."""
     @property
     def initial_guess(self) -> _EquilibriumCodeParametersParsedInitialGuessItem:
-        """Initial guess for first iteration.
-        """
+        """Initial guess for first iteration."""
     @property
     def source_function_p_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionPPrimeItem:
-        """The p' source function: its basis functions and their regularisation.
-        """
+        """The p' source function: its basis functions and their regularisation."""
     @property
     def source_function_ff_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionFfPrimeItem:
-        """The ff' source function: its basis functions and their regularisation.
-        """
+        """The ff' source function: its basis functions and their regularisation."""
     @property
     def pf_passive_dof(self) -> _EquilibriumCodeParametersParsedPfPassiveDofItem:
-        """The degrees of freedom of the currents in the passive structures, and their regularisation.
-        """
+        """The degrees of freedom of the currents in the passive structures, and their regularisation."""
     @property
     def constraints(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsItem:
-        """Constraints used in the least-squares fit.
-        """
+        """Constraints used in the least-squares fit."""
 
 class _EquilibriumCodeParametersParsedMany:
     """Settings to make the equilibrium IDS.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
     """
 
     @property
     def timeslices(self) -> _EquilibriumCodeParametersParsedTimeslicesMany:
-        """The times to reconstruct.
-        """
+        """The times to reconstruct."""
     @property
     def numerics(self) -> _EquilibriumCodeParametersParsedNumericsMany:
-        """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
-        """
+        """Settings for the Grad-Shafranov solve, and the number of threads it runs on."""
     @property
     def grid(self) -> _EquilibriumCodeParametersParsedGridMany:
-        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
-        """
+        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles."""
     @property
     def initial_guess(self) -> _EquilibriumCodeParametersParsedInitialGuessMany:
-        """Initial guess for first iteration.
-        """
+        """Initial guess for first iteration."""
     @property
     def source_function_p_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionPPrimeMany:
-        """The p' source function: its basis functions and their regularisation.
-        """
+        """The p' source function: its basis functions and their regularisation."""
     @property
     def source_function_ff_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionFfPrimeMany:
-        """The ff' source function: its basis functions and their regularisation.
-        """
+        """The ff' source function: its basis functions and their regularisation."""
     @property
     def pf_passive_dof(self) -> _EquilibriumCodeParametersParsedPfPassiveDofMany:
-        """The degrees of freedom of the currents in the passive structures, and their regularisation.
-        """
+        """The degrees of freedom of the currents in the passive structures, and their regularisation."""
     @property
     def constraints(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsMany:
-        """Constraints used in the least-squares fit.
-        """
+        """Constraints used in the least-squares fit."""
 
 class _EquilibriumCodeParametersParsedBFieldPolProbeItem:
     """Fitting settings for one probe.
-Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
+    Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
     """
 
     @property
     def name(self) -> Path[str]:
         """Name of the probe, e.g. `P101`.
-                        Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.
+        Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.
         """
     @property
     def comment(self) -> Path[str]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
     @property
     def expected_value(self) -> Path[float]:
         """Expected magnitude of the measurement, used to normalise the measurement.
@@ -608,8 +553,7 @@ Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_s
         """
     @property
     def include(self) -> Path[int]:
-        """Whether to include the probe in the fit.
-        """
+        """Whether to include the probe in the fit."""
     @property
     def weight(self) -> Path[float]:
         """Relative weight of the probe in the least-squares fit.
@@ -619,18 +563,17 @@ Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_s
 
 class _EquilibriumCodeParametersParsedBFieldPolProbeMany:
     """Fitting settings for one probe.
-Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
+    Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the probe, e.g. `P101`.
-                        Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.
+        Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.
         """
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
     @property
     def expected_value(self) -> Path[npt.NDArray[np.float64]]:
         """Expected magnitude of the measurement, used to normalise the measurement.
@@ -639,8 +582,7 @@ Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_s
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to include the probe in the fit.
-        """
+        """Whether to include the probe in the fit."""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Relative weight of the probe in the least-squares fit.
@@ -650,7 +592,7 @@ Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_s
 
 class _EquilibriumCodeParametersParsedDiamagneticFluxItem:
     """Fitting settings for the diamagnetic flux.
-Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
+    Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
     """
 
     @property
@@ -667,16 +609,14 @@ Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_
         """
     @property
     def include(self) -> Path[int]:
-        """Whether to include the diamagnetic flux in the fit.
-        """
+        """Whether to include the diamagnetic flux in the fit."""
     @property
     def comment(self) -> Path[str]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
 
 class _EquilibriumCodeParametersParsedDiamagneticFluxMany:
     """Fitting settings for the diamagnetic flux.
-Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
+    Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
     """
 
     @property
@@ -693,282 +633,172 @@ Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to include the diamagnetic flux in the fit.
-        """
+        """Whether to include the diamagnetic flux in the fit."""
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
 
 class _EquilibriumCodeParametersParsedEfitPolynomialItem:
     """Settings for EFIT's polynomials.
-Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def n_dof(self) -> Path[int]:
-        """Number of polynomials, and so of degrees of freedom.
-        """
+        """Number of polynomials, and so of degrees of freedom."""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
-Shape [n_rows, n_columns], one row per `row` element
+        Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def exact(self) -> Path[int]:
         """When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def coefficients(self) -> Path[npt.NDArray[np.float64]]:
         """The fixed coefficients, one per polynomial, used when `exact` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedEfitPolynomialMany:
     """Settings for EFIT's polynomials.
-Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def n_dof(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of polynomials, and so of degrees of freedom.
-        """
+        """Number of polynomials, and so of degrees of freedom."""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
-Shape [n_rows, n_columns], one row per `row` element
+        Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
         """When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def coefficients(self) -> Path[npt.NDArray[np.float64]]:
         """The fixed coefficients, one per polynomial, used when `exact` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsItem:
     """The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
-Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
-    """
-
-    @property
-    def b_field_pol_probe(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbeItem:
-        """How each poloidal field probe (Mirnov coil) is fitted.
-        """
-    @property
-    def flux_loop(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoopItem:
-        """How each flux loop is fitted.
-        """
-    @property
-    def rogowski_coil(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoilItem:
-        """How each Rogowski coil is fitted.
-        """
-    @property
-    def diamagnetic_flux(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFluxItem:
-        """How the diamagnetic loop is fitted.
-        """
-    @property
-    def isoflux(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsIsofluxItem:
-        """The isoflux constraints: pairs of points on the same flux surface.
-        """
-    @property
-    def pressure(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsPressureItem:
-        """How pressure sensors are fitted.
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsMany:
-    """The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
-Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
-    """
-
-    @property
-    def b_field_pol_probe(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbeMany:
-        """How each poloidal field probe (Mirnov coil) is fitted.
-        """
-    @property
-    def flux_loop(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoopMany:
-        """How each flux loop is fitted.
-        """
-    @property
-    def rogowski_coil(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoilMany:
-        """How each Rogowski coil is fitted.
-        """
-    @property
-    def diamagnetic_flux(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFluxMany:
-        """How the diamagnetic loop is fitted.
-        """
-    @property
-    def isoflux(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsIsofluxMany:
-        """The isoflux constraints: pairs of points on the same flux surface.
-        """
-    @property
-    def pressure(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsPressureMany:
-        """How pressure sensors are fitted.
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbeItem:
-    """Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
-                A probe read by the `database_reader` which is not listed here is not included in the fit.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
+                    That root element holds only the elements named as the link, e.g. one `flux_loop` per flux loop, so the link is collapsed: `constraints.flux_loop` holds the flux loops.
+    Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
     """
 
     @property
     def b_field_pol_probe(self) -> _EquilibriumCodeParametersParsedBFieldPolProbeArrayFromItem:
-        """Fitting settings for one probe.
-Optional in the settings: unset when it is left out
+        """How each poloidal field probe (Mirnov coil) is fitted.
+        Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
+                        A probe read by the `database_reader` which is not listed here is not included in the fit.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def flux_loop(self) -> _EquilibriumCodeParametersParsedFluxLoopArrayFromItem:
+        """How each flux loop is fitted.
+        Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
+                        A flux loop read by the `database_reader` which is not listed here is not included in the fit.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def rogowski_coil(self) -> _EquilibriumCodeParametersParsedRogowskiCoilArrayFromItem:
+        """How each Rogowski coil is fitted.
+        Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
+                        A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
+                        A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
+                        Not read by the freegs reader.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def diamagnetic_flux(self) -> _EquilibriumCodeParametersParsedDiamagneticFluxItem:
+        """How the diamagnetic loop is fitted.
+        Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
+                        GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
+                        A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
+                        Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
+                        With one, the magnetics IDS must hold the diamagnetic flux.
+                        Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def isoflux(self) -> _EquilibriumCodeParametersParsedIsofluxArrayFromItem:
+        """The isoflux constraints: pairs of points on the same flux surface.
+        The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def pressure(self) -> _EquilibriumCodeParametersParsedPressureItem:
+        """How pressure sensors are fitted.
+        Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
         """
 
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbeMany:
-    """Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
-                A probe read by the `database_reader` which is not listed here is not included in the fit.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
+class _EquilibriumCodeParametersParsedEquilibriumConstraintsMany:
+    """The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
+                    That root element holds only the elements named as the link, e.g. one `flux_loop` per flux loop, so the link is collapsed: `constraints.flux_loop` holds the flux loops.
+    Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
     """
 
     @property
     def b_field_pol_probe(self) -> _EquilibriumCodeParametersParsedBFieldPolProbeArrayFromMany:
-        """Fitting settings for one probe.
-Optional in the settings: unset when it is left out
+        """How each poloidal field probe (Mirnov coil) is fitted.
+        Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
+                        A probe read by the `database_reader` which is not listed here is not included in the fit.
+        Optional in the settings: unset when it is left out
         """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFluxItem:
-    """Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
-                GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
-                A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
-                Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
-                With one, the magnetics IDS must hold the diamagnetic flux.
-                Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
-    """
-
-    @property
-    def diamagnetic_flux(self) -> _EquilibriumCodeParametersParsedDiamagneticFluxItem:
-        """Fitting settings for the diamagnetic flux.
-Optional in the settings: unset when it is left out
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFluxMany:
-    """Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
-                GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
-                A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
-                Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
-                With one, the magnetics IDS must hold the diamagnetic flux.
-                Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
-    """
-
-    @property
-    def diamagnetic_flux(self) -> _EquilibriumCodeParametersParsedDiamagneticFluxMany:
-        """Fitting settings for the diamagnetic flux.
-Optional in the settings: unset when it is left out
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoopItem:
-    """Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
-                A flux loop read by the `database_reader` which is not listed here is not included in the fit.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
-    """
-
-    @property
-    def flux_loop(self) -> _EquilibriumCodeParametersParsedFluxLoopArrayFromItem:
-        """Fitting settings for one flux loop.
-Optional in the settings: unset when it is left out
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoopMany:
-    """Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
-                A flux loop read by the `database_reader` which is not listed here is not included in the fit.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
-    """
-
     @property
     def flux_loop(self) -> _EquilibriumCodeParametersParsedFluxLoopArrayFromMany:
-        """Fitting settings for one flux loop.
-Optional in the settings: unset when it is left out
+        """How each flux loop is fitted.
+        Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
+                        A flux loop read by the `database_reader` which is not listed here is not included in the fit.
+        Optional in the settings: unset when it is left out
         """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsIsofluxItem:
-    """The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
-    """
-
-    @property
-    def isoflux(self) -> _EquilibriumCodeParametersParsedIsofluxArrayFromItem:
-        """One isoflux constraint.
-Optional in the settings: unset when it is left out
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsIsofluxMany:
-    """The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
-    """
-
-    @property
-    def isoflux(self) -> _EquilibriumCodeParametersParsedIsofluxArrayFromMany:
-        """One isoflux constraint.
-Optional in the settings: unset when it is left out
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsPressureItem:
-    """Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
-    """
-
-    @property
-    def pressure(self) -> _EquilibriumCodeParametersParsedPressureItem:
-        """Whether pressure is fitted, and how the pressure constraints are made.
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsPressureMany:
-    """Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
-    """
-
-    @property
-    def pressure(self) -> _EquilibriumCodeParametersParsedPressureMany:
-        """Whether pressure is fitted, and how the pressure constraints are made.
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoilItem:
-    """Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
-                A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
-                A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
-                Not read by the freegs reader.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
-    """
-
-    @property
-    def rogowski_coil(self) -> _EquilibriumCodeParametersParsedRogowskiCoilArrayFromItem:
-        """Fitting settings for one Rogowski coil.
-Optional in the settings: unset when it is left out
-        """
-
-class _EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoilMany:
-    """Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
-                A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
-                A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
-                Not read by the freegs reader.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
-    """
-
     @property
     def rogowski_coil(self) -> _EquilibriumCodeParametersParsedRogowskiCoilArrayFromMany:
-        """Fitting settings for one Rogowski coil.
-Optional in the settings: unset when it is left out
+        """How each Rogowski coil is fitted.
+        Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
+                        A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
+                        A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
+                        Not read by the freegs reader.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def diamagnetic_flux(self) -> _EquilibriumCodeParametersParsedDiamagneticFluxMany:
+        """How the diamagnetic loop is fitted.
+        Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
+                        GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
+                        A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
+                        Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
+                        With one, the magnetics IDS must hold the diamagnetic flux.
+                        Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def isoflux(self) -> _EquilibriumCodeParametersParsedIsofluxArrayFromMany:
+        """The isoflux constraints: pairs of points on the same flux surface.
+        The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
+        Optional in the settings: unset when it is left out
+        """
+    @property
+    def pressure(self) -> _EquilibriumCodeParametersParsedPressureMany:
+        """How pressure sensors are fitted.
+        Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
         """
 
 class _EquilibriumCodeParametersParsedFluxLoopItem:
     """Fitting settings for one flux loop.
-Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
+    Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
     """
 
     @property
     def name(self) -> Path[str]:
         """Name of the flux loop, e.g. `L001`.
-                        Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.
+        Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.
         """
     @property
     def expected_value(self) -> Path[float]:
@@ -984,22 +814,20 @@ Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/
         """
     @property
     def include(self) -> Path[int]:
-        """Whether to include the flux loop in the fit.
-        """
+        """Whether to include the flux loop in the fit."""
     @property
     def comment(self) -> Path[str]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
 
 class _EquilibriumCodeParametersParsedFluxLoopMany:
     """Fitting settings for one flux loop.
-Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
+    Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the flux loop, e.g. `L001`.
-                        Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.
+        Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.
         """
     @property
     def expected_value(self) -> Path[npt.NDArray[np.float64]]:
@@ -1015,26 +843,22 @@ Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to include the flux loop in the fit.
-        """
+        """Whether to include the flux loop in the fit."""
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
 
 class _EquilibriumCodeParametersParsedGridItem:
     """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
     """
 
     @property
     def n_r(self) -> Path[int]:
-        """Number of radial grid points.
-        """
+        """Number of radial grid points."""
     @property
     def n_z(self) -> Path[int]:
-        """Number of vertical grid points.
-        """
+        """Number of vertical grid points."""
     @property
     def r_min(self) -> Path[float]:
         """Lower radial bound of the grid.
@@ -1061,22 +885,19 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid
         """
     @property
     def n_psi_norm(self) -> Path[int]:
-        """Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
-        """
+        """Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given."""
 
 class _EquilibriumCodeParametersParsedGridMany:
     """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
     """
 
     @property
     def n_r(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of radial grid points.
-        """
+        """Number of radial grid points."""
     @property
     def n_z(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of vertical grid points.
-        """
+        """Number of vertical grid points."""
     @property
     def r_min(self) -> Path[npt.NDArray[np.float64]]:
         """Lower radial bound of the grid.
@@ -1103,12 +924,11 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid
         """
     @property
     def n_psi_norm(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
-        """
+        """Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given."""
 
 class _EquilibriumCodeParametersParsedInitialGuessItem:
     """The initial guess of the plasma current: an ellipse of current.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
     """
 
     @property
@@ -1144,7 +964,7 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/init
 
 class _EquilibriumCodeParametersParsedInitialGuessMany:
     """The initial guess of the plasma current: an ellipse of current.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
     """
 
     @property
@@ -1180,17 +1000,15 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/init
 
 class _EquilibriumCodeParametersParsedIsofluxItem:
     """One isoflux constraint.
-Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
+    Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
     """
 
     @property
     def name(self) -> Path[str]:
-        """The constraint's name.
-        """
+        """The constraint's name."""
     @property
     def expected_value(self) -> Path[float]:
-        """The typical size of the flux difference between the two points. The fit divides the residual by it.
-        """
+        """The typical size of the flux difference between the two points. The fit divides the residual by it."""
     @property
     def weight(self) -> Path[float]:
         """Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.
@@ -1199,26 +1017,22 @@ Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/x
         """
     @property
     def include(self) -> Path[int]:
-        """Whether the constraint is fitted.
-        """
+        """Whether the constraint is fitted."""
     @property
     def comment(self) -> Path[str]:
-        """Free text, e.g. why the constraint is not included; not used by the fit.
-        """
+        """Free text, e.g. why the constraint is not included; not used by the fit."""
 
 class _EquilibriumCodeParametersParsedIsofluxMany:
     """One isoflux constraint.
-Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
+    Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """The constraint's name.
-        """
+        """The constraint's name."""
     @property
     def expected_value(self) -> Path[npt.NDArray[np.float64]]:
-        """The typical size of the flux difference between the two points. The fit divides the residual by it.
-        """
+        """The typical size of the flux difference between the two points. The fit divides the residual by it."""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.
@@ -1227,26 +1041,22 @@ Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/x
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether the constraint is fitted.
-        """
+        """Whether the constraint is fitted."""
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
-        """Free text, e.g. why the constraint is not included; not used by the fit.
-        """
+        """Free text, e.g. why the constraint is not included; not used by the fit."""
 
 class _EquilibriumCodeParametersParsedNumericsItem:
     """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def RAYON_NUM_THREADS(self) -> Path[int]:
-        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.
-        """
+        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU."""
     @property
     def n_iter_max(self) -> Path[int]:
-        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.
-        """
+        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed."""
     @property
     def grad_shafranov_deviation_tolerance(self) -> Path[float]:
         """The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this.
@@ -1255,30 +1065,25 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def n_iter_min(self) -> Path[int]:
-        """Minimum number of nonlinear solver iterations before the convergence test may pass.
-        """
+        """Minimum number of nonlinear solver iterations before the convergence test may pass."""
     @property
     def save_unconverged(self) -> Path[int]:
-        """Not read by the code at present.
-        """
+        """Not read by the code at present."""
     @property
     def nonlinear_solver(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverItem:
-        """The nonlinear solver for the Grad-Shafranov equation.
-        """
+        """The nonlinear solver for the Grad-Shafranov equation."""
 
 class _EquilibriumCodeParametersParsedNumericsMany:
     """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def RAYON_NUM_THREADS(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.
-        """
+        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU."""
     @property
     def n_iter_max(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.
-        """
+        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed."""
     @property
     def grad_shafranov_deviation_tolerance(self) -> Path[npt.NDArray[np.float64]]:
         """The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this.
@@ -1287,66 +1092,57 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def n_iter_min(self) -> Path[npt.NDArray[np.int32]]:
-        """Minimum number of nonlinear solver iterations before the convergence test may pass.
-        """
+        """Minimum number of nonlinear solver iterations before the convergence test may pass."""
     @property
     def save_unconverged(self) -> Path[npt.NDArray[np.int32]]:
-        """Not read by the code at present.
-        """
+        """Not read by the code at present."""
     @property
     def nonlinear_solver(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverMany:
-        """The nonlinear solver for the Grad-Shafranov equation.
-        """
+        """The nonlinear solver for the Grad-Shafranov equation."""
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverItem:
     """The nonlinear solver for the Grad-Shafranov equation.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
         """The solver to use. Its settings are in the element of the same name, below.
-One of: "picard", "newton_krylov", "newton_picard"
+        One of: "picard", "newton_krylov", "newton_picard"
         """
     @property
     def picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardItem:
-        """Settings for Picard iterations.
-        """
+        """Settings for Picard iterations."""
     @property
     def newton_krylov(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovItem:
-        """Settings for Jacobian-free Newton-Krylov.
-        """
+        """Settings for Jacobian-free Newton-Krylov."""
     @property
     def newton_picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardItem:
-        """Settings for Newton-Picard, the recursive projection method (RPM).
-        """
+        """Settings for Newton-Picard, the recursive projection method (RPM)."""
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverMany:
     """The nonlinear solver for the Grad-Shafranov equation.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
         """The solver to use. Its settings are in the element of the same name, below.
-One of: "picard", "newton_krylov", "newton_picard"
+        One of: "picard", "newton_krylov", "newton_picard"
         """
     @property
     def picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardMany:
-        """Settings for Picard iterations.
-        """
+        """Settings for Picard iterations."""
     @property
     def newton_krylov(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovMany:
-        """Settings for Jacobian-free Newton-Krylov.
-        """
+        """Settings for Jacobian-free Newton-Krylov."""
     @property
     def newton_picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardMany:
-        """Settings for Newton-Picard, the recursive projection method (RPM).
-        """
+        """Settings for Newton-Picard, the recursive projection method (RPM)."""
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovItem:
     """Settings for Jacobian-free Newton-Krylov.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
@@ -1357,8 +1153,7 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def n_krylov_max(self) -> Path[int]:
-        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.
-        """
+        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work."""
     @property
     def krylov_tolerance(self) -> Path[float]:
         """The Krylov solve stops once the linearised residual is this fraction of the residual.
@@ -1373,12 +1168,11 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def verbose(self) -> Path[int]:
-        """Whether to print the progress of each Newton iteration.
-        """
+        """Whether to print the progress of each Newton iteration."""
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovMany:
     """Settings for Jacobian-free Newton-Krylov.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
@@ -1389,8 +1183,7 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def n_krylov_max(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.
-        """
+        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work."""
     @property
     def krylov_tolerance(self) -> Path[npt.NDArray[np.float64]]:
         """The Krylov solve stops once the linearised residual is this fraction of the residual.
@@ -1405,18 +1198,16 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def verbose(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to print the progress of each Newton iteration.
-        """
+        """Whether to print the progress of each Newton iteration."""
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardItem:
     """Settings for Newton-Picard, the recursive projection method (RPM).
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_basis_max(self) -> Path[int]:
-        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.
-        """
+        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add."""
     @property
     def contraction_threshold(self) -> Path[float]:
         """A direction is added when the residual outside them shrinks by less than this factor per iteration.
@@ -1431,18 +1222,16 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def verbose(self) -> Path[int]:
-        """Whether to print the progress of each Newton-Picard iteration.
-        """
+        """Whether to print the progress of each Newton-Picard iteration."""
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardMany:
     """Settings for Newton-Picard, the recursive projection method (RPM).
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_basis_max(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.
-        """
+        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add."""
     @property
     def contraction_threshold(self) -> Path[npt.NDArray[np.float64]]:
         """A direction is added when the residual outside them shrinks by less than this factor per iteration.
@@ -1457,26 +1246,22 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
     @property
     def verbose(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to print the progress of each Newton-Picard iteration.
-        """
+        """Whether to print the progress of each Newton-Picard iteration."""
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardItem:
     """Settings for Picard iterations.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_iter_no_vertical_feedback(self) -> Path[int]:
-        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.
-        """
+        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off."""
     @property
     def apply_anderson_mixing(self) -> Path[int]:
-        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.
-        """
+        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals."""
     @property
     def anderson_n_history(self) -> Path[int]:
-        """Maximum number of previous iterations Anderson mixing combines.
-        """
+        """Maximum number of previous iterations Anderson mixing combines."""
     @property
     def anderson_mixing(self) -> Path[float]:
         """Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.
@@ -1486,21 +1271,18 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardMany:
     """Settings for Picard iterations.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_iter_no_vertical_feedback(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.
-        """
+        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off."""
     @property
     def apply_anderson_mixing(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.
-        """
+        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals."""
     @property
     def anderson_n_history(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of previous iterations Anderson mixing combines.
-        """
+        """Maximum number of previous iterations Anderson mixing combines."""
     @property
     def anderson_mixing(self) -> Path[npt.NDArray[np.float64]]:
         """Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.
@@ -1510,30 +1292,27 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
 
 class _EquilibriumCodeParametersParsedPassiveItem:
     """The degrees of freedom of one passive structure's current, and their regularisation.
-Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
+    Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def name(self) -> Path[str]:
-        """The passive's name in the database, e.g. "IVC".
-        """
+        """The passive's name in the database, e.g. "IVC"."""
     @property
     def current_distribution_type(self) -> Path[str]:
         """How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
-One of: "constant_current_density", "eig"
+        One of: "constant_current_density", "eig"
         """
     @property
     def include(self) -> Path[int]:
-        """Whether the passive is included. Not read at present.
-        """
+        """Whether the passive is included. Not read at present."""
     @property
     def n_dof(self) -> Path[int]:
-        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.
-        """
+        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig."""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations, one `row` of n_dof coefficients each; no rows for none.
-Shape [n_rows, n_columns], one row per `row` element
+        Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
@@ -1544,30 +1323,27 @@ Shape [n_rows, n_columns], one row per `row` element
 
 class _EquilibriumCodeParametersParsedPassiveMany:
     """The degrees of freedom of one passive structure's current, and their regularisation.
-Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
+    Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """The passive's name in the database, e.g. "IVC".
-        """
+        """The passive's name in the database, e.g. "IVC"."""
     @property
     def current_distribution_type(self) -> Path[npt.NDArray[np.str_]]:
         """How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
-One of: "constant_current_density", "eig"
+        One of: "constant_current_density", "eig"
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether the passive is included. Not read at present.
-        """
+        """Whether the passive is included. Not read at present."""
     @property
     def n_dof(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.
-        """
+        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig."""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations, one `row` of n_dof coefficients each; no rows for none.
-Shape [n_rows, n_columns], one row per `row` element
+        Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
@@ -1578,117 +1354,115 @@ Shape [n_rows, n_columns], one row per `row` element
 
 class _EquilibriumCodeParametersParsedPfPassiveDofItem:
     """The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def passive(self) -> _EquilibriumCodeParametersParsedPassiveArrayFromItem:
         """One passive structure.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPfPassiveDofMany:
     """The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def passive(self) -> _EquilibriumCodeParametersParsedPassiveArrayFromMany:
         """One passive structure.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPressureItem:
     """Whether pressure is fitted, and how the pressure constraints are made.
-Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+    Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def include(self) -> Path[int]:
-        """Whether to fit pressure. When false, nothing else in this file is read.
-        """
+        """Whether to fit pressure. When false, nothing else in this file is read."""
     @property
     def sensor_name_prefix(self) -> Path[str]:
         """The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def expected_value(self) -> Path[float]:
         """The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
 
-        Units: pascal
+                Units: pascal
         """
     @property
     def weight(self) -> Path[float]:
         """Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
 
-        Units: dimensionless
+                Units: dimensionless
         """
     @property
     def comment(self) -> Path[str]:
         """Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def thomson_scattering(self) -> _EquilibriumCodeParametersParsedPressureThomsonScatteringItem:
         """Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def synthetic(self) -> _EquilibriumCodeParametersParsedSyntheticItem:
         """Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPressureMany:
     """Whether pressure is fitted, and how the pressure constraints are made.
-Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+    Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to fit pressure. When false, nothing else in this file is read.
-        """
+        """Whether to fit pressure. When false, nothing else in this file is read."""
     @property
     def sensor_name_prefix(self) -> Path[npt.NDArray[np.str_]]:
         """The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def expected_value(self) -> Path[npt.NDArray[np.float64]]:
         """The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
 
-        Units: pascal
+                Units: pascal
         """
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
 
-        Units: dimensionless
+                Units: dimensionless
         """
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
         """Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def thomson_scattering(self) -> _EquilibriumCodeParametersParsedPressureThomsonScatteringMany:
         """Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def synthetic(self) -> _EquilibriumCodeParametersParsedSyntheticMany:
         """Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPressureThomsonScatteringItem:
     """Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader.
-Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+    Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
@@ -1706,7 +1480,7 @@ Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit
 
 class _EquilibriumCodeParametersParsedPressureThomsonScatteringMany:
     """Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader.
-Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+    Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
@@ -1724,7 +1498,7 @@ Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit
 
 class _EquilibriumCodeParametersParsedRegularisationBuilderItem:
     """How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free).
-Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
@@ -1736,12 +1510,12 @@ Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/set
     @property
     def regularisation_mode(self) -> Path[str]:
         """How the bulk of the profile is regularised.
-One of: "second_derivative_zero"
+        One of: "second_derivative_zero"
         """
     @property
     def left_boundary_condition(self) -> Path[str]:
         """The boundary condition at psi_n = 0, the magnetic axis.
-One of: "free", "dirichlet", "neumann"
+        One of: "free", "dirichlet", "neumann"
         """
     @property
     def left_boundary_weight(self) -> Path[float]:
@@ -1752,7 +1526,7 @@ One of: "free", "dirichlet", "neumann"
     @property
     def right_boundary_condition(self) -> Path[str]:
         """The boundary condition at psi_n = 1, the plasma boundary.
-One of: "free", "dirichlet", "neumann"
+        One of: "free", "dirichlet", "neumann"
         """
     @property
     def right_boundary_weight(self) -> Path[float]:
@@ -1763,7 +1537,7 @@ One of: "free", "dirichlet", "neumann"
 
 class _EquilibriumCodeParametersParsedRegularisationBuilderMany:
     """How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free).
-Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
@@ -1775,12 +1549,12 @@ Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/set
     @property
     def regularisation_mode(self) -> Path[npt.NDArray[np.str_]]:
         """How the bulk of the profile is regularised.
-One of: "second_derivative_zero"
+        One of: "second_derivative_zero"
         """
     @property
     def left_boundary_condition(self) -> Path[npt.NDArray[np.str_]]:
         """The boundary condition at psi_n = 0, the magnetic axis.
-One of: "free", "dirichlet", "neumann"
+        One of: "free", "dirichlet", "neumann"
         """
     @property
     def left_boundary_weight(self) -> Path[npt.NDArray[np.float64]]:
@@ -1791,7 +1565,7 @@ One of: "free", "dirichlet", "neumann"
     @property
     def right_boundary_condition(self) -> Path[npt.NDArray[np.str_]]:
         """The boundary condition at psi_n = 1, the plasma boundary.
-One of: "free", "dirichlet", "neumann"
+        One of: "free", "dirichlet", "neumann"
         """
     @property
     def right_boundary_weight(self) -> Path[npt.NDArray[np.float64]]:
@@ -1802,13 +1576,13 @@ One of: "free", "dirichlet", "neumann"
 
 class _EquilibriumCodeParametersParsedRogowskiCoilItem:
     """Fitting settings for one Rogowski coil.
-Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
+    Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
     """
 
     @property
     def name(self) -> Path[str]:
         """Name of the Rogowski coil, e.g. `INIVC000` or `BVLT`.
-                        Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.
+        Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.
         """
     @property
     def expected_value(self) -> Path[float]:
@@ -1824,22 +1598,20 @@ Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_sch
         """
     @property
     def include(self) -> Path[int]:
-        """Whether to include the Rogowski coil in the fit.
-        """
+        """Whether to include the Rogowski coil in the fit."""
     @property
     def comment(self) -> Path[str]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
 
 class _EquilibriumCodeParametersParsedRogowskiCoilMany:
     """Fitting settings for one Rogowski coil.
-Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
+    Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the Rogowski coil, e.g. `INIVC000` or `BVLT`.
-                        Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.
+        Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.
         """
     @property
     def expected_value(self) -> Path[npt.NDArray[np.float64]]:
@@ -1855,100 +1627,98 @@ Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_sch
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to include the Rogowski coil in the fit.
-        """
+        """Whether to include the Rogowski coil in the fit."""
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
-        """Free-text comment, e.g. on the quality of the signal; may be empty.
-        """
+        """Free-text comment, e.g. on the quality of the signal; may be empty."""
 
 class _EquilibriumCodeParametersParsedSourceFunctionFfPrimeItem:
     """The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
         """The basis functions to use. Their settings are in the element of the same name, below.
-One of: "efit_polynomial", "tensioned_cubic_b_spline"
+        One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialItem:
         """Settings for EFIT's polynomials.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineItem:
         """Settings for the tensioned cubic B-splines.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSourceFunctionFfPrimeMany:
     """The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
         """The basis functions to use. Their settings are in the element of the same name, below.
-One of: "efit_polynomial", "tensioned_cubic_b_spline"
+        One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialMany:
         """Settings for EFIT's polynomials.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineMany:
         """Settings for the tensioned cubic B-splines.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSourceFunctionPPrimeItem:
     """The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
         """The basis functions to use. Their settings are in the element of the same name, below.
-One of: "efit_polynomial", "tensioned_cubic_b_spline"
+        One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialItem:
         """Settings for EFIT's polynomials.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineItem:
         """Settings for the tensioned cubic B-splines.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSourceFunctionPPrimeMany:
     """The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
         """The basis functions to use. Their settings are in the element of the same name, below.
-One of: "efit_polynomial", "tensioned_cubic_b_spline"
+        One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialMany:
         """Settings for EFIT's polynomials.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineMany:
         """Settings for the tensioned cubic B-splines.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSyntheticItem:
     """Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader.
-Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+    Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
@@ -1965,8 +1735,7 @@ Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema
         """
     @property
     def n_sensors(self) -> Path[int]:
-        """Number of sensors, evenly spaced from r_start to r_end.
-        """
+        """Number of sensors, evenly spaced from r_start to r_end."""
     @property
     def minimum_pressure(self) -> Path[float]:
         """Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint.
@@ -1976,7 +1745,7 @@ Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema
 
 class _EquilibriumCodeParametersParsedSyntheticMany:
     """Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader.
-Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+    Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
@@ -1993,8 +1762,7 @@ Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema
         """
     @property
     def n_sensors(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of sensors, evenly spaced from r_start to r_end.
-        """
+        """Number of sensors, evenly spaced from r_start to r_end."""
     @property
     def minimum_pressure(self) -> Path[npt.NDArray[np.float64]]:
         """Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint.
@@ -2004,14 +1772,14 @@ Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema
 
 class _EquilibriumCodeParametersParsedTensionedCubicBSplineItem:
     """Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom.
-Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
-Shape [n_rows, n_columns], one row per `row` element
-Optional in the settings: unset when it is left out
+        Shape [n_rows, n_columns], one row per `row` element
+        Optional in the settings: unset when it is left out
         """
     @property
     def interior_knots(self) -> Path[npt.NDArray[np.float64]]:
@@ -2028,24 +1796,24 @@ Optional in the settings: unset when it is left out
     @property
     def make_cubic_spline_regularisations(self) -> Path[int]:
         """When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def regularisation_builder(self) -> _EquilibriumCodeParametersParsedRegularisationBuilderItem:
         """How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedTensionedCubicBSplineMany:
     """Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom.
-Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+    Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
-Shape [n_rows, n_columns], one row per `row` element
-Optional in the settings: unset when it is left out
+        Shape [n_rows, n_columns], one row per `row` element
+        Optional in the settings: unset when it is left out
         """
     @property
     def interior_knots(self) -> Path[npt.NDArray[np.float64]]:
@@ -2062,32 +1830,30 @@ Optional in the settings: unset when it is left out
     @property
     def make_cubic_spline_regularisations(self) -> Path[npt.NDArray[np.int32]]:
         """When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
     @property
     def regularisation_builder(self) -> _EquilibriumCodeParametersParsedRegularisationBuilderMany:
         """How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
-Optional in the settings: unset when it is left out
+        Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedTimeslicesItem:
     """The times to reconstruct.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
         """How the times are chosen. Its settings are in the element of the same name, below.
-One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
+        One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
         """
     @property
     def arange(self) -> _EquilibriumCodeParametersParsedTimeslicesArangeItem:
-        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
-        """
+        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)."""
     @property
     def linspace(self) -> _EquilibriumCodeParametersParsedTimeslicesLinspaceItem:
-        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
-        """
+        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)."""
     @property
     def user_defined(self) -> Path[npt.NDArray[np.float64]]:
         """User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3".
@@ -2097,22 +1863,20 @@ One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
 
 class _EquilibriumCodeParametersParsedTimeslicesMany:
     """The times to reconstruct.
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
         """How the times are chosen. Its settings are in the element of the same name, below.
-One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
+        One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
         """
     @property
     def arange(self) -> _EquilibriumCodeParametersParsedTimeslicesArangeMany:
-        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
-        """
+        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)."""
     @property
     def linspace(self) -> _EquilibriumCodeParametersParsedTimeslicesLinspaceMany:
-        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
-        """
+        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)."""
     @property
     def user_defined(self) -> Path[npt.NDArray[np.float64]]:
         """User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3".
@@ -2122,7 +1886,7 @@ One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
 
 class _EquilibriumCodeParametersParsedTimeslicesArangeItem:
     """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
@@ -2146,7 +1910,7 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/time
 
 class _EquilibriumCodeParametersParsedTimeslicesArangeMany:
     """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
@@ -2170,7 +1934,7 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/time
 
 class _EquilibriumCodeParametersParsedTimeslicesLinspaceItem:
     """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
@@ -2187,12 +1951,11 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/time
         """
     @property
     def n_time(self) -> Path[int]:
-        """Number of times.
-        """
+        """Number of times."""
 
 class _EquilibriumCodeParametersParsedTimeslicesLinspaceMany:
     """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
-Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+    Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
@@ -2209,12 +1972,10 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/time
         """
     @property
     def n_time(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of times.
-        """
+        """Number of times."""
 
 class _EquilibriumConstraintsItem:
-    """Measurements to constrain the equilibrium, output values and accuracy of the fit
-    """
+    """Measurements to constrain the equilibrium, output values and accuracy of the fit"""
 
     @property
     def b_field_tor_vacuum_r(self) -> _EquilibriumConstraints0dItem:
@@ -2320,12 +2081,10 @@ class _EquilibriumConstraintsItem:
         """
     @property
     def x_point(self) -> _EquilibriumConstraintsPurePositionArrayFromItem:
-        """Array of X-points, for each of them the RZ position is given
-        """
+        """Array of X-points, for each of them the RZ position is given"""
     @property
     def strike_point(self) -> _EquilibriumConstraintsPurePositionArrayFromItem:
-        """Array of strike points, for each of them the RZ position is given
-        """
+        """Array of strike points, for each of them the RZ position is given"""
     @property
     def chi_squared_reduced(self) -> Path[float]:
         """Sum of the chi_squared of all constraints used for the equilibrium reconstruction, divided by the number of degrees of freedom of the identification model
@@ -2334,12 +2093,10 @@ class _EquilibriumConstraintsItem:
         """
     @property
     def freedom_degrees_n(self) -> Path[int]:
-        """Number of degrees of freedom of the identification model
-        """
+        """Number of degrees of freedom of the identification model"""
     @property
     def constraints_n(self) -> Path[int]:
-        """Number of constraints used (i.e. having a non-zero weight)
-        """
+        """Number of constraints used (i.e. having a non-zero weight)"""
     @property
     def rogowski_coil(self) -> _EquilibriumConstraints0dIpLikeArrayFromItem:
         """Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`. The data dictionary has no constraint for them
@@ -2348,8 +2105,7 @@ class _EquilibriumConstraintsItem:
         """
 
 class _EquilibriumConstraintsMany:
-    """Measurements to constrain the equilibrium, output values and accuracy of the fit
-    """
+    """Measurements to constrain the equilibrium, output values and accuracy of the fit"""
 
     @property
     def b_field_tor_vacuum_r(self) -> _EquilibriumConstraints0dMany:
@@ -2455,12 +2211,10 @@ class _EquilibriumConstraintsMany:
         """
     @property
     def x_point(self) -> _EquilibriumConstraintsPurePositionArrayFromMany:
-        """Array of X-points, for each of them the RZ position is given
-        """
+        """Array of X-points, for each of them the RZ position is given"""
     @property
     def strike_point(self) -> _EquilibriumConstraintsPurePositionArrayFromMany:
-        """Array of strike points, for each of them the RZ position is given
-        """
+        """Array of strike points, for each of them the RZ position is given"""
     @property
     def chi_squared_reduced(self) -> Path[npt.NDArray[np.float64]]:
         """Sum of the chi_squared of all constraints used for the equilibrium reconstruction, divided by the number of degrees of freedom of the identification model
@@ -2469,12 +2223,10 @@ class _EquilibriumConstraintsMany:
         """
     @property
     def freedom_degrees_n(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of degrees of freedom of the identification model
-        """
+        """Number of degrees of freedom of the identification model"""
     @property
     def constraints_n(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of constraints used (i.e. having a non-zero weight)
-        """
+        """Number of constraints used (i.e. having a non-zero weight)"""
     @property
     def rogowski_coil(self) -> _EquilibriumConstraints0dIpLikeArrayFromMany:
         """Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`. The data dictionary has no constraint for them
@@ -2483,8 +2235,7 @@ class _EquilibriumConstraintsMany:
         """
 
 class _EquilibriumConstraints0dItem:
-    """Scalar constraint with no sign convention transformation
-    """
+    """Scalar constraint with no sign convention transformation"""
 
     @property
     def measured(self) -> Path[float]:
@@ -2494,8 +2245,7 @@ class _EquilibriumConstraints0dItem:
         """
     @property
     def source(self) -> Path[str]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[float]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2504,8 +2254,7 @@ class _EquilibriumConstraints0dItem:
         """
     @property
     def exact(self) -> Path[int]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[float]:
         """Weight given to the measurement
@@ -2533,29 +2282,27 @@ class _EquilibriumConstraints0dItem:
     @property
     def name(self) -> Path[str]:
         """Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
+        `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
         """
     @property
     def dof(self) -> _EquilibriumConstraints0dDofArrayFromItem:
-        """The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
-        """
+        """The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order"""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`
+        regularisation, one coefficient for each `dof`; no rows for none.
+        Shape = `(n_regularisations, n_dof)`
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
         """The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`
+        `regularisations`
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumConstraints0dMany:
-    """Scalar constraint with no sign convention transformation
-    """
+    """Scalar constraint with no sign convention transformation"""
 
     @property
     def measured(self) -> Path[npt.NDArray[np.float64]]:
@@ -2565,8 +2312,7 @@ class _EquilibriumConstraints0dMany:
         """
     @property
     def source(self) -> Path[npt.NDArray[np.str_]]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[npt.NDArray[np.float64]]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2575,8 +2321,7 @@ class _EquilibriumConstraints0dMany:
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Weight given to the measurement
@@ -2604,29 +2349,27 @@ class _EquilibriumConstraints0dMany:
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
+        `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
         """
     @property
     def dof(self) -> _EquilibriumConstraints0dDofArrayFromMany:
-        """The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
-        """
+        """The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order"""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`
+        regularisation, one coefficient for each `dof`; no rows for none.
+        Shape = `(n_regularisations, n_dof)`
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
         """The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`
+        `regularisations`
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumConstraints0dB0LikeItem:
-    """Scalar constraint with toroidal-field-like sign convention
-    """
+    """Scalar constraint with toroidal-field-like sign convention"""
 
     @property
     def measured(self) -> Path[float]:
@@ -2636,8 +2379,7 @@ class _EquilibriumConstraints0dB0LikeItem:
         """
     @property
     def source(self) -> Path[str]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[float]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2646,8 +2388,7 @@ class _EquilibriumConstraints0dB0LikeItem:
         """
     @property
     def exact(self) -> Path[int]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[float]:
         """Weight given to the measurement
@@ -2674,8 +2415,7 @@ class _EquilibriumConstraints0dB0LikeItem:
         """
 
 class _EquilibriumConstraints0dB0LikeMany:
-    """Scalar constraint with toroidal-field-like sign convention
-    """
+    """Scalar constraint with toroidal-field-like sign convention"""
 
     @property
     def measured(self) -> Path[npt.NDArray[np.float64]]:
@@ -2685,8 +2425,7 @@ class _EquilibriumConstraints0dB0LikeMany:
         """
     @property
     def source(self) -> Path[npt.NDArray[np.str_]]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[npt.NDArray[np.float64]]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2695,8 +2434,7 @@ class _EquilibriumConstraints0dB0LikeMany:
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Weight given to the measurement
@@ -2723,26 +2461,21 @@ class _EquilibriumConstraints0dB0LikeMany:
         """
 
 class _EquilibriumConstraints0dDofItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
-        """
+        """Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`"""
 
 class _EquilibriumConstraints0dDofMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
-        """
+        """Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`"""
 
 class _EquilibriumConstraints0dIpLikeItem:
-    """Scalar constraint with plasma-current-like sign convention
-    """
+    """Scalar constraint with plasma-current-like sign convention"""
 
     @property
     def measured(self) -> Path[float]:
@@ -2752,8 +2485,7 @@ class _EquilibriumConstraints0dIpLikeItem:
         """
     @property
     def source(self) -> Path[str]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[float]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2762,8 +2494,7 @@ class _EquilibriumConstraints0dIpLikeItem:
         """
     @property
     def exact(self) -> Path[int]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[float]:
         """Weight given to the measurement
@@ -2791,13 +2522,12 @@ class _EquilibriumConstraints0dIpLikeItem:
     @property
     def name(self) -> Path[str]:
         """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
-`constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
-`magnetics/ip(0)/method_name` for `constraints/ip`
+        `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
+        `magnetics/ip(0)/method_name` for `constraints/ip`
         """
 
 class _EquilibriumConstraints0dIpLikeMany:
-    """Scalar constraint with plasma-current-like sign convention
-    """
+    """Scalar constraint with plasma-current-like sign convention"""
 
     @property
     def measured(self) -> Path[npt.NDArray[np.float64]]:
@@ -2807,8 +2537,7 @@ class _EquilibriumConstraints0dIpLikeMany:
         """
     @property
     def source(self) -> Path[npt.NDArray[np.str_]]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[npt.NDArray[np.float64]]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2817,8 +2546,7 @@ class _EquilibriumConstraints0dIpLikeMany:
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Weight given to the measurement
@@ -2846,13 +2574,12 @@ class _EquilibriumConstraints0dIpLikeMany:
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
-`constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
-`magnetics/ip(0)/method_name` for `constraints/ip`
+        `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
+        `magnetics/ip(0)/method_name` for `constraints/ip`
         """
 
 class _EquilibriumConstraints0dOneLikeItem:
-    """Scalar constraint with geometry-dependent sign convention
-    """
+    """Scalar constraint with geometry-dependent sign convention"""
 
     @property
     def measured(self) -> Path[float]:
@@ -2862,8 +2589,7 @@ class _EquilibriumConstraints0dOneLikeItem:
         """
     @property
     def source(self) -> Path[str]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[float]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2872,8 +2598,7 @@ class _EquilibriumConstraints0dOneLikeItem:
         """
     @property
     def exact(self) -> Path[int]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[float]:
         """Weight given to the measurement
@@ -2900,12 +2625,10 @@ class _EquilibriumConstraints0dOneLikeItem:
         """
     @property
     def name(self) -> Path[str]:
-        """Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`
-        """
+        """Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`"""
 
 class _EquilibriumConstraints0dOneLikeMany:
-    """Scalar constraint with geometry-dependent sign convention
-    """
+    """Scalar constraint with geometry-dependent sign convention"""
 
     @property
     def measured(self) -> Path[npt.NDArray[np.float64]]:
@@ -2915,8 +2638,7 @@ class _EquilibriumConstraints0dOneLikeMany:
         """
     @property
     def source(self) -> Path[npt.NDArray[np.str_]]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[npt.NDArray[np.float64]]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2925,8 +2647,7 @@ class _EquilibriumConstraints0dOneLikeMany:
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Weight given to the measurement
@@ -2953,12 +2674,10 @@ class _EquilibriumConstraints0dOneLikeMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`
-        """
+        """Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`"""
 
 class _EquilibriumConstraints0dPositionItem:
-    """Scalar constraint with R,Z,phi position
-    """
+    """Scalar constraint with R,Z,phi position"""
 
     @property
     def measured(self) -> Path[float]:
@@ -2968,12 +2687,10 @@ class _EquilibriumConstraints0dPositionItem:
         """
     @property
     def position(self) -> _EquilibriumRphizpsirho0dDynamicAos3Item:
-        """Position at which this measurement is given
-        """
+        """Position at which this measurement is given"""
     @property
     def source(self) -> Path[str]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[float]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -2982,8 +2699,7 @@ class _EquilibriumConstraints0dPositionItem:
         """
     @property
     def exact(self) -> Path[int]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[float]:
         """Weight given to the measurement
@@ -3010,8 +2726,7 @@ class _EquilibriumConstraints0dPositionItem:
         """
 
 class _EquilibriumConstraints0dPositionMany:
-    """Scalar constraint with R,Z,phi position
-    """
+    """Scalar constraint with R,Z,phi position"""
 
     @property
     def measured(self) -> Path[npt.NDArray[np.float64]]:
@@ -3021,12 +2736,10 @@ class _EquilibriumConstraints0dPositionMany:
         """
     @property
     def position(self) -> _EquilibriumRphizpsirho0dDynamicAos3Many:
-        """Position at which this measurement is given
-        """
+        """Position at which this measurement is given"""
     @property
     def source(self) -> Path[npt.NDArray[np.str_]]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[npt.NDArray[np.float64]]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -3035,8 +2748,7 @@ class _EquilibriumConstraints0dPositionMany:
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Weight given to the measurement
@@ -3063,8 +2775,7 @@ class _EquilibriumConstraints0dPositionMany:
         """
 
 class _EquilibriumConstraintsMagnetizationItem:
-    """Magnetization constraints along R and Z axis
-    """
+    """Magnetization constraints along R and Z axis"""
 
     @property
     def magnetization_r(self) -> _EquilibriumConstraints0dItem:
@@ -3080,8 +2791,7 @@ class _EquilibriumConstraintsMagnetizationItem:
         """
 
 class _EquilibriumConstraintsMagnetizationMany:
-    """Magnetization constraints along R and Z axis
-    """
+    """Magnetization constraints along R and Z axis"""
 
     @property
     def magnetization_r(self) -> _EquilibriumConstraints0dMany:
@@ -3097,17 +2807,14 @@ class _EquilibriumConstraintsMagnetizationMany:
         """
 
 class _EquilibriumConstraintsPurePositionItem:
-    """R,Z position constraint
-    """
+    """R,Z position constraint"""
 
     @property
     def position_measured(self) -> _EquilibriumRz0dDynamicAosItem:
-        """Measured or estimated position
-        """
+        """Measured or estimated position"""
     @property
     def source(self) -> Path[str]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[float]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -3116,8 +2823,7 @@ class _EquilibriumConstraintsPurePositionItem:
         """
     @property
     def exact(self) -> Path[int]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[float]:
         """Weight given to the measurement
@@ -3132,8 +2838,7 @@ class _EquilibriumConstraintsPurePositionItem:
         """
     @property
     def position_reconstructed(self) -> _EquilibriumRz0dDynamicAosItem:
-        """Position estimated from the reconstructed equilibrium
-        """
+        """Position estimated from the reconstructed equilibrium"""
     @property
     def chi_squared_r(self) -> Path[float]:
         """Squared error on the major radius normalized by the variance considered in the minimization process : chi_squared = weight^2 *(position_reconstructed/r - position_measured/r)^2 / sigma^2, where sigma is the standard deviation of the measurement error
@@ -3148,17 +2853,14 @@ class _EquilibriumConstraintsPurePositionItem:
         """
 
 class _EquilibriumConstraintsPurePositionMany:
-    """R,Z position constraint
-    """
+    """R,Z position constraint"""
 
     @property
     def position_measured(self) -> _EquilibriumRz0dDynamicAosMany:
-        """Measured or estimated position
-        """
+        """Measured or estimated position"""
     @property
     def source(self) -> Path[npt.NDArray[np.str_]]:
-        """Path to the source data for this measurement in the IMAS data dictionary
-        """
+        """Path to the source data for this measurement in the IMAS data dictionary"""
     @property
     def time_measurement(self) -> Path[npt.NDArray[np.float64]]:
         """Exact time slice used from the time array of the measurement source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
@@ -3167,8 +2869,7 @@ class _EquilibriumConstraintsPurePositionMany:
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit
-        """
+        """Integer flag : 1 means exact data, taken as an exact input without being fitted; 0 means the equilibrium code does a least square fit"""
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
         """Weight given to the measurement
@@ -3183,8 +2884,7 @@ class _EquilibriumConstraintsPurePositionMany:
         """
     @property
     def position_reconstructed(self) -> _EquilibriumRz0dDynamicAosMany:
-        """Position estimated from the reconstructed equilibrium
-        """
+        """Position estimated from the reconstructed equilibrium"""
     @property
     def chi_squared_r(self) -> Path[npt.NDArray[np.float64]]:
         """Squared error on the major radius normalized by the variance considered in the minimization process : chi_squared = weight^2 *(position_reconstructed/r - position_measured/r)^2 / sigma^2, where sigma is the standard deviation of the measurement error
@@ -3199,43 +2899,34 @@ class _EquilibriumConstraintsPurePositionMany:
         """
 
 class _EquilibriumContourTreeItem:
-    """A structure to store the location, value, and connectivity of poloidal flux critical points and limiter points
-    """
+    """A structure to store the location, value, and connectivity of poloidal flux critical points and limiter points"""
 
     @property
     def node(self) -> _EquilibriumContourTreeNodeArrayFromItem:
-        """Set of critical points and limiter points of the poloidal flux. Each node is defined by its critical type (see critical_type), node type (see node_type), and position within the poloidal plane. All ordering rules below are defined in terms of normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), which is 0 at the magnetic axis and 1 at the plasma boundary. Nodes are partitioned into two groups: critical points (critical_type 0, 1, 2) occupy the leading indices, followed by limiter points (critical_type 3). Within each partition, nodes are ordered by ascending psi_norm; ties are broken by ascending R, then ascending Z. Node 0 must contain the primary O-point (magnetic axis), which has psi_norm = 0. Node 1 must contain the primary X-point, defined as the X-point with the lowest psi_norm value. For double-null divertor (DND) configurations, the secondary X-point has a higher psi_norm value and must be stored at a higher node index than the primary; the two psi_norm values are always distinct in practice. For limiter-bounded plasmas where no X-point defines the LCFS, node 1 should contain the X-point with the lowest psi_norm value (nearest to the plasma boundary), if any X-point exists. If no X-points exist, nodes are ordered by ascending psi_norm starting from node 1. For doublet or multi-region plasmas, each confined plasma region has its own O-point; additional O-points follow the same ascending psi_norm ordering. When limiter points are absent, only the critical point partition is present and the ordering is unchanged from earlier versions. The node_type identifier distinguishes O-points that represent confined plasma regions (node_type = plasma) from vacuum field extrema (node_type = vacuum).
-        """
+        """Set of critical points and limiter points of the poloidal flux. Each node is defined by its critical type (see critical_type), node type (see node_type), and position within the poloidal plane. All ordering rules below are defined in terms of normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), which is 0 at the magnetic axis and 1 at the plasma boundary. Nodes are partitioned into two groups: critical points (critical_type 0, 1, 2) occupy the leading indices, followed by limiter points (critical_type 3). Within each partition, nodes are ordered by ascending psi_norm; ties are broken by ascending R, then ascending Z. Node 0 must contain the primary O-point (magnetic axis), which has psi_norm = 0. Node 1 must contain the primary X-point, defined as the X-point with the lowest psi_norm value. For double-null divertor (DND) configurations, the secondary X-point has a higher psi_norm value and must be stored at a higher node index than the primary; the two psi_norm values are always distinct in practice. For limiter-bounded plasmas where no X-point defines the LCFS, node 1 should contain the X-point with the lowest psi_norm value (nearest to the plasma boundary), if any X-point exists. If no X-points exist, nodes are ordered by ascending psi_norm starting from node 1. For doublet or multi-region plasmas, each confined plasma region has its own O-point; additional O-points follow the same ascending psi_norm ordering. When limiter points are absent, only the critical point partition is present and the ordering is unchanged from earlier versions. The node_type identifier distinguishes O-points that represent confined plasma regions (node_type = plasma) from vacuum field extrema (node_type = vacuum)."""
     @property
     def edges(self) -> Path[npt.NDArray[np.int32]]:
-        """Edges encode the Reeb graph (contour tree) of the poloidal flux by connecting topologically adjacent nodes. For each edge (1st dimension), the indices of the two connected nodes are listed (indices referring to the ../node array). An edge (i, j) indicates that sweeping the contour level continuously between the psi values at nodes i and j encounters no other critical point or limiter point. Limiter point nodes participate in edges like any other node; they are inserted by splitting an existing edge at the limiter point's psi level, replacing one edge with two. The number of edges equals n_nodes minus the number of connected components of the graph. For simply-connected 2D domains the graph is a tree with n_edges = n_nodes - 1. For doublet or multi-island configurations the graph may be a forest of disconnected trees. Each edge pair must be stored with the lower node index first (edges[k, 0] < edges[k, 1]).
-        """
+        """Edges encode the Reeb graph (contour tree) of the poloidal flux by connecting topologically adjacent nodes. For each edge (1st dimension), the indices of the two connected nodes are listed (indices referring to the ../node array). An edge (i, j) indicates that sweeping the contour level continuously between the psi values at nodes i and j encounters no other critical point or limiter point. Limiter point nodes participate in edges like any other node; they are inserted by splitting an existing edge at the limiter point's psi level, replacing one edge with two. The number of edges equals n_nodes minus the number of connected components of the graph. For simply-connected 2D domains the graph is a tree with n_edges = n_nodes - 1. For doublet or multi-island configurations the graph may be a forest of disconnected trees. Each edge pair must be stored with the lower node index first (edges[k, 0] < edges[k, 1])."""
 
 class _EquilibriumContourTreeMany:
-    """A structure to store the location, value, and connectivity of poloidal flux critical points and limiter points
-    """
+    """A structure to store the location, value, and connectivity of poloidal flux critical points and limiter points"""
 
     @property
     def node(self) -> _EquilibriumContourTreeNodeArrayFromMany:
-        """Set of critical points and limiter points of the poloidal flux. Each node is defined by its critical type (see critical_type), node type (see node_type), and position within the poloidal plane. All ordering rules below are defined in terms of normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), which is 0 at the magnetic axis and 1 at the plasma boundary. Nodes are partitioned into two groups: critical points (critical_type 0, 1, 2) occupy the leading indices, followed by limiter points (critical_type 3). Within each partition, nodes are ordered by ascending psi_norm; ties are broken by ascending R, then ascending Z. Node 0 must contain the primary O-point (magnetic axis), which has psi_norm = 0. Node 1 must contain the primary X-point, defined as the X-point with the lowest psi_norm value. For double-null divertor (DND) configurations, the secondary X-point has a higher psi_norm value and must be stored at a higher node index than the primary; the two psi_norm values are always distinct in practice. For limiter-bounded plasmas where no X-point defines the LCFS, node 1 should contain the X-point with the lowest psi_norm value (nearest to the plasma boundary), if any X-point exists. If no X-points exist, nodes are ordered by ascending psi_norm starting from node 1. For doublet or multi-region plasmas, each confined plasma region has its own O-point; additional O-points follow the same ascending psi_norm ordering. When limiter points are absent, only the critical point partition is present and the ordering is unchanged from earlier versions. The node_type identifier distinguishes O-points that represent confined plasma regions (node_type = plasma) from vacuum field extrema (node_type = vacuum).
-        """
+        """Set of critical points and limiter points of the poloidal flux. Each node is defined by its critical type (see critical_type), node type (see node_type), and position within the poloidal plane. All ordering rules below are defined in terms of normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), which is 0 at the magnetic axis and 1 at the plasma boundary. Nodes are partitioned into two groups: critical points (critical_type 0, 1, 2) occupy the leading indices, followed by limiter points (critical_type 3). Within each partition, nodes are ordered by ascending psi_norm; ties are broken by ascending R, then ascending Z. Node 0 must contain the primary O-point (magnetic axis), which has psi_norm = 0. Node 1 must contain the primary X-point, defined as the X-point with the lowest psi_norm value. For double-null divertor (DND) configurations, the secondary X-point has a higher psi_norm value and must be stored at a higher node index than the primary; the two psi_norm values are always distinct in practice. For limiter-bounded plasmas where no X-point defines the LCFS, node 1 should contain the X-point with the lowest psi_norm value (nearest to the plasma boundary), if any X-point exists. If no X-points exist, nodes are ordered by ascending psi_norm starting from node 1. For doublet or multi-region plasmas, each confined plasma region has its own O-point; additional O-points follow the same ascending psi_norm ordering. When limiter points are absent, only the critical point partition is present and the ordering is unchanged from earlier versions. The node_type identifier distinguishes O-points that represent confined plasma regions (node_type = plasma) from vacuum field extrema (node_type = vacuum)."""
     @property
     def edges(self) -> Path[npt.NDArray[np.int32]]:
-        """Edges encode the Reeb graph (contour tree) of the poloidal flux by connecting topologically adjacent nodes. For each edge (1st dimension), the indices of the two connected nodes are listed (indices referring to the ../node array). An edge (i, j) indicates that sweeping the contour level continuously between the psi values at nodes i and j encounters no other critical point or limiter point. Limiter point nodes participate in edges like any other node; they are inserted by splitting an existing edge at the limiter point's psi level, replacing one edge with two. The number of edges equals n_nodes minus the number of connected components of the graph. For simply-connected 2D domains the graph is a tree with n_edges = n_nodes - 1. For doublet or multi-island configurations the graph may be a forest of disconnected trees. Each edge pair must be stored with the lower node index first (edges[k, 0] < edges[k, 1]).
-        """
+        """Edges encode the Reeb graph (contour tree) of the poloidal flux by connecting topologically adjacent nodes. For each edge (1st dimension), the indices of the two connected nodes are listed (indices referring to the ../node array). An edge (i, j) indicates that sweeping the contour level continuously between the psi values at nodes i and j encounters no other critical point or limiter point. Limiter point nodes participate in edges like any other node; they are inserted by splitting an existing edge at the limiter point's psi level, replacing one edge with two. The number of edges equals n_nodes minus the number of connected components of the graph. For simply-connected 2D domains the graph is a tree with n_edges = n_nodes - 1. For doublet or multi-island configurations the graph may be a forest of disconnected trees. Each edge pair must be stored with the lower node index first (edges[k, 0] < edges[k, 1])."""
 
 class _EquilibriumContourTreeNodeItem:
-    """Node description for critical points and limiter points
-    """
+    """Node description for critical points and limiter points"""
 
     @property
     def critical_type(self) -> Path[int]:
-        """Critical-point type of the poloidal flux: 0 = local minimum, 1 = saddle (X-point), 2 = local maximum, 3 = limiter point. Whether the magnetic axis is a minimum or maximum of psi depends on the sign of the plasma current. A limiter point represents a point on the first wall where the plasma boundary makes contact. Limiter point nodes are inserted by splitting an existing tree edge at the limiter point's psi level; they have degree 2 in the tree. A limiter point is valid only if it belongs to the same connected component as at least one O-point in the subgraph obtained by removing all saddle nodes (critical_type = 1). Limiter points store the last closed flux surface passing through the limiter point in their levelset
-        """
+        """Critical-point type of the poloidal flux: 0 = local minimum, 1 = saddle (X-point), 2 = local maximum, 3 = limiter point. Whether the magnetic axis is a minimum or maximum of psi depends on the sign of the plasma current. A limiter point represents a point on the first wall where the plasma boundary makes contact. Limiter point nodes are inserted by splitting an existing tree edge at the limiter point's psi level; they have degree 2 in the tree. A limiter point is valid only if it belongs to the same connected component as at least one O-point in the subgraph obtained by removing all saddle nodes (critical_type = 1). Limiter points store the last closed flux surface passing through the limiter point in their levelset"""
     @property
     def node_type(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Identifies whether this node represents a confined plasma feature or a vacuum field feature. Only meaningful for O-point nodes (critical_type 0 or 2). Limiter points are always plasma features. X-points and saddle points do not require classification
-        """
+        """Identifies whether this node represents a confined plasma feature or a vacuum field feature. Only meaningful for O-point nodes (critical_type 0 or 2). Limiter points are always plasma features. X-points and saddle points do not require classification"""
     @property
     def r(self) -> Path[float]:
         """Major radius
@@ -3256,21 +2947,17 @@ class _EquilibriumContourTreeNodeItem:
         """
     @property
     def levelset(self) -> _EquilibriumRz1dDynamicAosArrayFromItem:
-        """Poloidal flux contour segments at the node's psi value that are topologically connected to the node. Each element of the array of structures stores one distinct contour segment. Only segments whose contour passes through the node are included; disconnected contours that share the same psi value but are spatially remote must be excluded. For O-points (flux extrema), no contour passes through the extremum and this field must contain a single entry with empty r and z arrays. For limiter points, the levelset contains the last closed flux surface (LCFS) that passes through the limiter point. For X-points, the segments are ordered as follows: segment 0 is the last closed flux surface (LCFS), the closed contour bounding the confined plasma that passes through the X-point. Segments 1..N are divertor or scrape-off layer leg contours, ordered by their departure angle from the X-point measured counterclockwise from the outboard midplane (theta=0 at R_max, Z of the X-point) in the standard (R, Z) poloidal plane. A standard single-null divertor (SND) X-point has 2 segments: the LCFS and the divertor legs. A double-null divertor (DND) has 2 segments per X-point; the primary X-point (lower psi_norm, closer to the magnetic axis) is stored at a lower node index than the secondary, so their levelsets are unambiguously associated. An exact snowflake, where two X-points merge into a single higher-order null with 6 separatrix branches, produces 3 segments: the LCFS and 2 distinct divertor channel contours.
-        """
+        """Poloidal flux contour segments at the node's psi value that are topologically connected to the node. Each element of the array of structures stores one distinct contour segment. Only segments whose contour passes through the node are included; disconnected contours that share the same psi value but are spatially remote must be excluded. For O-points (flux extrema), no contour passes through the extremum and this field must contain a single entry with empty r and z arrays. For limiter points, the levelset contains the last closed flux surface (LCFS) that passes through the limiter point. For X-points, the segments are ordered as follows: segment 0 is the last closed flux surface (LCFS), the closed contour bounding the confined plasma that passes through the X-point. Segments 1..N are divertor or scrape-off layer leg contours, ordered by their departure angle from the X-point measured counterclockwise from the outboard midplane (theta=0 at R_max, Z of the X-point) in the standard (R, Z) poloidal plane. A standard single-null divertor (SND) X-point has 2 segments: the LCFS and the divertor legs. A double-null divertor (DND) has 2 segments per X-point; the primary X-point (lower psi_norm, closer to the magnetic axis) is stored at a lower node index than the secondary, so their levelsets are unambiguously associated. An exact snowflake, where two X-points merge into a single higher-order null with 6 separatrix branches, produces 3 segments: the LCFS and 2 distinct divertor channel contours."""
 
 class _EquilibriumContourTreeNodeMany:
-    """Node description for critical points and limiter points
-    """
+    """Node description for critical points and limiter points"""
 
     @property
     def critical_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Critical-point type of the poloidal flux: 0 = local minimum, 1 = saddle (X-point), 2 = local maximum, 3 = limiter point. Whether the magnetic axis is a minimum or maximum of psi depends on the sign of the plasma current. A limiter point represents a point on the first wall where the plasma boundary makes contact. Limiter point nodes are inserted by splitting an existing tree edge at the limiter point's psi level; they have degree 2 in the tree. A limiter point is valid only if it belongs to the same connected component as at least one O-point in the subgraph obtained by removing all saddle nodes (critical_type = 1). Limiter points store the last closed flux surface passing through the limiter point in their levelset
-        """
+        """Critical-point type of the poloidal flux: 0 = local minimum, 1 = saddle (X-point), 2 = local maximum, 3 = limiter point. Whether the magnetic axis is a minimum or maximum of psi depends on the sign of the plasma current. A limiter point represents a point on the first wall where the plasma boundary makes contact. Limiter point nodes are inserted by splitting an existing tree edge at the limiter point's psi level; they have degree 2 in the tree. A limiter point is valid only if it belongs to the same connected component as at least one O-point in the subgraph obtained by removing all saddle nodes (critical_type = 1). Limiter points store the last closed flux surface passing through the limiter point in their levelset"""
     @property
     def node_type(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Identifies whether this node represents a confined plasma feature or a vacuum field feature. Only meaningful for O-point nodes (critical_type 0 or 2). Limiter points are always plasma features. X-points and saddle points do not require classification
-        """
+        """Identifies whether this node represents a confined plasma feature or a vacuum field feature. Only meaningful for O-point nodes (critical_type 0 or 2). Limiter points are always plasma features. X-points and saddle points do not require classification"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius
@@ -3291,21 +2978,17 @@ class _EquilibriumContourTreeNodeMany:
         """
     @property
     def levelset(self) -> _EquilibriumRz1dDynamicAosArrayFromMany:
-        """Poloidal flux contour segments at the node's psi value that are topologically connected to the node. Each element of the array of structures stores one distinct contour segment. Only segments whose contour passes through the node are included; disconnected contours that share the same psi value but are spatially remote must be excluded. For O-points (flux extrema), no contour passes through the extremum and this field must contain a single entry with empty r and z arrays. For limiter points, the levelset contains the last closed flux surface (LCFS) that passes through the limiter point. For X-points, the segments are ordered as follows: segment 0 is the last closed flux surface (LCFS), the closed contour bounding the confined plasma that passes through the X-point. Segments 1..N are divertor or scrape-off layer leg contours, ordered by their departure angle from the X-point measured counterclockwise from the outboard midplane (theta=0 at R_max, Z of the X-point) in the standard (R, Z) poloidal plane. A standard single-null divertor (SND) X-point has 2 segments: the LCFS and the divertor legs. A double-null divertor (DND) has 2 segments per X-point; the primary X-point (lower psi_norm, closer to the magnetic axis) is stored at a lower node index than the secondary, so their levelsets are unambiguously associated. An exact snowflake, where two X-points merge into a single higher-order null with 6 separatrix branches, produces 3 segments: the LCFS and 2 distinct divertor channel contours.
-        """
+        """Poloidal flux contour segments at the node's psi value that are topologically connected to the node. Each element of the array of structures stores one distinct contour segment. Only segments whose contour passes through the node are included; disconnected contours that share the same psi value but are spatially remote must be excluded. For O-points (flux extrema), no contour passes through the extremum and this field must contain a single entry with empty r and z arrays. For limiter points, the levelset contains the last closed flux surface (LCFS) that passes through the limiter point. For X-points, the segments are ordered as follows: segment 0 is the last closed flux surface (LCFS), the closed contour bounding the confined plasma that passes through the X-point. Segments 1..N are divertor or scrape-off layer leg contours, ordered by their departure angle from the X-point measured counterclockwise from the outboard midplane (theta=0 at R_max, Z of the X-point) in the standard (R, Z) poloidal plane. A standard single-null divertor (SND) X-point has 2 segments: the LCFS and the divertor legs. A double-null divertor (DND) has 2 segments per X-point; the primary X-point (lower psi_norm, closer to the magnetic axis) is stored at a lower node index than the secondary, so their levelsets are unambiguously associated. An exact snowflake, where two X-points merge into a single higher-order null with 6 separatrix branches, produces 3 segments: the LCFS and 2 distinct divertor channel contours."""
 
 class _EquilibriumConvergenceItem:
-    """Convergence details for the equilibrium calculation
-    """
+    """Convergence details for the equilibrium calculation"""
 
     @property
     def iterations_n(self) -> Path[int]:
-        """Number of iterations carried out in the convergence loop
-        """
+        """Number of iterations carried out in the convergence loop"""
     @property
     def grad_shafranov_deviation_expression(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Expression for calculating the residual deviation between the left and right hand side of the Grad Shafranov equation
-        """
+        """Expression for calculating the residual deviation between the left and right hand side of the Grad Shafranov equation"""
     @property
     def grad_shafranov_deviation_value(self) -> Path[float]:
         """Value of the residual deviation between the left and right hand side of the Grad Shafranov equation, evaluated as per grad_shafranov_deviation_expression
@@ -3314,35 +2997,31 @@ class _EquilibriumConvergenceItem:
         """
     @property
     def result(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Convergence result
-        """
+        """Convergence result"""
     @property
     def delta_z(self) -> Path[float]:
         """Vertical shift applied by the vertical feedback controller. Unset until the first inverse
-solve has run, and 0 while the vertical feedback is switched off
+        solve has run, and 0 while the vertical feedback is switched off
 
-        Units: m
+                Units: m
         """
     @property
     def flux_evaluations_n(self) -> Path[int]:
         """Number of times the flux was calculated on the grid from the current density, each followed
-by the search for the magnetic axis and the plasma boundary. This is where nearly all the
-time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
-whether or not the solve converged
+        by the search for the magnetic axis and the plasma boundary. This is where nearly all the
+        time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
+        whether or not the solve converged
         """
 
 class _EquilibriumConvergenceMany:
-    """Convergence details for the equilibrium calculation
-    """
+    """Convergence details for the equilibrium calculation"""
 
     @property
     def iterations_n(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of iterations carried out in the convergence loop
-        """
+        """Number of iterations carried out in the convergence loop"""
     @property
     def grad_shafranov_deviation_expression(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Expression for calculating the residual deviation between the left and right hand side of the Grad Shafranov equation
-        """
+        """Expression for calculating the residual deviation between the left and right hand side of the Grad Shafranov equation"""
     @property
     def grad_shafranov_deviation_value(self) -> Path[npt.NDArray[np.float64]]:
         """Value of the residual deviation between the left and right hand side of the Grad Shafranov equation, evaluated as per grad_shafranov_deviation_expression
@@ -3351,35 +3030,31 @@ class _EquilibriumConvergenceMany:
         """
     @property
     def result(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Convergence result
-        """
+        """Convergence result"""
     @property
     def delta_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical shift applied by the vertical feedback controller. Unset until the first inverse
-solve has run, and 0 while the vertical feedback is switched off
+        solve has run, and 0 while the vertical feedback is switched off
 
-        Units: m
+                Units: m
         """
     @property
     def flux_evaluations_n(self) -> Path[npt.NDArray[np.int32]]:
         """Number of times the flux was calculated on the grid from the current density, each followed
-by the search for the magnetic axis and the plasma boundary. This is where nearly all the
-time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
-whether or not the solve converged
+        by the search for the magnetic axis and the plasma boundary. This is where nearly all the
+        time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
+        whether or not the solve converged
         """
 
 class _EquilibriumCoordinateSystemItem:
-    """Flux surface coordinate system on a square grid of flux and poloidal angle
-    """
+    """Flux surface coordinate system on a square grid of flux and poloidal angle"""
 
     @property
     def grid_type(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Type of coordinate system
-        """
+        """Type of coordinate system"""
     @property
     def grid(self) -> _EquilibriumProfiles2dGridItem:
-        """Definition of the 2D grid
-        """
+        """Definition of the 2D grid"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Values of the major radius on the grid
@@ -3412,17 +3087,14 @@ class _EquilibriumCoordinateSystemItem:
         """
 
 class _EquilibriumCoordinateSystemMany:
-    """Flux surface coordinate system on a square grid of flux and poloidal angle
-    """
+    """Flux surface coordinate system on a square grid of flux and poloidal angle"""
 
     @property
     def grid_type(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Type of coordinate system
-        """
+        """Type of coordinate system"""
     @property
     def grid(self) -> _EquilibriumProfiles2dGridMany:
-        """Definition of the 2D grid
-        """
+        """Definition of the 2D grid"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Values of the major radius on the grid
@@ -3455,17 +3127,14 @@ class _EquilibriumCoordinateSystemMany:
         """
 
 class _EquilibriumGapItem:
-    """Gap for describing the plasma boundary
-    """
+    """Gap for describing the plasma boundary"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. mid-plane gap
-        """
+        """Description, e.g. mid-plane gap"""
     @property
     def r(self) -> Path[float]:
         """Major radius of the reference point
@@ -3492,17 +3161,14 @@ class _EquilibriumGapItem:
         """
 
 class _EquilibriumGapMany:
-    """Gap for describing the plasma boundary
-    """
+    """Gap for describing the plasma boundary"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. mid-plane gap
-        """
+        """Description, e.g. mid-plane gap"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of the reference point
@@ -3529,8 +3195,7 @@ class _EquilibriumGapMany:
         """
 
 class _EquilibriumGgdItem:
-    """Equilibrium ggd representation
-    """
+    """Equilibrium ggd representation"""
 
     @property
     def r(self) -> _EquilibriumGenericGridScalarArrayFromItem:
@@ -3594,8 +3259,7 @@ class _EquilibriumGgdItem:
         """
 
 class _EquilibriumGgdMany:
-    """Equilibrium ggd representation
-    """
+    """Equilibrium ggd representation"""
 
     @property
     def r(self) -> _EquilibriumGenericGridScalarArrayFromMany:
@@ -3659,13 +3323,11 @@ class _EquilibriumGgdMany:
         """
 
 class _EquilibriumGgdArrayItem:
-    """Multiple GGDs provided at a given time slice
-    """
+    """Multiple GGDs provided at a given time slice"""
 
     @property
     def grid(self) -> _EquilibriumGenericGridDynamicArrayFromItem:
-        """Set of GGD grids for describing the equilibrium, at a given time slice
-        """
+        """Set of GGD grids for describing the equilibrium, at a given time slice"""
     @property
     def time(self) -> Path[float]:
         """Time
@@ -3674,13 +3336,11 @@ class _EquilibriumGgdArrayItem:
         """
 
 class _EquilibriumGgdArrayMany:
-    """Multiple GGDs provided at a given time slice
-    """
+    """Multiple GGDs provided at a given time slice"""
 
     @property
     def grid(self) -> _EquilibriumGenericGridDynamicArrayFromMany:
-        """Set of GGD grids for describing the equilibrium, at a given time slice
-        """
+        """Set of GGD grids for describing the equilibrium, at a given time slice"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Time
@@ -3689,8 +3349,7 @@ class _EquilibriumGgdArrayMany:
         """
 
 class _EquilibriumGlobalQuantitiesItem:
-    """0D parameters of the equilibrium
-    """
+    """0D parameters of the equilibrium"""
 
     @property
     def beta_pol(self) -> Path[float]:
@@ -3754,12 +3413,10 @@ class _EquilibriumGlobalQuantitiesItem:
         """
     @property
     def magnetic_axis(self) -> _EquilibriumGlobalQuantitiesMagneticAxisItem:
-        """Magnetic axis position and toroidal field
-        """
+        """Magnetic axis position and toroidal field"""
     @property
     def current_centre(self) -> _EquilibriumGlobalQuantitiesCurrentCentreItem:
-        """Position and vertical velocity of the current centre
-        """
+        """Position and vertical velocity of the current centre"""
     @property
     def q_axis(self) -> Path[float]:
         """q at the magnetic axis. Positive when toroidal current and toroidal magnetic field are in the same direction
@@ -3774,8 +3431,7 @@ class _EquilibriumGlobalQuantitiesItem:
         """
     @property
     def q_min(self) -> _EquilibriumGlobalQuantitiesQminItem:
-        """Minimum q value and position
-        """
+        """Minimum q value and position"""
     @property
     def energy_mhd(self) -> Path[float]:
         """Plasma energy content = 3/2 * int(p,dV) with p being the total pressure (thermal + fast particles) [J]. Time-dependent; Scalar
@@ -3809,90 +3465,89 @@ class _EquilibriumGlobalQuantitiesItem:
     @property
     def beta_pol_1(self) -> Path[float]:
         """Poloidal beta normalised to the flux-surface-averaged poloidal field:
-`2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
-flux-surface average
+        `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
+        flux-surface average
         """
     @property
     def beta_pol_2(self) -> Path[float]:
         """Poloidal beta normalised to the magnetic axis major radius:
-`4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`
+        `4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`
         """
     @property
     def beta_pol_3(self) -> Path[float]:
         """Poloidal beta normalised to the geometric major radius:
-`4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
-This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
-vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
+        `4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
+        This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
+        vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
         """
     @property
     def bp_omp(self) -> Path[float]:
         """Magnitude of the poloidal magnetic field at the outboard midplane,
-`sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
-the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
-use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
-`profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
-height within the grid
+        `sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
+        the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
+        use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
+        `profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
+        height within the grid
 
-        Units: T
+                Units: T
         """
     @property
     def bt_vac_at_r_geo(self) -> Path[float]:
         """Vacuum toroidal magnetic field at the plasma geometric axis,
-`vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
-`vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
-`vacuum_toroidal_field/r0` rather than following the plasma
+        `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
+        `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
+        `vacuum_toroidal_field/r0` rather than following the plasma
 
-        Units: T
+                Units: T
         """
     @property
     def li_1(self) -> Path[float]:
         """Internal inductance normalised to the flux-surface-averaged poloidal field:
-`<b_p ** 2> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
-flux-surface average
+        `<b_p ** 2> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
+        flux-surface average
         """
     @property
     def li_2(self) -> Path[float]:
         """Internal inductance normalised to the magnetic axis major radius:
-`2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`
-The data dictionary's own `li_3` is the same quantity normalised to
-`boundary/geometric_axis/r` instead
+        `2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`
+        The data dictionary's own `li_3` is the same quantity normalised to
+        `boundary/geometric_axis/r` instead
         """
     @property
     def delta_r_sep(self) -> Path[float]:
         """Radial separation of the two separatrices at the height of the magnetic axis, on the
-outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
-X-point)`. So it is negative for a lower single null, positive for an upper single null,
-and passes through zero at a connected double null. NaN when the plasma is limited, or
-when only one X-point was found
-It is evaluated in flux rather than by differencing two traced contours: the difference in
-`psi` between the two X-points is mapped to the outboard midplane through
-`d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
-X-point positions at second order, which is what makes a sub-millimetre answer meaningful
-on a centimetre grid
+        outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
+        X-point)`. So it is negative for a lower single null, positive for an upper single null,
+        and passes through zero at a connected double null. NaN when the plasma is limited, or
+        when only one X-point was found
+        It is evaluated in flux rather than by differencing two traced contours: the difference in
+        `psi` between the two X-points is mapped to the outboard midplane through
+        `d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
+        X-point positions at second order, which is what makes a sub-millimetre answer meaningful
+        on a centimetre grid
 
-        Units: m
+                Units: m
         """
     @property
     def f_x(self) -> Path[float]:
         """Flux expansion from the outboard midplane to the outboard strike point on the active
-X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
-outboard midplane is at the height of the magnetic axis. This excludes the additional
-expansion along the target caused by the field-line incidence angle
+        X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
+        outboard midplane is at the height of the magnetic axis. This excludes the additional
+        expansion along the target caused by the field-line incidence angle
 
-        Units: dimensionless
+                Units: dimensionless
         """
     @property
     def v_loop(self) -> Path[float]:
         """Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over
-the reconstruction times. Distinct from the data dictionary's `v_external`, which
-differentiates `psi_external_average` instead
+        the reconstruction times. Distinct from the data dictionary's `v_external`, which
+        differentiates `psi_external_average` instead
 
-        Units: V
+                Units: V
         """
 
 class _EquilibriumGlobalQuantitiesMany:
-    """0D parameters of the equilibrium
-    """
+    """0D parameters of the equilibrium"""
 
     @property
     def beta_pol(self) -> Path[npt.NDArray[np.float64]]:
@@ -3956,12 +3611,10 @@ class _EquilibriumGlobalQuantitiesMany:
         """
     @property
     def magnetic_axis(self) -> _EquilibriumGlobalQuantitiesMagneticAxisMany:
-        """Magnetic axis position and toroidal field
-        """
+        """Magnetic axis position and toroidal field"""
     @property
     def current_centre(self) -> _EquilibriumGlobalQuantitiesCurrentCentreMany:
-        """Position and vertical velocity of the current centre
-        """
+        """Position and vertical velocity of the current centre"""
     @property
     def q_axis(self) -> Path[npt.NDArray[np.float64]]:
         """q at the magnetic axis. Positive when toroidal current and toroidal magnetic field are in the same direction
@@ -3976,8 +3629,7 @@ class _EquilibriumGlobalQuantitiesMany:
         """
     @property
     def q_min(self) -> _EquilibriumGlobalQuantitiesQminMany:
-        """Minimum q value and position
-        """
+        """Minimum q value and position"""
     @property
     def energy_mhd(self) -> Path[npt.NDArray[np.float64]]:
         """Plasma energy content = 3/2 * int(p,dV) with p being the total pressure (thermal + fast particles) [J]. Time-dependent; Scalar
@@ -4011,90 +3663,89 @@ class _EquilibriumGlobalQuantitiesMany:
     @property
     def beta_pol_1(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal beta normalised to the flux-surface-averaged poloidal field:
-`2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
-flux-surface average
+        `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
+        flux-surface average
         """
     @property
     def beta_pol_2(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal beta normalised to the magnetic axis major radius:
-`4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`
+        `4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`
         """
     @property
     def beta_pol_3(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal beta normalised to the geometric major radius:
-`4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
-This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
-vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
+        `4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
+        This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
+        vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
         """
     @property
     def bp_omp(self) -> Path[npt.NDArray[np.float64]]:
         """Magnitude of the poloidal magnetic field at the outboard midplane,
-`sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
-the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
-use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
-`profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
-height within the grid
+        `sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
+        the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
+        use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
+        `profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
+        height within the grid
 
-        Units: T
+                Units: T
         """
     @property
     def bt_vac_at_r_geo(self) -> Path[npt.NDArray[np.float64]]:
         """Vacuum toroidal magnetic field at the plasma geometric axis,
-`vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
-`vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
-`vacuum_toroidal_field/r0` rather than following the plasma
+        `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
+        `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
+        `vacuum_toroidal_field/r0` rather than following the plasma
 
-        Units: T
+                Units: T
         """
     @property
     def li_1(self) -> Path[npt.NDArray[np.float64]]:
         """Internal inductance normalised to the flux-surface-averaged poloidal field:
-`<b_p ** 2> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
-flux-surface average
+        `<b_p ** 2> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
+        flux-surface average
         """
     @property
     def li_2(self) -> Path[npt.NDArray[np.float64]]:
         """Internal inductance normalised to the magnetic axis major radius:
-`2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`
-The data dictionary's own `li_3` is the same quantity normalised to
-`boundary/geometric_axis/r` instead
+        `2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`
+        The data dictionary's own `li_3` is the same quantity normalised to
+        `boundary/geometric_axis/r` instead
         """
     @property
     def delta_r_sep(self) -> Path[npt.NDArray[np.float64]]:
         """Radial separation of the two separatrices at the height of the magnetic axis, on the
-outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
-X-point)`. So it is negative for a lower single null, positive for an upper single null,
-and passes through zero at a connected double null. NaN when the plasma is limited, or
-when only one X-point was found
-It is evaluated in flux rather than by differencing two traced contours: the difference in
-`psi` between the two X-points is mapped to the outboard midplane through
-`d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
-X-point positions at second order, which is what makes a sub-millimetre answer meaningful
-on a centimetre grid
+        outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
+        X-point)`. So it is negative for a lower single null, positive for an upper single null,
+        and passes through zero at a connected double null. NaN when the plasma is limited, or
+        when only one X-point was found
+        It is evaluated in flux rather than by differencing two traced contours: the difference in
+        `psi` between the two X-points is mapped to the outboard midplane through
+        `d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
+        X-point positions at second order, which is what makes a sub-millimetre answer meaningful
+        on a centimetre grid
 
-        Units: m
+                Units: m
         """
     @property
     def f_x(self) -> Path[npt.NDArray[np.float64]]:
         """Flux expansion from the outboard midplane to the outboard strike point on the active
-X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
-outboard midplane is at the height of the magnetic axis. This excludes the additional
-expansion along the target caused by the field-line incidence angle
+        X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
+        outboard midplane is at the height of the magnetic axis. This excludes the additional
+        expansion along the target caused by the field-line incidence angle
 
-        Units: dimensionless
+                Units: dimensionless
         """
     @property
     def v_loop(self) -> Path[npt.NDArray[np.float64]]:
         """Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over
-the reconstruction times. Distinct from the data dictionary's `v_external`, which
-differentiates `psi_external_average` instead
+        the reconstruction times. Distinct from the data dictionary's `v_external`, which
+        differentiates `psi_external_average` instead
 
-        Units: V
+                Units: V
         """
 
 class _EquilibriumGlobalQuantitiesCurrentCentreItem:
-    """R, Z, and vertical velocity of current centre, dynamic within a type 3 array of structure (index on time)
-    """
+    """R, Z, and vertical velocity of current centre, dynamic within a type 3 array of structure (index on time)"""
 
     @property
     def r(self) -> Path[float]:
@@ -4116,8 +3767,7 @@ class _EquilibriumGlobalQuantitiesCurrentCentreItem:
         """
 
 class _EquilibriumGlobalQuantitiesCurrentCentreMany:
-    """R, Z, and vertical velocity of current centre, dynamic within a type 3 array of structure (index on time)
-    """
+    """R, Z, and vertical velocity of current centre, dynamic within a type 3 array of structure (index on time)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -4139,8 +3789,7 @@ class _EquilibriumGlobalQuantitiesCurrentCentreMany:
         """
 
 class _EquilibriumGlobalQuantitiesMagneticAxisItem:
-    """R, Z, and Btor at magnetic axis, dynamic within a type 3 array of structure (index on time)
-    """
+    """R, Z, and Btor at magnetic axis, dynamic within a type 3 array of structure (index on time)"""
 
     @property
     def r(self) -> Path[float]:
@@ -4162,8 +3811,7 @@ class _EquilibriumGlobalQuantitiesMagneticAxisItem:
         """
 
 class _EquilibriumGlobalQuantitiesMagneticAxisMany:
-    """R, Z, and Btor at magnetic axis, dynamic within a type 3 array of structure (index on time)
-    """
+    """R, Z, and Btor at magnetic axis, dynamic within a type 3 array of structure (index on time)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -4185,8 +3833,7 @@ class _EquilibriumGlobalQuantitiesMagneticAxisMany:
         """
 
 class _EquilibriumGlobalQuantitiesQminItem:
-    """Position and value of q_min
-    """
+    """Position and value of q_min"""
 
     @property
     def value(self) -> Path[float]:
@@ -4214,8 +3861,7 @@ class _EquilibriumGlobalQuantitiesQminItem:
         """
 
 class _EquilibriumGlobalQuantitiesQminMany:
-    """Position and value of q_min
-    """
+    """Position and value of q_min"""
 
     @property
     def value(self) -> Path[npt.NDArray[np.float64]]:
@@ -4243,70 +3889,59 @@ class _EquilibriumGlobalQuantitiesQminMany:
         """
 
 class _EquilibriumGreensItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def grid(self) -> _EquilibriumGreensGridItem:
-        """Observer: the (R, Z) grid
-        """
+        """Observer: the (R, Z) grid"""
     @property
     def b_field_pol_probe(self) -> _EquilibriumGreensBFieldPolProbeArrayFromItem:
-        """Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`
-        """
+        """Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`"""
     @property
     def flux_loop(self) -> _EquilibriumGreensFluxLoopArrayFromItem:
-        """Observer: each flux loop, in the order of `magnetics/flux_loop`
-        """
+        """Observer: each flux loop, in the order of `magnetics/flux_loop`"""
     @property
     def rogowski_coil(self) -> _EquilibriumGreensRogowskiCoilArrayFromItem:
-        """Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`
-        """
+        """Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`"""
 
 class _EquilibriumGreensMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def grid(self) -> _EquilibriumGreensGridMany:
-        """Observer: the (R, Z) grid
-        """
+        """Observer: the (R, Z) grid"""
     @property
     def b_field_pol_probe(self) -> _EquilibriumGreensBFieldPolProbeArrayFromMany:
-        """Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`
-        """
+        """Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`"""
     @property
     def flux_loop(self) -> _EquilibriumGreensFluxLoopArrayFromMany:
-        """Observer: each flux loop, in the order of `magnetics/flux_loop`
-        """
+        """Observer: each flux loop, in the order of `magnetics/flux_loop`"""
     @property
     def rogowski_coil(self) -> _EquilibriumGreensRogowskiCoilArrayFromMany:
-        """Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`
-        """
+        """Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`"""
 
 class _EquilibriumGreensBFieldPolProbeItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
         """Name of the probe, matching `magnetics/b_field_pol_probe(i1)/name` and `time_slice(itime)/constraints/b_field_pol_probe(i1)/name`,
-e.g. `"P101"`
+        e.g. `"P101"`
         """
     @property
     def plasma(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: T.A^-1
+                Units: T.A^-1
         """
     @property
     def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the probe's height, for the change
-in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
-Shape = `(n_z, n_r)`
+        in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
+        Shape = `(n_z, n_r)`
 
-        Units: T.A^-1.m^-1
+                Units: T.A^-1.m^-1
         """
     @property
     def pf_active(self) -> Path[npt.NDArray[np.float64]]:
@@ -4322,28 +3957,27 @@ Shape = `(n_z, n_r)`
         """
 
 class _EquilibriumGreensBFieldPolProbeMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the probe, matching `magnetics/b_field_pol_probe(i1)/name` and `time_slice(itime)/constraints/b_field_pol_probe(i1)/name`,
-e.g. `"P101"`
+        e.g. `"P101"`
         """
     @property
     def plasma(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: T.A^-1
+                Units: T.A^-1
         """
     @property
     def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the probe's height, for the change
-in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
-Shape = `(n_z, n_r)`
+        in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
+        Shape = `(n_z, n_r)`
 
-        Units: T.A^-1.m^-1
+                Units: T.A^-1.m^-1
         """
     @property
     def pf_active(self) -> Path[npt.NDArray[np.float64]]:
@@ -4359,28 +3993,27 @@ Shape = `(n_z, n_r)`
         """
 
 class _EquilibriumGreensFluxLoopItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
         """Name of the flux loop, matching `magnetics/flux_loop(i1)/name` and `time_slice(itime)/constraints/flux_loop(i1)/name`, e.g.
-`"L001"`
+        `"L001"`
         """
     @property
     def plasma(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the loop's height, for the change
-in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
-Shape = `(n_z, n_r)`
+        in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def pf_active(self) -> Path[npt.NDArray[np.float64]]:
@@ -4396,28 +4029,27 @@ Shape = `(n_z, n_r)`
         """
 
 class _EquilibriumGreensFluxLoopMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the flux loop, matching `magnetics/flux_loop(i1)/name` and `time_slice(itime)/constraints/flux_loop(i1)/name`, e.g.
-`"L001"`
+        `"L001"`
         """
     @property
     def plasma(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the loop's height, for the change
-in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
-Shape = `(n_z, n_r)`
+        in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def pf_active(self) -> Path[npt.NDArray[np.float64]]:
@@ -4433,514 +4065,491 @@ Shape = `(n_z, n_r)`
         """
 
 class _EquilibriumGreensGridItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def plasma(self) -> _EquilibriumGreensGridPlasmaItem:
-        """Source: the plasma current in each grid cell
-        """
+        """Source: the plasma current in each grid cell"""
     @property
     def pf_active(self) -> _EquilibriumGreensGridPfActiveArrayFromItem:
-        """Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too
-        """
+        """Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too"""
     @property
     def pf_passive(self) -> _EquilibriumGreensGridPfPassiveArrayFromItem:
         """Source: each passive conductor, in the order of `pf_passive/loop`, with its degrees of freedom. Every sensor's
-`pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
+        `pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
         """
 
 class _EquilibriumGreensGridMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def plasma(self) -> _EquilibriumGreensGridPlasmaMany:
-        """Source: the plasma current in each grid cell
-        """
+        """Source: the plasma current in each grid cell"""
     @property
     def pf_active(self) -> _EquilibriumGreensGridPfActiveArrayFromMany:
-        """Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too
-        """
+        """Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too"""
     @property
     def pf_passive(self) -> _EquilibriumGreensGridPfPassiveArrayFromMany:
         """Source: each passive conductor, in the order of `pf_passive/loop`, with its degrees of freedom. Every sensor's
-`pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
+        `pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
         """
 
 class _EquilibriumGreensGridPfActiveItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`
-        """
+        """Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`"""
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
 
 class _EquilibriumGreensGridPfActiveMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`
-        """
+        """Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`"""
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
 
 class _EquilibriumGreensGridPfPassiveItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`
-        """
+        """Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`"""
     @property
     def dof(self) -> _EquilibriumGreensGridPfPassiveDofArrayFromItem:
-        """Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`
-        """
+        """Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`"""
 
 class _EquilibriumGreensGridPfPassiveMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`
-        """
+        """Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`"""
     @property
     def dof(self) -> _EquilibriumGreensGridPfPassiveDofArrayFromMany:
-        """Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`
-        """
+        """Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`"""
 
 class _EquilibriumGreensGridPfPassiveDofItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
-        """
+        """Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`"""
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
 
 class _EquilibriumGreensGridPfPassiveDofMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
-        """
+        """Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`"""
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
 
 class _EquilibriumGreensGridPlasmaItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
 
 class _EquilibriumGreensGridPlasmaMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1
+                Units: Wb.A^-1
         """
     @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-1
+                Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-2
+                Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+        Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
 
-        Units: Wb.A^-1.m^-3
+                Units: Wb.A^-1.m^-3
         """
 
 class _EquilibriumGreensRogowskiCoilItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
         """Name of the Rogowski coil, matching `magnetics/rogowski_coil(i1)/name` and
-`time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
+        `time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
         """
     @property
     def plasma(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: A.A^-1
+                Units: A.A^-1
         """
     @property
     def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the coil's height, for the change
-in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
-Shape = `(n_z, n_r)`
+        in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
+        Shape = `(n_z, n_r)`
 
-        Units: A.A^-1.m^-1
+                Units: A.A^-1.m^-1
         """
     @property
     def pf_active(self) -> Path[npt.NDArray[np.float64]]:
@@ -4956,28 +4565,27 @@ Shape = `(n_z, n_r)`
         """
 
 class _EquilibriumGreensRogowskiCoilMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the Rogowski coil, matching `magnetics/rogowski_coil(i1)/name` and
-`time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
+        `time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
         """
     @property
     def plasma(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`
+        Shape = `(n_z, n_r)`
 
-        Units: A.A^-1
+                Units: A.A^-1
         """
     @property
     def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the coil's height, for the change
-in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
-Shape = `(n_z, n_r)`
+        in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
+        Shape = `(n_z, n_r)`
 
-        Units: A.A^-1.m^-1
+                Units: A.A^-1.m^-1
         """
     @property
     def pf_active(self) -> Path[npt.NDArray[np.float64]]:
@@ -4993,62 +4601,53 @@ Shape = `(n_z, n_r)`
         """
 
 class _EquilibriumLimiterItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def unit(self) -> _EquilibriumLimiterUnitArrayFromItem:
         """Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`. The order is part
-of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
-the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
-`unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
-vessel contour. The points of every unit are candidate limit points, so a plasma may be
-limited on the vessel or on any of the tiles
+        of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
+        the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
+        `unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
+        vessel contour. The points of every unit are candidate limit points, so a plasma may be
+        limited on the vessel or on any of the tiles
         """
 
 class _EquilibriumLimiterMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def unit(self) -> _EquilibriumLimiterUnitArrayFromMany:
         """Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`. The order is part
-of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
-the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
-`unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
-vessel contour. The points of every unit are candidate limit points, so a plasma may be
-limited on the vessel or on any of the tiles
+        of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
+        the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
+        `unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
+        vessel contour. The points of every unit are candidate limit points, so a plasma may be
+        limited on the vessel or on any of the tiles
         """
 
 class _EquilibriumLimiterUnitItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Short identifier for the unit, e.g. `"vacuum_vessel"`
-        """
+        """Short identifier for the unit, e.g. `"vacuum_vessel"`"""
     @property
     def outline(self) -> _EquilibriumLimiterUnitOutlineItem:
-        """Outline of the limiting surface
-        """
+        """Outline of the limiting surface"""
 
 class _EquilibriumLimiterUnitMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short identifier for the unit, e.g. `"vacuum_vessel"`
-        """
+        """Short identifier for the unit, e.g. `"vacuum_vessel"`"""
     @property
     def outline(self) -> _EquilibriumLimiterUnitOutlineMany:
-        """Outline of the limiting surface
-        """
+        """Outline of the limiting surface"""
 
 class _EquilibriumLimiterUnitOutlineItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -5064,8 +4663,7 @@ class _EquilibriumLimiterUnitOutlineItem:
         """
 
 class _EquilibriumLimiterUnitOutlineMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -5081,8 +4679,7 @@ class _EquilibriumLimiterUnitOutlineMany:
         """
 
 class _EquilibriumProfiles1dItem:
-    """Equilibrium profiles (1D radial grid) as a function of the poloidal flux
-    """
+    """Equilibrium profiles (1D radial grid) as a function of the poloidal flux"""
 
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
@@ -5182,8 +4779,7 @@ class _EquilibriumProfiles1dItem:
         """
     @property
     def geometric_axis(self) -> _EquilibriumProfiles1dRz1dDynamicAosItem:
-        """RZ position of the geometric axis of the magnetic surfaces (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the surface)
-        """
+        """RZ position of the geometric axis of the magnetic surfaces (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the surface)"""
     @property
     def elongation(self) -> Path[npt.NDArray[np.float64]]:
         """Elongation
@@ -5373,33 +4969,32 @@ class _EquilibriumProfiles1dItem:
     @property
     def r_inboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
-The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
-moves between time-slices. This one is measured on the machine's mid-plane instead, so that
-a series of time-slices is a series of radii at one fixed height.
-The two sides are split at the major radius of the magnetic axis, which is the point every
-flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
-that point, is NaN
+        The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
+        moves between time-slices. This one is measured on the machine's mid-plane instead, so that
+        a series of time-slices is a series of radii at one fixed height.
+        The two sides are split at the major radius of the magnetic axis, which is the point every
+        flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
+        that point, is NaN
 
-        Units: m
+                Units: m
         """
     @property
     def r_outboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each flux surface where it crosses `z = 0`, on the outboard side. The
-outboard counterpart of `r_inboard_z_0`
+        outboard counterpart of `r_inboard_z_0`
 
-        Units: m
+                Units: m
         """
     @property
     def rho_pol(self) -> Path[npt.NDArray[np.float64]]:
         """Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
-data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
+        data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumProfiles1dMany:
-    """Equilibrium profiles (1D radial grid) as a function of the poloidal flux
-    """
+    """Equilibrium profiles (1D radial grid) as a function of the poloidal flux"""
 
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
@@ -5499,8 +5094,7 @@ class _EquilibriumProfiles1dMany:
         """
     @property
     def geometric_axis(self) -> _EquilibriumProfiles1dRz1dDynamicAosMany:
-        """RZ position of the geometric axis of the magnetic surfaces (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the surface)
-        """
+        """RZ position of the geometric axis of the magnetic surfaces (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the surface)"""
     @property
     def elongation(self) -> Path[npt.NDArray[np.float64]]:
         """Elongation
@@ -5690,33 +5284,32 @@ class _EquilibriumProfiles1dMany:
     @property
     def r_inboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
-The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
-moves between time-slices. This one is measured on the machine's mid-plane instead, so that
-a series of time-slices is a series of radii at one fixed height.
-The two sides are split at the major radius of the magnetic axis, which is the point every
-flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
-that point, is NaN
+        The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
+        moves between time-slices. This one is measured on the machine's mid-plane instead, so that
+        a series of time-slices is a series of radii at one fixed height.
+        The two sides are split at the major radius of the magnetic axis, which is the point every
+        flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
+        that point, is NaN
 
-        Units: m
+                Units: m
         """
     @property
     def r_outboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each flux surface where it crosses `z = 0`, on the outboard side. The
-outboard counterpart of `r_inboard_z_0`
+        outboard counterpart of `r_inboard_z_0`
 
-        Units: m
+                Units: m
         """
     @property
     def rho_pol(self) -> Path[npt.NDArray[np.float64]]:
         """Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
-data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
+        data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumProfiles1dRMidplaneItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -5727,31 +5320,31 @@ class _EquilibriumProfiles1dRMidplaneItem:
     @property
     def dpressure_dpsi(self) -> Path[npt.NDArray[np.float64]]:
         """Derivative of the pressure with respect to the poloidal flux, along the mid-plane. Zero
-outside the plasma boundary
+        outside the plasma boundary
 
-        Units: Pa.Wb^-1
+                Units: Pa.Wb^-1
         """
     @property
     def f(self) -> Path[npt.NDArray[np.float64]]:
         """Diamagnetic function `f = R * b_field_phi` along the mid-plane. The vacuum value outside the
-plasma boundary, where no poloidal current flows
+        plasma boundary, where no poloidal current flows
 
-        Units: T.m
+                Units: T.m
         """
     @property
     def f_df_dpsi(self) -> Path[npt.NDArray[np.float64]]:
         """Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
-Zero outside the plasma boundary
+        Zero outside the plasma boundary
 
-        Units: T^2.m^2.Wb^-1
+                Units: T^2.m^2.Wb^-1
         """
     @property
     def j_phi(self) -> Path[npt.NDArray[np.float64]]:
         """Toroidal plasma current density along the mid-plane. Zero outside the plasma boundary.
-Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
-solved current density
+        Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
+        solved current density
 
-        Units: A.m^-2
+                Units: A.m^-2
         """
     @property
     def pressure(self) -> Path[npt.NDArray[np.float64]]:
@@ -5762,14 +5355,13 @@ solved current density
     @property
     def q(self) -> Path[npt.NDArray[np.float64]]:
         """Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
-flux surface to define it
+        flux surface to define it
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumProfiles1dRMidplaneMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -5780,31 +5372,31 @@ class _EquilibriumProfiles1dRMidplaneMany:
     @property
     def dpressure_dpsi(self) -> Path[npt.NDArray[np.float64]]:
         """Derivative of the pressure with respect to the poloidal flux, along the mid-plane. Zero
-outside the plasma boundary
+        outside the plasma boundary
 
-        Units: Pa.Wb^-1
+                Units: Pa.Wb^-1
         """
     @property
     def f(self) -> Path[npt.NDArray[np.float64]]:
         """Diamagnetic function `f = R * b_field_phi` along the mid-plane. The vacuum value outside the
-plasma boundary, where no poloidal current flows
+        plasma boundary, where no poloidal current flows
 
-        Units: T.m
+                Units: T.m
         """
     @property
     def f_df_dpsi(self) -> Path[npt.NDArray[np.float64]]:
         """Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
-Zero outside the plasma boundary
+        Zero outside the plasma boundary
 
-        Units: T^2.m^2.Wb^-1
+                Units: T^2.m^2.Wb^-1
         """
     @property
     def j_phi(self) -> Path[npt.NDArray[np.float64]]:
         """Toroidal plasma current density along the mid-plane. Zero outside the plasma boundary.
-Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
-solved current density
+        Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
+        solved current density
 
-        Units: A.m^-2
+                Units: A.m^-2
         """
     @property
     def pressure(self) -> Path[npt.NDArray[np.float64]]:
@@ -5815,76 +5407,73 @@ solved current density
     @property
     def q(self) -> Path[npt.NDArray[np.float64]]:
         """Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
-flux surface to define it
+        flux surface to define it
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumProfiles1dRMidplaneHItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each point along the refined mid-plane. The solved grid's radial axis
-subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
-these, and the same on every time-slice
+        subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
+        these, and the same on every time-slice
 
-        Units: m
+                Units: m
         """
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
-NaN on a time-slice which did not converge
+        NaN on a time-slice which did not converge
 
-        Units: Wb
+                Units: Wb
         """
     @property
     def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
         """Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary -
-psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
-Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
-point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
-across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
-means picking the inboard or outboard branch first
+        psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
+        Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
+        point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
+        across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
+        means picking the inboard or outboard branch first
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumProfiles1dRMidplaneHMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each point along the refined mid-plane. The solved grid's radial axis
-subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
-these, and the same on every time-slice
+        subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
+        these, and the same on every time-slice
 
-        Units: m
+                Units: m
         """
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
-NaN on a time-slice which did not converge
+        NaN on a time-slice which did not converge
 
-        Units: Wb
+                Units: Wb
         """
     @property
     def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
         """Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary -
-psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
-Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
-point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
-across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
-means picking the inboard or outboard branch first
+        psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
+        Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
+        point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
+        across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
+        means picking the inboard or outboard branch first
 
-        Units: dimensionless
+                Units: dimensionless
         """
 
 class _EquilibriumProfiles1dRz1dDynamicAosItem:
-    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time)), with coordinates referring to profiles_1d/psi
-    """
+    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time)), with coordinates referring to profiles_1d/psi"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -5900,8 +5489,7 @@ class _EquilibriumProfiles1dRz1dDynamicAosItem:
         """
 
 class _EquilibriumProfiles1dRz1dDynamicAosMany:
-    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time)), with coordinates referring to profiles_1d/psi
-    """
+    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time)), with coordinates referring to profiles_1d/psi"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -5917,21 +5505,17 @@ class _EquilibriumProfiles1dRz1dDynamicAosMany:
         """
 
 class _EquilibriumProfiles2dItem:
-    """Equilibrium 2D profiles in the poloidal plane
-    """
+    """Equilibrium 2D profiles in the poloidal plane"""
 
     @property
     def type(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Type of profiles (distinguishes contribution from plasma, vaccum fields and total fields)
-        """
+        """Type of profiles (distinguishes contribution from plasma, vaccum fields and total fields)"""
     @property
     def grid_type(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Selection of one of a set of grid types
-        """
+        """Selection of one of a set of grid types"""
     @property
     def grid(self) -> _EquilibriumProfiles2dGridItem:
-        """Definition of the 2D grid (the content of dim1 and dim2 is defined by the selected grid_type)
-        """
+        """Definition of the 2D grid (the content of dim1 and dim2 is defined by the selected grid_type)"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Values of the major radius on the grid
@@ -6030,8 +5614,7 @@ class _EquilibriumProfiles2dItem:
         """
     @property
     def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
-        """Normalised poloidal flux on the grid, 0 at the magnetic axis and 1 at the plasma boundary
-        """
+        """Normalised poloidal flux on the grid, 0 at the magnetic axis and 1 at the plasma boundary"""
     @property
     def psi_coils(self) -> Path[npt.NDArray[np.float64]]:
         """Contribution to the poloidal flux from the PF coils alone
@@ -6047,27 +5630,23 @@ class _EquilibriumProfiles2dItem:
     @property
     def d_b_field_z_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the vertical magnetic field on the grid in the poloidal plane. Used
-by the vertical stability control
+        by the vertical stability control
 
-        Units: T.m^-1
+                Units: T.m^-1
         """
 
 class _EquilibriumProfiles2dMany:
-    """Equilibrium 2D profiles in the poloidal plane
-    """
+    """Equilibrium 2D profiles in the poloidal plane"""
 
     @property
     def type(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Type of profiles (distinguishes contribution from plasma, vaccum fields and total fields)
-        """
+        """Type of profiles (distinguishes contribution from plasma, vaccum fields and total fields)"""
     @property
     def grid_type(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Selection of one of a set of grid types
-        """
+        """Selection of one of a set of grid types"""
     @property
     def grid(self) -> _EquilibriumProfiles2dGridMany:
-        """Definition of the 2D grid (the content of dim1 and dim2 is defined by the selected grid_type)
-        """
+        """Definition of the 2D grid (the content of dim1 and dim2 is defined by the selected grid_type)"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Values of the major radius on the grid
@@ -6166,8 +5745,7 @@ class _EquilibriumProfiles2dMany:
         """
     @property
     def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
-        """Normalised poloidal flux on the grid, 0 at the magnetic axis and 1 at the plasma boundary
-        """
+        """Normalised poloidal flux on the grid, 0 at the magnetic axis and 1 at the plasma boundary"""
     @property
     def psi_coils(self) -> Path[npt.NDArray[np.float64]]:
         """Contribution to the poloidal flux from the PF coils alone
@@ -6183,14 +5761,13 @@ class _EquilibriumProfiles2dMany:
     @property
     def d_b_field_z_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the vertical magnetic field on the grid in the poloidal plane. Used
-by the vertical stability control
+        by the vertical stability control
 
-        Units: T.m^-1
+                Units: T.m^-1
         """
 
 class _EquilibriumProfiles2dGridItem:
-    """Definition of the 2D grid
-    """
+    """Definition of the 2D grid"""
 
     @property
     def dim1(self) -> Path[npt.NDArray[np.float64]]:
@@ -6213,14 +5790,13 @@ class _EquilibriumProfiles2dGridItem:
     @property
     def d_area(self) -> Path[float]:
         """Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`. A single value, because
-the grid is rectangular and uniformly spaced in both directions
+        the grid is rectangular and uniformly spaced in both directions
 
-        Units: m^2
+                Units: m^2
         """
 
 class _EquilibriumProfiles2dGridMany:
-    """Definition of the 2D grid
-    """
+    """Definition of the 2D grid"""
 
     @property
     def dim1(self) -> Path[npt.NDArray[np.float64]]:
@@ -6243,40 +5819,33 @@ class _EquilibriumProfiles2dGridMany:
     @property
     def d_area(self) -> Path[npt.NDArray[np.float64]]:
         """Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`. A single value, because
-the grid is rectangular and uniformly spaced in both directions
+        the grid is rectangular and uniformly spaced in both directions
 
-        Units: m^2
+                Units: m^2
         """
 
 class _EquilibriumSolItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def hfs(self) -> _EquilibriumSolLegItem:
-        """High field side leg, on the inboard side of the machine
-        """
+        """High field side leg, on the inboard side of the machine"""
     @property
     def lfs(self) -> _EquilibriumSolLegItem:
-        """Low field side leg, on the outboard side of the machine
-        """
+        """Low field side leg, on the outboard side of the machine"""
 
 class _EquilibriumSolMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def hfs(self) -> _EquilibriumSolLegMany:
-        """High field side leg, on the inboard side of the machine
-        """
+        """High field side leg, on the inboard side of the machine"""
     @property
     def lfs(self) -> _EquilibriumSolLegMany:
-        """Low field side leg, on the outboard side of the machine
-        """
+        """Low field side leg, on the outboard side of the machine"""
 
 class _EquilibriumSolContourItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -6292,8 +5861,7 @@ class _EquilibriumSolContourItem:
         """
 
 class _EquilibriumSolContourMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -6309,34 +5877,27 @@ class _EquilibriumSolContourMany:
         """
 
 class _EquilibriumSolLegItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def contour(self) -> _EquilibriumSolContourItem:
-        """The field line itself, traced from the X-point to where it meets the wall
-        """
+        """The field line itself, traced from the X-point to where it meets the wall"""
     @property
     def strike_point(self) -> _EquilibriumSolStrikePointItem:
-        """Where the leg meets the wall, which is the last point of the contour
-        """
+        """Where the leg meets the wall, which is the last point of the contour"""
 
 class _EquilibriumSolLegMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def contour(self) -> _EquilibriumSolContourMany:
-        """The field line itself, traced from the X-point to where it meets the wall
-        """
+        """The field line itself, traced from the X-point to where it meets the wall"""
     @property
     def strike_point(self) -> _EquilibriumSolStrikePointMany:
-        """Where the leg meets the wall, which is the last point of the contour
-        """
+        """Where the leg meets the wall, which is the last point of the contour"""
 
 class _EquilibriumSolStrikePointItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[float]:
@@ -6352,8 +5913,7 @@ class _EquilibriumSolStrikePointItem:
         """
 
 class _EquilibriumSolStrikePointMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -6369,89 +5929,69 @@ class _EquilibriumSolStrikePointMany:
         """
 
 class _EquilibriumSourceFunctionItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def coefficients(self) -> Path[npt.NDArray[np.float64]]:
-        """Fitted degrees of freedom of the source function, in the basis the source function defines
-        """
+        """Fitted degrees of freedom of the source function, in the basis the source function defines"""
 
 class _EquilibriumSourceFunctionMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def coefficients(self) -> Path[npt.NDArray[np.float64]]:
-        """Fitted degrees of freedom of the source function, in the basis the source function defines
-        """
+        """Fitted degrees of freedom of the source function, in the basis the source function defines"""
 
 class _EquilibriumSourceFunctionsItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def p_prime(self) -> _EquilibriumSourceFunctionItem:
-        """The p' source function, dp/dpsi
-        """
+        """The p' source function, dp/dpsi"""
     @property
     def ff_prime(self) -> _EquilibriumSourceFunctionItem:
-        """The FF' source function, F dF/dpsi
-        """
+        """The FF' source function, F dF/dpsi"""
 
 class _EquilibriumSourceFunctionsMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs"""
 
     @property
     def p_prime(self) -> _EquilibriumSourceFunctionMany:
-        """The p' source function, dp/dpsi
-        """
+        """The p' source function, dp/dpsi"""
     @property
     def ff_prime(self) -> _EquilibriumSourceFunctionMany:
-        """The FF' source function, F dF/dpsi
-        """
+        """The FF' source function, F dF/dpsi"""
 
 class _EquilibriumTimeSliceItem:
-    """Equilibrium at a given time slice
-    """
+    """Equilibrium at a given time slice"""
 
     @property
     def boundary(self) -> _EquilibriumBoundaryItem:
-        """Description of the plasma boundary. The boundary can be either the real separatrix (provided by a free boundary equilibrium solver) or the 0.99x psi_norm flux surface provided by a fixed boundary equilibrium
-        """
+        """Description of the plasma boundary. The boundary can be either the real separatrix (provided by a free boundary equilibrium solver) or the 0.99x psi_norm flux surface provided by a fixed boundary equilibrium"""
     @property
     def contour_tree(self) -> _EquilibriumContourTreeItem:
-        """Contour tree (Reeb graph) of the poloidal flux, encoding the topological structure of the equilibrium through its critical points and limiter points. Nodes represent critical points of the poloidal flux (O-points, X-points) and limiter points where the plasma boundary touches the first wall. Edges connect nodes that are topologically adjacent in psi_norm space, meaning no other node lies between them. The tree captures the nesting structure of flux surfaces, the connectivity between plasma regions, the separatrix topology, and the locations of limiter contacts. Normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), defines all ordering conventions.
-        """
+        """Contour tree (Reeb graph) of the poloidal flux, encoding the topological structure of the equilibrium through its critical points and limiter points. Nodes represent critical points of the poloidal flux (O-points, X-points) and limiter points where the plasma boundary touches the first wall. Edges connect nodes that are topologically adjacent in psi_norm space, meaning no other node lies between them. The tree captures the nesting structure of flux surfaces, the connectivity between plasma regions, the separatrix topology, and the locations of limiter contacts. Normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), defines all ordering conventions."""
     @property
     def constraints(self) -> _EquilibriumConstraintsItem:
-        """In case of equilibrium reconstruction under constraints, measurements used to constrain the equilibrium, reconstructed values and accuracy of the fit. The names of the child nodes correspond to the following definition: the solver aims at minimizing a cost function defined as : J=1/2*sum_i [ weight_i^2 (reconstructed_i - measured_i)^2 / sigma_i^2 ]. in which sigma_i is the standard deviation of the measurement error (to be found in the IDS of the measurement)
-        """
+        """In case of equilibrium reconstruction under constraints, measurements used to constrain the equilibrium, reconstructed values and accuracy of the fit. The names of the child nodes correspond to the following definition: the solver aims at minimizing a cost function defined as : J=1/2*sum_i [ weight_i^2 (reconstructed_i - measured_i)^2 / sigma_i^2 ]. in which sigma_i is the standard deviation of the measurement error (to be found in the IDS of the measurement)"""
     @property
     def global_quantities(self) -> _EquilibriumGlobalQuantitiesItem:
-        """0D parameters of the equilibrium
-        """
+        """0D parameters of the equilibrium"""
     @property
     def profiles_1d(self) -> _EquilibriumProfiles1dItem:
-        """Equilibrium profiles (1D radial grid) as a function of the poloidal flux
-        """
+        """Equilibrium profiles (1D radial grid) as a function of the poloidal flux"""
     @property
     def profiles_2d(self) -> _EquilibriumProfiles2dArrayFromItem:
-        """Equilibrium 2D profiles in the poloidal plane. Multiple 2D representations of the equilibrium can be stored here.
-        """
+        """Equilibrium 2D profiles in the poloidal plane. Multiple 2D representations of the equilibrium can be stored here."""
     @property
     def ggd(self) -> _EquilibriumGgdArrayFromItem:
-        """Set of equilibrium representations using the generic grid description
-        """
+        """Set of equilibrium representations using the generic grid description"""
     @property
     def coordinate_system(self) -> _EquilibriumCoordinateSystemItem:
-        """Flux surface coordinate system on a square grid of flux and poloidal angle
-        """
+        """Flux surface coordinate system on a square grid of flux and poloidal angle"""
     @property
     def convergence(self) -> _EquilibriumConvergenceItem:
-        """Convergence details
-        """
+        """Convergence details"""
     @property
     def time(self) -> Path[float]:
         """Time
@@ -6460,20 +6000,16 @@ class _EquilibriumTimeSliceItem:
         """
     @property
     def source_functions(self) -> _EquilibriumSourceFunctionsItem:
-        """Source functions which parameterise the plasma current profile
-        """
+        """Source functions which parameterise the plasma current profile"""
     @property
     def profiles_1d_r_midplane(self) -> _EquilibriumProfiles1dRMidplaneItem:
-        """Profiles along the horizontal line through the middle of the grid
-        """
+        """Profiles along the horizontal line through the middle of the grid"""
     @property
     def profiles_1d_r_midplane_h(self) -> _EquilibriumProfiles1dRMidplaneHItem:
-        """Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`
-        """
+        """Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`"""
     @property
     def sol(self) -> _EquilibriumSolItem:
-        """Scrape-off layer: the open field lines outside the last closed flux surface
-        """
+        """Scrape-off layer: the open field lines outside the last closed flux surface"""
     @property
     def passive_dof_values(self) -> Path[npt.NDArray[np.float64]]:
         """Fitted degrees of freedom of the passive structure currents
@@ -6482,45 +6018,35 @@ class _EquilibriumTimeSliceItem:
         """
 
 class _EquilibriumTimeSliceMany:
-    """Equilibrium at a given time slice
-    """
+    """Equilibrium at a given time slice"""
 
     @property
     def boundary(self) -> _EquilibriumBoundaryMany:
-        """Description of the plasma boundary. The boundary can be either the real separatrix (provided by a free boundary equilibrium solver) or the 0.99x psi_norm flux surface provided by a fixed boundary equilibrium
-        """
+        """Description of the plasma boundary. The boundary can be either the real separatrix (provided by a free boundary equilibrium solver) or the 0.99x psi_norm flux surface provided by a fixed boundary equilibrium"""
     @property
     def contour_tree(self) -> _EquilibriumContourTreeMany:
-        """Contour tree (Reeb graph) of the poloidal flux, encoding the topological structure of the equilibrium through its critical points and limiter points. Nodes represent critical points of the poloidal flux (O-points, X-points) and limiter points where the plasma boundary touches the first wall. Edges connect nodes that are topologically adjacent in psi_norm space, meaning no other node lies between them. The tree captures the nesting structure of flux surfaces, the connectivity between plasma regions, the separatrix topology, and the locations of limiter contacts. Normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), defines all ordering conventions.
-        """
+        """Contour tree (Reeb graph) of the poloidal flux, encoding the topological structure of the equilibrium through its critical points and limiter points. Nodes represent critical points of the poloidal flux (O-points, X-points) and limiter points where the plasma boundary touches the first wall. Edges connect nodes that are topologically adjacent in psi_norm space, meaning no other node lies between them. The tree captures the nesting structure of flux surfaces, the connectivity between plasma regions, the separatrix topology, and the locations of limiter contacts. Normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), defines all ordering conventions."""
     @property
     def constraints(self) -> _EquilibriumConstraintsMany:
-        """In case of equilibrium reconstruction under constraints, measurements used to constrain the equilibrium, reconstructed values and accuracy of the fit. The names of the child nodes correspond to the following definition: the solver aims at minimizing a cost function defined as : J=1/2*sum_i [ weight_i^2 (reconstructed_i - measured_i)^2 / sigma_i^2 ]. in which sigma_i is the standard deviation of the measurement error (to be found in the IDS of the measurement)
-        """
+        """In case of equilibrium reconstruction under constraints, measurements used to constrain the equilibrium, reconstructed values and accuracy of the fit. The names of the child nodes correspond to the following definition: the solver aims at minimizing a cost function defined as : J=1/2*sum_i [ weight_i^2 (reconstructed_i - measured_i)^2 / sigma_i^2 ]. in which sigma_i is the standard deviation of the measurement error (to be found in the IDS of the measurement)"""
     @property
     def global_quantities(self) -> _EquilibriumGlobalQuantitiesMany:
-        """0D parameters of the equilibrium
-        """
+        """0D parameters of the equilibrium"""
     @property
     def profiles_1d(self) -> _EquilibriumProfiles1dMany:
-        """Equilibrium profiles (1D radial grid) as a function of the poloidal flux
-        """
+        """Equilibrium profiles (1D radial grid) as a function of the poloidal flux"""
     @property
     def profiles_2d(self) -> _EquilibriumProfiles2dArrayFromMany:
-        """Equilibrium 2D profiles in the poloidal plane. Multiple 2D representations of the equilibrium can be stored here.
-        """
+        """Equilibrium 2D profiles in the poloidal plane. Multiple 2D representations of the equilibrium can be stored here."""
     @property
     def ggd(self) -> _EquilibriumGgdArrayFromMany:
-        """Set of equilibrium representations using the generic grid description
-        """
+        """Set of equilibrium representations using the generic grid description"""
     @property
     def coordinate_system(self) -> _EquilibriumCoordinateSystemMany:
-        """Flux surface coordinate system on a square grid of flux and poloidal angle
-        """
+        """Flux surface coordinate system on a square grid of flux and poloidal angle"""
     @property
     def convergence(self) -> _EquilibriumConvergenceMany:
-        """Convergence details
-        """
+        """Convergence details"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Time
@@ -6529,20 +6055,16 @@ class _EquilibriumTimeSliceMany:
         """
     @property
     def source_functions(self) -> _EquilibriumSourceFunctionsMany:
-        """Source functions which parameterise the plasma current profile
-        """
+        """Source functions which parameterise the plasma current profile"""
     @property
     def profiles_1d_r_midplane(self) -> _EquilibriumProfiles1dRMidplaneMany:
-        """Profiles along the horizontal line through the middle of the grid
-        """
+        """Profiles along the horizontal line through the middle of the grid"""
     @property
     def profiles_1d_r_midplane_h(self) -> _EquilibriumProfiles1dRMidplaneHMany:
-        """Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`
-        """
+        """Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`"""
     @property
     def sol(self) -> _EquilibriumSolMany:
-        """Scrape-off layer: the open field lines outside the last closed flux surface
-        """
+        """Scrape-off layer: the open field lines outside the last closed flux surface"""
     @property
     def passive_dof_values(self) -> Path[npt.NDArray[np.float64]]:
         """Fitted degrees of freedom of the passive structure currents
@@ -6551,152 +6073,117 @@ class _EquilibriumTimeSliceMany:
         """
 
 class _EquilibriumGenericGridDynamicItem:
-    """Generic grid (dynamic within a type 3 AoS)
-    """
+    """Generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Grid identifier
-        """
+        """Grid identifier"""
     @property
     def path(self) -> Path[str]:
-        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
-        """
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)"""
     @property
     def space(self) -> _EquilibriumGenericGridDynamicSpaceArrayFromItem:
-        """Set of grid spaces
-        """
+        """Set of grid spaces"""
     @property
     def grid_subset(self) -> _EquilibriumGenericGridDynamicGridSubsetArrayFromItem:
-        """Grid subsets
-        """
+        """Grid subsets"""
 
 class _EquilibriumGenericGridDynamicMany:
-    """Generic grid (dynamic within a type 3 AoS)
-    """
+    """Generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Grid identifier
-        """
+        """Grid identifier"""
     @property
     def path(self) -> Path[npt.NDArray[np.str_]]:
-        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
-        """
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)"""
     @property
     def space(self) -> _EquilibriumGenericGridDynamicSpaceArrayFromMany:
-        """Set of grid spaces
-        """
+        """Set of grid spaces"""
     @property
     def grid_subset(self) -> _EquilibriumGenericGridDynamicGridSubsetArrayFromMany:
-        """Grid subsets
-        """
+        """Grid subsets"""
 
 class _EquilibriumGenericGridDynamicGridSubsetItem:
-    """Generic grid grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Grid subset identifier
-        """
+        """Grid subset identifier"""
     @property
     def dimension(self) -> Path[int]:
-        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def element(self) -> _EquilibriumGenericGridDynamicGridSubsetElementArrayFromItem:
-        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
-        """
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces"""
     @property
     def base(self) -> _EquilibriumGenericGridDynamicGridSubsetMetricArrayFromItem:
-        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
-        """
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid."""
     @property
     def metric(self) -> _EquilibriumGenericGridDynamicGridSubsetMetricItem:
-        """Metric of the canonical frame onto Cartesian coordinates
-        """
+        """Metric of the canonical frame onto Cartesian coordinates"""
 
 class _EquilibriumGenericGridDynamicGridSubsetMany:
-    """Generic grid grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Grid subset identifier
-        """
+        """Grid subset identifier"""
     @property
     def dimension(self) -> Path[npt.NDArray[np.int32]]:
-        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def element(self) -> _EquilibriumGenericGridDynamicGridSubsetElementArrayFromMany:
-        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
-        """
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces"""
     @property
     def base(self) -> _EquilibriumGenericGridDynamicGridSubsetMetricArrayFromMany:
-        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
-        """
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid."""
     @property
     def metric(self) -> _EquilibriumGenericGridDynamicGridSubsetMetricMany:
-        """Metric of the canonical frame onto Cartesian coordinates
-        """
+        """Metric of the canonical frame onto Cartesian coordinates"""
 
 class _EquilibriumGenericGridDynamicGridSubsetElementItem:
-    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _EquilibriumGenericGridDynamicGridSubsetElementObjectArrayFromItem:
-        """Set of objects defining the element
-        """
+        """Set of objects defining the element"""
 
 class _EquilibriumGenericGridDynamicGridSubsetElementMany:
-    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _EquilibriumGenericGridDynamicGridSubsetElementObjectArrayFromMany:
-        """Set of objects defining the element
-        """
+        """Set of objects defining the element"""
 
 class _EquilibriumGenericGridDynamicGridSubsetElementObjectItem:
-    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def space(self) -> Path[int]:
-        """Index of the space from which that object is taken
-        """
+        """Index of the space from which that object is taken"""
     @property
     def dimension(self) -> Path[int]:
-        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def index(self) -> Path[int]:
-        """Object index
-        """
+        """Object index"""
 
 class _EquilibriumGenericGridDynamicGridSubsetElementObjectMany:
-    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def space(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the space from which that object is taken
-        """
+        """Index of the space from which that object is taken"""
     @property
     def dimension(self) -> Path[npt.NDArray[np.int32]]:
-        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Object index
-        """
+        """Object index"""
 
 class _EquilibriumGenericGridDynamicGridSubsetMetricItem:
-    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
-    """
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)"""
 
     @property
     def jacobian(self) -> Path[npt.NDArray[np.float64]]:
@@ -6718,8 +6205,7 @@ class _EquilibriumGenericGridDynamicGridSubsetMetricItem:
         """
 
 class _EquilibriumGenericGridDynamicGridSubsetMetricMany:
-    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
-    """
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)"""
 
     @property
     def jacobian(self) -> Path[npt.NDArray[np.float64]]:
@@ -6741,81 +6227,63 @@ class _EquilibriumGenericGridDynamicGridSubsetMetricMany:
         """
 
 class _EquilibriumGenericGridDynamicSpaceItem:
-    """Generic grid space (dynamic within a type 3 AoS)
-    """
+    """Generic grid space (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Space identifier
-        """
+        """Space identifier"""
     @property
     def geometry_type(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
-        """
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)"""
     @property
     def coordinates_type(self) -> _EquilibriumIdentifierDynamicAos3ArrayFromItem:
-        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
-        """
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space."""
     @property
     def objects_per_dimension(self) -> _EquilibriumGenericGridDynamicSpaceDimensionArrayFromItem:
-        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
-        """
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described."""
 
 class _EquilibriumGenericGridDynamicSpaceMany:
-    """Generic grid space (dynamic within a type 3 AoS)
-    """
+    """Generic grid space (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Space identifier
-        """
+        """Space identifier"""
     @property
     def geometry_type(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
-        """
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)"""
     @property
     def coordinates_type(self) -> _EquilibriumIdentifierDynamicAos3ArrayFromMany:
-        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
-        """
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space."""
     @property
     def objects_per_dimension(self) -> _EquilibriumGenericGridDynamicSpaceDimensionArrayFromMany:
-        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
-        """
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described."""
 
 class _EquilibriumGenericGridDynamicSpaceDimensionItem:
-    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectArrayFromItem:
-        """Set of objects for a given dimension
-        """
+        """Set of objects for a given dimension"""
     @property
     def geometry_content(self) -> _EquilibriumIdentifierDynamicAos3Item:
-        """Content of the ../object/geometry node for this dimension
-        """
+        """Content of the ../object/geometry node for this dimension"""
 
 class _EquilibriumGenericGridDynamicSpaceDimensionMany:
-    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectArrayFromMany:
-        """Set of objects for a given dimension
-        """
+        """Set of objects for a given dimension"""
     @property
     def geometry_content(self) -> _EquilibriumIdentifierDynamicAos3Many:
-        """Content of the ../object/geometry node for this dimension
-        """
+        """Content of the ../object/geometry node for this dimension"""
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectItem:
-    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)"""
 
     @property
     def boundary(self) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
-        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
-        """
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object"""
     @property
     def geometry(self) -> Path[npt.NDArray[np.float64]]:
         """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
@@ -6824,8 +6292,7 @@ class _EquilibriumGenericGridDynamicSpaceDimensionObjectItem:
         """
     @property
     def nodes(self) -> Path[npt.NDArray[np.int32]]:
-        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
-        """
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)"""
     @property
     def measure(self) -> Path[float]:
         """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
@@ -6840,13 +6307,11 @@ class _EquilibriumGenericGridDynamicSpaceDimensionObjectItem:
         """
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectMany:
-    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)"""
 
     @property
     def boundary(self) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
-        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
-        """
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object"""
     @property
     def geometry(self) -> Path[npt.NDArray[np.float64]]:
         """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
@@ -6855,8 +6320,7 @@ class _EquilibriumGenericGridDynamicSpaceDimensionObjectMany:
         """
     @property
     def nodes(self) -> Path[npt.NDArray[np.int32]]:
-        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
-        """
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)"""
     @property
     def measure(self) -> Path[npt.NDArray[np.float64]]:
         """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
@@ -6871,43 +6335,34 @@ class _EquilibriumGenericGridDynamicSpaceDimensionObjectMany:
         """
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryItem:
-    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
-    """
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)"""
 
     @property
     def index(self) -> Path[int]:
-        """Index of this (n-1)-dimensional boundary object
-        """
+        """Index of this (n-1)-dimensional boundary object"""
     @property
     def neighbours(self) -> Path[npt.NDArray[np.int32]]:
-        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
-        """
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary"""
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryMany:
-    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
-    """
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)"""
 
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of this (n-1)-dimensional boundary object
-        """
+        """Index of this (n-1)-dimensional boundary object"""
     @property
     def neighbours(self) -> Path[npt.NDArray[np.int32]]:
-        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
-        """
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary"""
 
 class _EquilibriumGenericGridScalarItem:
-    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[int]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[int]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """One scalar value is provided per element in the grid subset.
@@ -6922,17 +6377,14 @@ class _EquilibriumGenericGridScalarItem:
         """
 
 class _EquilibriumGenericGridScalarMany:
-    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """One scalar value is provided per element in the grid subset.
@@ -6947,100 +6399,77 @@ class _EquilibriumGenericGridScalarMany:
         """
 
 class _EquilibriumIdentifierDynamicAos3Item:
-    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _EquilibriumIdentifierDynamicAos3Many:
-    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _EquilibriumLibraryItem:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _EquilibriumLibraryMany:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _EquilibriumRphizpsirho0dDynamicAos3Item:
-    """Structure for R, Z, Phi, psi, rho_tor positions (0D, dynamic within a type 3 array of structures (index on time))
-    """
+    """Structure for R, Z, Phi, psi, rho_tor positions (0D, dynamic within a type 3 array of structures (index on time))"""
 
     @property
     def r(self) -> Path[float]:
@@ -7074,8 +6503,7 @@ class _EquilibriumRphizpsirho0dDynamicAos3Item:
         """
 
 class _EquilibriumRphizpsirho0dDynamicAos3Many:
-    """Structure for R, Z, Phi, psi, rho_tor positions (0D, dynamic within a type 3 array of structures (index on time))
-    """
+    """Structure for R, Z, Phi, psi, rho_tor positions (0D, dynamic within a type 3 array of structures (index on time))"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -7109,8 +6537,7 @@ class _EquilibriumRphizpsirho0dDynamicAos3Many:
         """
 
 class _EquilibriumRz0dDynamicAosItem:
-    """Structure for scalar R, Z positions, dynamic within a type 3 array of structures (index on time)
-    """
+    """Structure for scalar R, Z positions, dynamic within a type 3 array of structures (index on time)"""
 
     @property
     def r(self) -> Path[float]:
@@ -7126,8 +6553,7 @@ class _EquilibriumRz0dDynamicAosItem:
         """
 
 class _EquilibriumRz0dDynamicAosMany:
-    """Structure for scalar R, Z positions, dynamic within a type 3 array of structures (index on time)
-    """
+    """Structure for scalar R, Z positions, dynamic within a type 3 array of structures (index on time)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -7143,8 +6569,7 @@ class _EquilibriumRz0dDynamicAosMany:
         """
 
 class _EquilibriumRz1dDynamicAosItem:
-    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time))
-    """
+    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time))"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -7160,8 +6585,7 @@ class _EquilibriumRz1dDynamicAosItem:
         """
 
 class _EquilibriumRz1dDynamicAosMany:
-    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time))
-    """
+    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time))"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -7603,32 +7027,27 @@ class _EquilibriumRz1dDynamicAosArrayFromMany:
 # --------------------------------------------------------------------------
 
 class _EquilibriumPaths:
-    """Description of a 2D, axi-symmetric, tokamak equilibrium; result of an equilibrium code.
-    """
+    """Description of a 2D, axi-symmetric, tokamak equilibrium; result of an equilibrium code."""
 
     @property
     def vacuum_toroidal_field(self) -> _EquilibriumBTorVacuum1Item:
-        """Characteristics of the vacuum toroidal field (used in rho_tor definition and in the normalization of current densities)
-        """
+        """Characteristics of the vacuum toroidal field (used in rho_tor definition and in the normalization of current densities)"""
     @property
     def grids_ggd(self) -> _EquilibriumGgdArrayArrayFromItem:
-        """Grids (using the Generic Grid Description), for various time slices. The timebase of this array of structure must be a subset of the time_slice timebase
-        """
+        """Grids (using the Generic Grid Description), for various time slices. The timebase of this array of structure must be a subset of the time_slice timebase"""
     @property
     def time_slice(self) -> _EquilibriumTimeSliceArrayFromItem:
-        """Set of equilibria at various time slices
-        """
+        """Set of equilibria at various time slices"""
     @property
     def code(self) -> _EquilibriumCodeItem: ...
     @property
     def greens(self) -> _EquilibriumGreensItem:
-        """Greens tables: what each observer, the grid or a magnetic sensor, sees per ampere in each current source
-        """
+        """Greens tables: what each observer, the grid or a magnetic sensor, sees per ampere in each current source"""
     @property
     def limiter(self) -> _EquilibriumLimiterItem:
         """The limiter: the immobile surfaces which bound the plasma. A copy of the `wall` IDS's
-`wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
-the post-processor read it from the equilibrium IDS rather than from the `wall` IDS
+        `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
+        the post-processor read it from the equilibrium IDS rather than from the `wall` IDS
         """
 
 equilibrium_paths: _EquilibriumPaths
@@ -7657,8 +7076,7 @@ class PfActive:
 # ==========================================================================
 
 class _PfActiveAnnulusStaticItem:
-    """Annulus description (2D object)
-    """
+    """Annulus description (2D object)"""
 
     @property
     def r(self) -> Path[float]:
@@ -7686,8 +7104,7 @@ class _PfActiveAnnulusStaticItem:
         """
 
 class _PfActiveAnnulusStaticMany:
-    """Annulus description (2D object)
-    """
+    """Annulus description (2D object)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -7715,8 +7132,7 @@ class _PfActiveAnnulusStaticMany:
         """
 
 class _PfActiveArcsOfCircleStaticItem:
-    """Arcs of circle description of a 2D contour
-    """
+    """Arcs of circle description of a 2D contour"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -7738,8 +7154,7 @@ class _PfActiveArcsOfCircleStaticItem:
         """
 
 class _PfActiveArcsOfCircleStaticMany:
-    """Arcs of circle description of a 2D contour
-    """
+    """Arcs of circle description of a 2D contour"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -7761,174 +7176,133 @@ class _PfActiveArcsOfCircleStaticMany:
         """
 
 class _PfActiveCodeItem:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _PfActiveLibraryArrayFromItem:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _PfActiveCodeMany:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _PfActiveLibraryArrayFromMany:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _PfActiveIdentifierStaticItem:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PfActiveIdentifierStaticMany:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PfActiveLibraryItem:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _PfActiveLibraryMany:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _PfActiveObliqueStaticItem:
-    """Description of a 2D parallelogram
-    """
+    """Description of a 2D parallelogram"""
 
     @property
     def r(self) -> Path[float]:
@@ -7968,8 +7342,7 @@ class _PfActiveObliqueStaticItem:
         """
 
 class _PfActiveObliqueStaticMany:
-    """Description of a 2D parallelogram
-    """
+    """Description of a 2D parallelogram"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -8009,91 +7382,70 @@ class _PfActiveObliqueStaticMany:
         """
 
 class _PfActiveOutline2dGeometryStaticItem:
-    """Description of 2D geometry
-    """
+    """Description of 2D geometry"""
 
     @property
     def geometry_type(self) -> Path[int]:
-        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
-        """
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')"""
     @property
     def outline(self) -> _PfActiveRz1dStaticItem:
-        """Irregular outline of the element. Repeat the first point since this is a closed contour
-        """
+        """Irregular outline of the element. Repeat the first point since this is a closed contour"""
     @property
     def rectangle(self) -> _PfActiveRectangleStaticItem:
-        """Rectangular description of the element
-        """
+        """Rectangular description of the element"""
     @property
     def oblique(self) -> _PfActiveObliqueStaticItem:
-        """Parallelogram description of the element
-        """
+        """Parallelogram description of the element"""
     @property
     def arcs_of_circle(self) -> _PfActiveArcsOfCircleStaticItem:
-        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
-        """
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle."""
     @property
     def annulus(self) -> _PfActiveAnnulusStaticItem:
-        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
-        """
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer"""
     @property
     def thick_line(self) -> _PfActiveThickLineStaticItem:
-        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
-        """
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment"""
 
 class _PfActiveOutline2dGeometryStaticMany:
-    """Description of 2D geometry
-    """
+    """Description of 2D geometry"""
 
     @property
     def geometry_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
-        """
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')"""
     @property
     def outline(self) -> _PfActiveRz1dStaticMany:
-        """Irregular outline of the element. Repeat the first point since this is a closed contour
-        """
+        """Irregular outline of the element. Repeat the first point since this is a closed contour"""
     @property
     def rectangle(self) -> _PfActiveRectangleStaticMany:
-        """Rectangular description of the element
-        """
+        """Rectangular description of the element"""
     @property
     def oblique(self) -> _PfActiveObliqueStaticMany:
-        """Parallelogram description of the element
-        """
+        """Parallelogram description of the element"""
     @property
     def arcs_of_circle(self) -> _PfActiveArcsOfCircleStaticMany:
-        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
-        """
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle."""
     @property
     def annulus(self) -> _PfActiveAnnulusStaticMany:
-        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
-        """
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer"""
     @property
     def thick_line(self) -> _PfActiveThickLineStaticMany:
-        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
-        """
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment"""
 
 class _PfActivePfCircuitsItem:
-    """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system
-    """
+    """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> Path[str]:
-        """Type of the circuit
-        """
+        """Type of the circuit"""
     @property
     def connections(self) -> Path[npt.NDArray[np.int32]]:
-        """Description of the supplies and coils connections (nodes) across the circuit. Nodes of the circuit are listed as the first dimension of the matrix. Supplies (listed first) and coils (listed second) are listed as the second dimension. Thus the second dimension has a size equal to (N_supplies+N_coils). N_supplies (resp. N_coils) is the total number of supplies (resp. coils) listed in the supply (resp.coil) array of structure, i.e. including also supplies/coils that are not part of the actual circuit. The (i,j) matrix elements are 1 if the j-th supply or coil side is connected to the i-th node by its positive side, -1 if connected by its negative side, or 0 if not connected.
-        """
+        """Description of the supplies and coils connections (nodes) across the circuit. Nodes of the circuit are listed as the first dimension of the matrix. Supplies (listed first) and coils (listed second) are listed as the second dimension. Thus the second dimension has a size equal to (N_supplies+N_coils). N_supplies (resp. N_coils) is the total number of supplies (resp. coils) listed in the supply (resp.coil) array of structure, i.e. including also supplies/coils that are not part of the actual circuit. The (i,j) matrix elements are 1 if the j-th supply or coil side is connected to the i-th node by its positive side, -1 if connected by its negative side, or 0 if not connected."""
     @property
     def voltage(self) -> _PfActiveSignalFlt1dItem:
         """Voltage on the circuit between the sides of the group of supplies (only for circuits with a single supply or in which supplies are grouped)
@@ -8108,25 +7460,20 @@ class _PfActivePfCircuitsItem:
         """
 
 class _PfActivePfCircuitsMany:
-    """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system
-    """
+    """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> Path[npt.NDArray[np.str_]]:
-        """Type of the circuit
-        """
+        """Type of the circuit"""
     @property
     def connections(self) -> Path[npt.NDArray[np.int32]]:
-        """Description of the supplies and coils connections (nodes) across the circuit. Nodes of the circuit are listed as the first dimension of the matrix. Supplies (listed first) and coils (listed second) are listed as the second dimension. Thus the second dimension has a size equal to (N_supplies+N_coils). N_supplies (resp. N_coils) is the total number of supplies (resp. coils) listed in the supply (resp.coil) array of structure, i.e. including also supplies/coils that are not part of the actual circuit. The (i,j) matrix elements are 1 if the j-th supply or coil side is connected to the i-th node by its positive side, -1 if connected by its negative side, or 0 if not connected.
-        """
+        """Description of the supplies and coils connections (nodes) across the circuit. Nodes of the circuit are listed as the first dimension of the matrix. Supplies (listed first) and coils (listed second) are listed as the second dimension. Thus the second dimension has a size equal to (N_supplies+N_coils). N_supplies (resp. N_coils) is the total number of supplies (resp. coils) listed in the supply (resp.coil) array of structure, i.e. including also supplies/coils that are not part of the actual circuit. The (i,j) matrix elements are 1 if the j-th supply or coil side is connected to the i-th node by its positive side, -1 if connected by its negative side, or 0 if not connected."""
     @property
     def voltage(self) -> _PfActiveSignalFlt1dMany:
         """Voltage on the circuit between the sides of the group of supplies (only for circuits with a single supply or in which supplies are grouped)
@@ -8141,21 +7488,17 @@ class _PfActivePfCircuitsMany:
         """
 
 class _PfActivePfCoilsItem:
-    """Active PF coils
-    """
+    """Active PF coils"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def function(self) -> _PfActiveIdentifierStaticArrayFromItem:
-        """Set of functions for which this coil may be used
-        """
+        """Set of functions for which this coil may be used"""
     @property
     def resistance(self) -> Path[float]:
         """Coil resistance at the temperature_reference indicated at the top of the IDS
@@ -8218,12 +7561,10 @@ class _PfActivePfCoilsItem:
         """
     @property
     def element(self) -> _PfActivePfCoilsElementsArrayFromItem:
-        """Each PF coil is comprised of a number of cross-section elements described  individually and connected serially
-        """
+        """Each PF coil is comprised of a number of cross-section elements described  individually and connected serially"""
     @property
     def geometry(self) -> _PfActiveOutline2dGeometryStaticItem:
-        """Cross-sectional shape of the coil
-        """
+        """Cross-sectional shape of the coil"""
     @property
     def current(self) -> _PfActiveSignalFlt1dItem:
         """Current fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
@@ -8263,25 +7604,21 @@ class _PfActivePfCoilsItem:
     @property
     def prescribed(self) -> _PfActiveIdentifierStaticItem:
         """Which of the coil's signals is prescribed: `current` (`index` 1) when `coil(i1)/current` is given, or `voltage` (`index` 2)
-when `coil(i1)/voltage` is given and the current is calculated
+        when `coil(i1)/voltage` is given and the current is calculated
         """
 
 class _PfActivePfCoilsMany:
-    """Active PF coils
-    """
+    """Active PF coils"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def function(self) -> _PfActiveIdentifierStaticArrayFromMany:
-        """Set of functions for which this coil may be used
-        """
+        """Set of functions for which this coil may be used"""
     @property
     def resistance(self) -> Path[npt.NDArray[np.float64]]:
         """Coil resistance at the temperature_reference indicated at the top of the IDS
@@ -8344,12 +7681,10 @@ class _PfActivePfCoilsMany:
         """
     @property
     def element(self) -> _PfActivePfCoilsElementsArrayFromMany:
-        """Each PF coil is comprised of a number of cross-section elements described  individually and connected serially
-        """
+        """Each PF coil is comprised of a number of cross-section elements described  individually and connected serially"""
     @property
     def geometry(self) -> _PfActiveOutline2dGeometryStaticMany:
-        """Cross-sectional shape of the coil
-        """
+        """Cross-sectional shape of the coil"""
     @property
     def current(self) -> _PfActiveSignalFlt1dMany:
         """Current fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
@@ -8389,21 +7724,18 @@ class _PfActivePfCoilsMany:
     @property
     def prescribed(self) -> _PfActiveIdentifierStaticMany:
         """Which of the coil's signals is prescribed: `current` (`index` 1) when `coil(i1)/current` is given, or `voltage` (`index` 2)
-when `coil(i1)/voltage` is given and the current is calculated
+        when `coil(i1)/voltage` is given and the current is calculated
         """
 
 class _PfActivePfCoilsElementsItem:
-    """Each PF coil is comprised of a number of cross-section elements described  individually
-    """
+    """Each PF coil is comprised of a number of cross-section elements described  individually"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def turns_with_sign(self) -> Path[float]:
         """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
@@ -8418,21 +7750,17 @@ class _PfActivePfCoilsElementsItem:
         """
     @property
     def geometry(self) -> _PfActiveOutline2dGeometryStaticItem:
-        """Cross-sectional shape of the element
-        """
+        """Cross-sectional shape of the element"""
 
 class _PfActivePfCoilsElementsMany:
-    """Each PF coil is comprised of a number of cross-section elements described  individually
-    """
+    """Each PF coil is comprised of a number of cross-section elements described  individually"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def turns_with_sign(self) -> Path[npt.NDArray[np.float64]]:
         """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
@@ -8447,12 +7775,10 @@ class _PfActivePfCoilsElementsMany:
         """
     @property
     def geometry(self) -> _PfActiveOutline2dGeometryStaticMany:
-        """Cross-sectional shape of the element
-        """
+        """Cross-sectional shape of the element"""
 
 class _PfActivePfForceLimitsItem:
-    """Description of force limits
-    """
+    """Description of force limits"""
 
     @property
     def combination_matrix(self) -> Path[npt.NDArray[np.float64]]:
@@ -8480,8 +7806,7 @@ class _PfActivePfForceLimitsItem:
         """
 
 class _PfActivePfForceLimitsMany:
-    """Description of force limits
-    """
+    """Description of force limits"""
 
     @property
     def combination_matrix(self) -> Path[npt.NDArray[np.float64]]:
@@ -8509,21 +7834,17 @@ class _PfActivePfForceLimitsMany:
         """
 
 class _PfActivePfSuppliesItem:
-    """PF power supplies
-    """
+    """PF power supplies"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> Path[int]:
-        """Type of the supply; TBD add free description of non-linear power supplies
-        """
+        """Type of the supply; TBD add free description of non-linear power supplies"""
     @property
     def resistance(self) -> Path[float]:
         """Power supply internal resistance
@@ -8586,8 +7907,7 @@ class _PfActivePfSuppliesItem:
         """
     @property
     def nonlinear_model(self) -> Path[str]:
-        """Description of the nonlinear transfer function of the supply
-        """
+        """Description of the nonlinear transfer function of the supply"""
     @property
     def voltage(self) -> _PfActiveSignalFlt1dItem:
         """Voltage at the supply output (Vside1-Vside2)
@@ -8602,21 +7922,17 @@ class _PfActivePfSuppliesItem:
         """
 
 class _PfActivePfSuppliesMany:
-    """PF power supplies
-    """
+    """PF power supplies"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> Path[npt.NDArray[np.int32]]:
-        """Type of the supply; TBD add free description of non-linear power supplies
-        """
+        """Type of the supply; TBD add free description of non-linear power supplies"""
     @property
     def resistance(self) -> Path[npt.NDArray[np.float64]]:
         """Power supply internal resistance
@@ -8679,8 +7995,7 @@ class _PfActivePfSuppliesMany:
         """
     @property
     def nonlinear_model(self) -> Path[npt.NDArray[np.str_]]:
-        """Description of the nonlinear transfer function of the supply
-        """
+        """Description of the nonlinear transfer function of the supply"""
     @property
     def voltage(self) -> _PfActiveSignalFlt1dMany:
         """Voltage at the supply output (Vside1-Vside2)
@@ -8695,8 +8010,7 @@ class _PfActivePfSuppliesMany:
         """
 
 class _PfActiveRectangleStaticItem:
-    """Rectangular description of a 2D object
-    """
+    """Rectangular description of a 2D object"""
 
     @property
     def r(self) -> Path[float]:
@@ -8724,8 +8038,7 @@ class _PfActiveRectangleStaticItem:
         """
 
 class _PfActiveRectangleStaticMany:
-    """Rectangular description of a 2D object
-    """
+    """Rectangular description of a 2D object"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -8753,8 +8066,7 @@ class _PfActiveRectangleStaticMany:
         """
 
 class _PfActiveRz0dStaticItem:
-    """Structure for a single R, Z position (0D, static)
-    """
+    """Structure for a single R, Z position (0D, static)"""
 
     @property
     def r(self) -> Path[float]:
@@ -8770,8 +8082,7 @@ class _PfActiveRz0dStaticItem:
         """
 
 class _PfActiveRz0dStaticMany:
-    """Structure for a single R, Z position (0D, static)
-    """
+    """Structure for a single R, Z position (0D, static)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -8787,8 +8098,7 @@ class _PfActiveRz0dStaticMany:
         """
 
 class _PfActiveRz1dStaticItem:
-    """Structure for list of R, Z positions (1D, constant)
-    """
+    """Structure for list of R, Z positions (1D, constant)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -8804,8 +8114,7 @@ class _PfActiveRz1dStaticItem:
         """
 
 class _PfActiveRz1dStaticMany:
-    """Structure for list of R, Z positions (1D, constant)
-    """
+    """Structure for list of R, Z positions (1D, constant)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -8821,8 +8130,7 @@ class _PfActiveRz1dStaticMany:
         """
 
 class _PfActiveSignalFlt1dItem:
-    """Signal (FLT_1D) with its time base
-    """
+    """Signal (FLT_1D) with its time base"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -8838,8 +8146,7 @@ class _PfActiveSignalFlt1dItem:
         """
 
 class _PfActiveSignalFlt1dMany:
-    """Signal (FLT_1D) with its time base
-    """
+    """Signal (FLT_1D) with its time base"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -8855,13 +8162,11 @@ class _PfActiveSignalFlt1dMany:
         """
 
 class _PfActiveTemperatureReferenceItem:
-    """Structure describing the reference temperature for which static data are given
-    """
+    """Structure describing the reference temperature for which static data are given"""
 
     @property
     def description(self) -> Path[str]:
-        """Description of how the reference temperature is defined : for which object, at which location, ...
-        """
+        """Description of how the reference temperature is defined : for which object, at which location, ..."""
     @property
     def data(self) -> Path[float]:
         """Reference temperature
@@ -8870,13 +8175,11 @@ class _PfActiveTemperatureReferenceItem:
         """
 
 class _PfActiveTemperatureReferenceMany:
-    """Structure describing the reference temperature for which static data are given
-    """
+    """Structure describing the reference temperature for which static data are given"""
 
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description of how the reference temperature is defined : for which object, at which location, ...
-        """
+        """Description of how the reference temperature is defined : for which object, at which location, ..."""
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
         """Reference temperature
@@ -8885,17 +8188,14 @@ class _PfActiveTemperatureReferenceMany:
         """
 
 class _PfActiveThickLineStaticItem:
-    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
-    """
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section"""
 
     @property
     def first_point(self) -> _PfActiveRz0dStaticItem:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _PfActiveRz0dStaticItem:
-        """Position of the second point
-        """
+        """Position of the second point"""
     @property
     def thickness(self) -> Path[float]:
         """Thickness
@@ -8904,17 +8204,14 @@ class _PfActiveThickLineStaticItem:
         """
 
 class _PfActiveThickLineStaticMany:
-    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
-    """
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section"""
 
     @property
     def first_point(self) -> _PfActiveRz0dStaticMany:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _PfActiveRz0dStaticMany:
-        """Position of the second point
-        """
+        """Position of the second point"""
     @property
     def thickness(self) -> Path[npt.NDArray[np.float64]]:
         """Thickness
@@ -8997,29 +8294,23 @@ class _PfActivePfSuppliesArrayFromMany:
 # --------------------------------------------------------------------------
 
 class _PfActivePaths:
-    """Description of the axisymmetric active poloidal field (PF) coils and supplies; includes the limits of these systems; includes the forces on them; does not include non-axisymmetric coil systems
-    """
+    """Description of the axisymmetric active poloidal field (PF) coils and supplies; includes the limits of these systems; includes the forces on them; does not include non-axisymmetric coil systems"""
 
     @property
     def temperature_reference(self) -> _PfActiveTemperatureReferenceItem:
-        """Reference temperature for which the machine description data is given in this IDS
-        """
+        """Reference temperature for which the machine description data is given in this IDS"""
     @property
     def coil(self) -> _PfActivePfCoilsArrayFromItem:
-        """Active PF coils
-        """
+        """Active PF coils"""
     @property
     def force_limits(self) -> _PfActivePfForceLimitsItem:
-        """Description of force limits on the axisymmetric PF coil system
-        """
+        """Description of force limits on the axisymmetric PF coil system"""
     @property
     def circuit(self) -> _PfActivePfCircuitsArrayFromItem:
-        """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system
-        """
+        """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system"""
     @property
     def supply(self) -> _PfActivePfSuppliesArrayFromItem:
-        """PF power supplies
-        """
+        """PF power supplies"""
     @property
     def latency(self) -> Path[float]:
         """Upper bound of the delay between input command received from the RT network and actuator starting to react. Applies globally to the system described by this IDS unless specific latencies (e.g. channel-specific or antenna-specific) are provided at a deeper level in the IDS structure.
@@ -9055,8 +8346,7 @@ class PfPassive:
 # ==========================================================================
 
 class _PfPassiveAnnulusStaticItem:
-    """Annulus description (2D object)
-    """
+    """Annulus description (2D object)"""
 
     @property
     def r(self) -> Path[float]:
@@ -9084,8 +8374,7 @@ class _PfPassiveAnnulusStaticItem:
         """
 
 class _PfPassiveAnnulusStaticMany:
-    """Annulus description (2D object)
-    """
+    """Annulus description (2D object)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9113,8 +8402,7 @@ class _PfPassiveAnnulusStaticMany:
         """
 
 class _PfPassiveArcsOfCircleStaticItem:
-    """Arcs of circle description of a 2D contour
-    """
+    """Arcs of circle description of a 2D contour"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9136,8 +8424,7 @@ class _PfPassiveArcsOfCircleStaticItem:
         """
 
 class _PfPassiveArcsOfCircleStaticMany:
-    """Arcs of circle description of a 2D contour
-    """
+    """Arcs of circle description of a 2D contour"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9159,174 +8446,133 @@ class _PfPassiveArcsOfCircleStaticMany:
         """
 
 class _PfPassiveCodeItem:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _PfPassiveLibraryArrayFromItem:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _PfPassiveCodeMany:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _PfPassiveLibraryArrayFromMany:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _PfPassiveIdentifierStaticItem:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PfPassiveIdentifierStaticMany:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PfPassiveLibraryItem:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _PfPassiveLibraryMany:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _PfPassiveObliqueStaticItem:
-    """Description of a 2D parallelogram
-    """
+    """Description of a 2D parallelogram"""
 
     @property
     def r(self) -> Path[float]:
@@ -9366,8 +8612,7 @@ class _PfPassiveObliqueStaticItem:
         """
 
 class _PfPassiveObliqueStaticMany:
-    """Description of a 2D parallelogram
-    """
+    """Description of a 2D parallelogram"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9407,83 +8652,64 @@ class _PfPassiveObliqueStaticMany:
         """
 
 class _PfPassiveOutline2dGeometryStaticItem:
-    """Description of 2D geometry
-    """
+    """Description of 2D geometry"""
 
     @property
     def geometry_type(self) -> Path[int]:
-        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
-        """
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')"""
     @property
     def outline(self) -> _PfPassiveRz1dStaticItem:
-        """Irregular outline of the element. Repeat the first point since this is a closed contour
-        """
+        """Irregular outline of the element. Repeat the first point since this is a closed contour"""
     @property
     def rectangle(self) -> _PfPassiveRectangleStaticItem:
-        """Rectangular description of the element
-        """
+        """Rectangular description of the element"""
     @property
     def oblique(self) -> _PfPassiveObliqueStaticItem:
-        """Parallelogram description of the element
-        """
+        """Parallelogram description of the element"""
     @property
     def arcs_of_circle(self) -> _PfPassiveArcsOfCircleStaticItem:
-        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
-        """
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle."""
     @property
     def annulus(self) -> _PfPassiveAnnulusStaticItem:
-        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
-        """
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer"""
     @property
     def thick_line(self) -> _PfPassiveThickLineStaticItem:
-        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
-        """
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment"""
 
 class _PfPassiveOutline2dGeometryStaticMany:
-    """Description of 2D geometry
-    """
+    """Description of 2D geometry"""
 
     @property
     def geometry_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
-        """
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')"""
     @property
     def outline(self) -> _PfPassiveRz1dStaticMany:
-        """Irregular outline of the element. Repeat the first point since this is a closed contour
-        """
+        """Irregular outline of the element. Repeat the first point since this is a closed contour"""
     @property
     def rectangle(self) -> _PfPassiveRectangleStaticMany:
-        """Rectangular description of the element
-        """
+        """Rectangular description of the element"""
     @property
     def oblique(self) -> _PfPassiveObliqueStaticMany:
-        """Parallelogram description of the element
-        """
+        """Parallelogram description of the element"""
     @property
     def arcs_of_circle(self) -> _PfPassiveArcsOfCircleStaticMany:
-        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
-        """
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle."""
     @property
     def annulus(self) -> _PfPassiveAnnulusStaticMany:
-        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
-        """
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer"""
     @property
     def thick_line(self) -> _PfPassiveThickLineStaticMany:
-        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
-        """
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment"""
 
 class _PfPassivePfCoilsElementsItem:
-    """Each PF coil is comprised of a number of cross-section elements described  individually
-    """
+    """Each PF coil is comprised of a number of cross-section elements described  individually"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def turns_with_sign(self) -> Path[float]:
         """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
@@ -9498,8 +8724,7 @@ class _PfPassivePfCoilsElementsItem:
         """
     @property
     def geometry(self) -> _PfPassiveOutline2dGeometryStaticItem:
-        """Cross-sectional shape of the element
-        """
+        """Cross-sectional shape of the element"""
     @property
     def current(self) -> Path[npt.NDArray[np.float64]]:
         """The current in this element, on the loop's timebase, `loop(i1)/time`. Only set by `solve_circuit_equations`, which simulates it
@@ -9508,17 +8733,14 @@ class _PfPassivePfCoilsElementsItem:
         """
 
 class _PfPassivePfCoilsElementsMany:
-    """Each PF coil is comprised of a number of cross-section elements described  individually
-    """
+    """Each PF coil is comprised of a number of cross-section elements described  individually"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def turns_with_sign(self) -> Path[npt.NDArray[np.float64]]:
         """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
@@ -9533,8 +8755,7 @@ class _PfPassivePfCoilsElementsMany:
         """
     @property
     def geometry(self) -> _PfPassiveOutline2dGeometryStaticMany:
-        """Cross-sectional shape of the element
-        """
+        """Cross-sectional shape of the element"""
     @property
     def current(self) -> Path[npt.NDArray[np.float64]]:
         """The current in this element, on the loop's timebase, `loop(i1)/time`. Only set by `solve_circuit_equations`, which simulates it
@@ -9543,17 +8764,14 @@ class _PfPassivePfCoilsElementsMany:
         """
 
 class _PfPassiveLoopsItem:
-    """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
-    """
+    """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def resistance(self) -> Path[float]:
         """Passive loop resistance
@@ -9568,12 +8786,10 @@ class _PfPassiveLoopsItem:
         """
     @property
     def element(self) -> _PfPassivePfCoilsElementsArrayFromItem:
-        """Each loop is comprised of a number of cross-section elements described  individually
-        """
+        """Each loop is comprised of a number of cross-section elements described  individually"""
     @property
     def current(self) -> Path[npt.NDArray[np.float64]]:
-        """Passive loop current
-        """
+        """Passive loop current"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes of this loop located at this level of the IDS structure
@@ -9583,17 +8799,16 @@ class _PfPassiveLoopsItem:
     @property
     def current_distribution_type(self) -> _PfPassiveIdentifierStaticItem:
         """How the loop's current is distributed over its elements, which sets its degrees of freedom, `dof`:
-`constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
-`eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes
+        `constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
+        `eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes
         """
     @property
     def dof(self) -> _PfPassiveLoopsDofArrayFromItem:
-        """The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits
-        """
+        """The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits"""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations of the degrees of freedom, one row of `n_dof` coefficients for each regularisation; no rows for none.
-Shape = `(n_regularisations, n_dof)`
+        Shape = `(n_regularisations, n_dof)`
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
@@ -9603,17 +8818,14 @@ Shape = `(n_regularisations, n_dof)`
         """
 
 class _PfPassiveLoopsMany:
-    """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
-    """
+    """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def resistance(self) -> Path[npt.NDArray[np.float64]]:
         """Passive loop resistance
@@ -9628,12 +8840,10 @@ class _PfPassiveLoopsMany:
         """
     @property
     def element(self) -> _PfPassivePfCoilsElementsArrayFromMany:
-        """Each loop is comprised of a number of cross-section elements described  individually
-        """
+        """Each loop is comprised of a number of cross-section elements described  individually"""
     @property
     def current(self) -> Path[npt.NDArray[np.float64]]:
-        """Passive loop current
-        """
+        """Passive loop current"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes of this loop located at this level of the IDS structure
@@ -9643,17 +8853,16 @@ class _PfPassiveLoopsMany:
     @property
     def current_distribution_type(self) -> _PfPassiveIdentifierStaticMany:
         """How the loop's current is distributed over its elements, which sets its degrees of freedom, `dof`:
-`constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
-`eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes
+        `constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
+        `eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes
         """
     @property
     def dof(self) -> _PfPassiveLoopsDofArrayFromMany:
-        """The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits
-        """
+        """The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits"""
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
         """The regularisations of the degrees of freedom, one row of `n_dof` coefficients for each regularisation; no rows for none.
-Shape = `(n_regularisations, n_dof)`
+        Shape = `(n_regularisations, n_dof)`
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
@@ -9663,17 +8872,15 @@ Shape = `(n_regularisations, n_dof)`
         """
 
 class _PfPassiveLoopsDofItem:
-    """Custom (non-IMAS) structure, declared in custom_pf_passive_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_pf_passive_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first
-        """
+        """Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first"""
     @property
     def current_distribution(self) -> Path[npt.NDArray[np.float64]]:
         """The current in each element, in the order of `element`, for a unit amplitude of this degree of freedom.
-For `constant_current_density` it is the element's area, so that the amplitude is the current density
+        For `constant_current_density` it is the element's area, so that the amplitude is the current density
         """
     @property
     def time_constant(self) -> Path[float]:
@@ -9683,17 +8890,15 @@ For `constant_current_density` it is the element's area, so that the amplitude i
         """
 
 class _PfPassiveLoopsDofMany:
-    """Custom (non-IMAS) structure, declared in custom_pf_passive_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_pf_passive_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first
-        """
+        """Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first"""
     @property
     def current_distribution(self) -> Path[npt.NDArray[np.float64]]:
         """The current in each element, in the order of `element`, for a unit amplitude of this degree of freedom.
-For `constant_current_density` it is the element's area, so that the amplitude is the current density
+        For `constant_current_density` it is the element's area, so that the amplitude is the current density
         """
     @property
     def time_constant(self) -> Path[npt.NDArray[np.float64]]:
@@ -9703,8 +8908,7 @@ For `constant_current_density` it is the element's area, so that the amplitude i
         """
 
 class _PfPassiveRectangleStaticItem:
-    """Rectangular description of a 2D object
-    """
+    """Rectangular description of a 2D object"""
 
     @property
     def r(self) -> Path[float]:
@@ -9732,8 +8936,7 @@ class _PfPassiveRectangleStaticItem:
         """
 
 class _PfPassiveRectangleStaticMany:
-    """Rectangular description of a 2D object
-    """
+    """Rectangular description of a 2D object"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9761,8 +8964,7 @@ class _PfPassiveRectangleStaticMany:
         """
 
 class _PfPassiveRz0dStaticItem:
-    """Structure for a single R, Z position (0D, static)
-    """
+    """Structure for a single R, Z position (0D, static)"""
 
     @property
     def r(self) -> Path[float]:
@@ -9778,8 +8980,7 @@ class _PfPassiveRz0dStaticItem:
         """
 
 class _PfPassiveRz0dStaticMany:
-    """Structure for a single R, Z position (0D, static)
-    """
+    """Structure for a single R, Z position (0D, static)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9795,8 +8996,7 @@ class _PfPassiveRz0dStaticMany:
         """
 
 class _PfPassiveRz1dStaticItem:
-    """Structure for list of R, Z positions (1D, constant)
-    """
+    """Structure for list of R, Z positions (1D, constant)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9812,8 +9012,7 @@ class _PfPassiveRz1dStaticItem:
         """
 
 class _PfPassiveRz1dStaticMany:
-    """Structure for list of R, Z positions (1D, constant)
-    """
+    """Structure for list of R, Z positions (1D, constant)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -9829,17 +9028,14 @@ class _PfPassiveRz1dStaticMany:
         """
 
 class _PfPassiveThickLineStaticItem:
-    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
-    """
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section"""
 
     @property
     def first_point(self) -> _PfPassiveRz0dStaticItem:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _PfPassiveRz0dStaticItem:
-        """Position of the second point
-        """
+        """Position of the second point"""
     @property
     def thickness(self) -> Path[float]:
         """Thickness
@@ -9848,17 +9044,14 @@ class _PfPassiveThickLineStaticItem:
         """
 
 class _PfPassiveThickLineStaticMany:
-    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
-    """
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section"""
 
     @property
     def first_point(self) -> _PfPassiveRz0dStaticMany:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _PfPassiveRz0dStaticMany:
-        """Position of the second point
-        """
+        """Position of the second point"""
     @property
     def thickness(self) -> Path[npt.NDArray[np.float64]]:
         """Thickness
@@ -9919,13 +9112,11 @@ class _PfPassiveLoopsDofArrayFromMany:
 # --------------------------------------------------------------------------
 
 class _PfPassivePaths:
-    """Description of the axisymmetric passive conductors, currents flowing in them. Electromagnetic simulations are expected to use only this IDS to describe passive conductors and their specific discretization, not the component-related IDS (e.g. wall) which are used to store e.g. the component machine description
-    """
+    """Description of the axisymmetric passive conductors, currents flowing in them. Electromagnetic simulations are expected to use only this IDS to describe passive conductors and their specific discretization, not the component-related IDS (e.g. wall) which are used to store e.g. the component machine description"""
 
     @property
     def loop(self) -> _PfPassiveLoopsArrayFromItem:
-        """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
-        """
+        """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached."""
     @property
     def code(self) -> _PfPassiveCodeItem: ...
 
@@ -9955,91 +9146,70 @@ class PulseSchedule:
 # ==========================================================================
 
 class _PulseScheduleCodeItem:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _PulseScheduleLibraryArrayFromItem:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _PulseScheduleCodeMany:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _PulseScheduleLibraryArrayFromMany:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _PulseScheduleGasMixtureConstantItem:
-    """Description of a neutral species within a gas mixture (constant)
-    """
+    """Description of a neutral species within a gas mixture (constant)"""
 
     @property
     def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[str]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def fraction(self) -> Path[float]:
         """Relative fraction of this species (in molecules) in the gas mixture
@@ -10048,17 +9218,14 @@ class _PulseScheduleGasMixtureConstantItem:
         """
 
 class _PulseScheduleGasMixtureConstantMany:
-    """Description of a neutral species within a gas mixture (constant)
-    """
+    """Description of a neutral species within a gas mixture (constant)"""
 
     @property
     def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def fraction(self) -> Path[npt.NDArray[np.float64]]:
         """Relative fraction of this species (in molecules) in the gas mixture
@@ -10067,168 +9234,129 @@ class _PulseScheduleGasMixtureConstantMany:
         """
 
 class _PulseScheduleIdentifierItem:
-    """Standard type for identifiers (constant). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (constant). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PulseScheduleIdentifierMany:
-    """Standard type for identifiers (constant). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (constant). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PulseScheduleIdentifierStaticItem:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PulseScheduleIdentifierStaticMany:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _PulseScheduleLibraryItem:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _PulseScheduleLibraryMany:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _PulseScheduleLineOfSight3pointsItem:
-    """Generic description of a line of sight, defined by two points (one way) and an optional third point to indicate the direction of reflection if the second point is e.g. the position of a mirror reflecting the line-of-sight
-    """
+    """Generic description of a line of sight, defined by two points (one way) and an optional third point to indicate the direction of reflection if the second point is e.g. the position of a mirror reflecting the line-of-sight"""
 
     @property
     def first_point(self) -> _PulseScheduleRphiz0dStaticItem:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _PulseScheduleRphiz0dStaticItem:
-        """Position of the second point
-        """
+        """Position of the second point"""
     @property
     def third_point(self) -> _PulseScheduleRphiz0dStaticItem:
-        """Position of the third point
-        """
+        """Position of the third point"""
 
 class _PulseScheduleLineOfSight3pointsMany:
-    """Generic description of a line of sight, defined by two points (one way) and an optional third point to indicate the direction of reflection if the second point is e.g. the position of a mirror reflecting the line-of-sight
-    """
+    """Generic description of a line of sight, defined by two points (one way) and an optional third point to indicate the direction of reflection if the second point is e.g. the position of a mirror reflecting the line-of-sight"""
 
     @property
     def first_point(self) -> _PulseScheduleRphiz0dStaticMany:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _PulseScheduleRphiz0dStaticMany:
-        """Position of the second point
-        """
+        """Position of the second point"""
     @property
     def third_point(self) -> _PulseScheduleRphiz0dStaticMany:
-        """Position of the third point
-        """
+        """Position of the third point"""
 
 class _PulseSchedulePlasmaCompositionNeutralElementConstantItem:
-    """Element entering in the composition of the neutral atom or molecule (constant)
-    """
+    """Element entering in the composition of the neutral atom or molecule (constant)"""
 
     @property
     def a(self) -> Path[float]:
@@ -10244,12 +9372,10 @@ class _PulseSchedulePlasmaCompositionNeutralElementConstantItem:
         """
     @property
     def atoms_n(self) -> Path[int]:
-        """Number of atoms of this element in the molecule
-        """
+        """Number of atoms of this element in the molecule"""
 
 class _PulseSchedulePlasmaCompositionNeutralElementConstantMany:
-    """Element entering in the composition of the neutral atom or molecule (constant)
-    """
+    """Element entering in the composition of the neutral atom or molecule (constant)"""
 
     @property
     def a(self) -> Path[npt.NDArray[np.float64]]:
@@ -10265,17 +9391,14 @@ class _PulseSchedulePlasmaCompositionNeutralElementConstantMany:
         """
     @property
     def atoms_n(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of atoms of this element in the molecule
-        """
+        """Number of atoms of this element in the molecule"""
 
 class _PulseScheduleDensityControlItem:
-    """Gas injection system
-    """
+    """Gas injection system"""
 
     @property
     def valve(self) -> _PulseScheduleDensityControlValveArrayFromItem:
-        """Set of injection valves. Time-dependent
-        """
+        """Set of injection valves. Time-dependent"""
     @property
     def n_e_line(self) -> _PulseScheduleReferenceDensityItem:
         """Line integrated electron density over a line of sight in the whole vacuum chamber
@@ -10296,8 +9419,7 @@ class _PulseScheduleDensityControlItem:
         """
     @property
     def n_e_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsItem:
-        """Description of the line of sight for calculating n_e, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
-        """
+        """Description of the line of sight for calculating n_e, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path"""
     @property
     def n_e_volume_average(self) -> _PulseScheduleReferenceDensityItem:
         """Volume averaged electron density (average over the plasma volume up to the LCFS)
@@ -10312,12 +9434,10 @@ class _PulseScheduleDensityControlItem:
         """
     @property
     def zeff_method(self) -> _PulseScheduleIdentifierStaticItem:
-        """Method for zeff calculation : Index = 1: average over a line of sight in the whole vacuum chamber, 2 : average over a line of sight within the LCFS, 3 : average of a 1D core profile over rho_tor_norm up to the LCFS
-        """
+        """Method for zeff calculation : Index = 1: average over a line of sight in the whole vacuum chamber, 2 : average over a line of sight within the LCFS, 3 : average of a 1D core profile over rho_tor_norm up to the LCFS"""
     @property
     def zeff_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsItem:
-        """Description of the line of sight for calculating zeff, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
-        """
+        """Description of the line of sight for calculating zeff, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path"""
     @property
     def n_t_over_n_d(self) -> _PulseScheduleReferenceDensityItem:
         """Average ratio of tritium over deuterium density
@@ -10332,12 +9452,10 @@ class _PulseScheduleDensityControlItem:
         """
     @property
     def ion(self) -> _PulseScheduleDensityControlIonArrayFromItem:
-        """Quantities related to the different ion species, in the sense of isonuclear or isomolecular sequences
-        """
+        """Quantities related to the different ion species, in the sense of isonuclear or isomolecular sequences"""
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -10346,13 +9464,11 @@ class _PulseScheduleDensityControlItem:
         """
 
 class _PulseScheduleDensityControlMany:
-    """Gas injection system
-    """
+    """Gas injection system"""
 
     @property
     def valve(self) -> _PulseScheduleDensityControlValveArrayFromMany:
-        """Set of injection valves. Time-dependent
-        """
+        """Set of injection valves. Time-dependent"""
     @property
     def n_e_line(self) -> _PulseScheduleReferenceDensityMany:
         """Line integrated electron density over a line of sight in the whole vacuum chamber
@@ -10373,8 +9489,7 @@ class _PulseScheduleDensityControlMany:
         """
     @property
     def n_e_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsMany:
-        """Description of the line of sight for calculating n_e, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
-        """
+        """Description of the line of sight for calculating n_e, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path"""
     @property
     def n_e_volume_average(self) -> _PulseScheduleReferenceDensityMany:
         """Volume averaged electron density (average over the plasma volume up to the LCFS)
@@ -10389,12 +9504,10 @@ class _PulseScheduleDensityControlMany:
         """
     @property
     def zeff_method(self) -> _PulseScheduleIdentifierStaticMany:
-        """Method for zeff calculation : Index = 1: average over a line of sight in the whole vacuum chamber, 2 : average over a line of sight within the LCFS, 3 : average of a 1D core profile over rho_tor_norm up to the LCFS
-        """
+        """Method for zeff calculation : Index = 1: average over a line of sight in the whole vacuum chamber, 2 : average over a line of sight within the LCFS, 3 : average of a 1D core profile over rho_tor_norm up to the LCFS"""
     @property
     def zeff_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsMany:
-        """Description of the line of sight for calculating zeff, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
-        """
+        """Description of the line of sight for calculating zeff, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path"""
     @property
     def n_t_over_n_d(self) -> _PulseScheduleReferenceDensityMany:
         """Average ratio of tritium over deuterium density
@@ -10409,12 +9522,10 @@ class _PulseScheduleDensityControlMany:
         """
     @property
     def ion(self) -> _PulseScheduleDensityControlIonArrayFromMany:
-        """Quantities related to the different ion species, in the sense of isonuclear or isomolecular sequences
-        """
+        """Quantities related to the different ion species, in the sense of isonuclear or isomolecular sequences"""
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -10423,13 +9534,11 @@ class _PulseScheduleDensityControlMany:
         """
 
 class _PulseScheduleDensityControlIonItem:
-    """References for ion species
-    """
+    """References for ion species"""
 
     @property
     def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[float]:
         """Ion charge
@@ -10438,8 +9547,7 @@ class _PulseScheduleDensityControlIonItem:
         """
     @property
     def name(self) -> Path[str]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def n_i_volume_average(self) -> _PulseScheduleReferenceDensityItem:
         """Volume averaged ion density (average over the plasma volume up to the LCFS)
@@ -10448,13 +9556,11 @@ class _PulseScheduleDensityControlIonItem:
         """
 
 class _PulseScheduleDensityControlIonMany:
-    """References for ion species
-    """
+    """References for ion species"""
 
     @property
     def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[npt.NDArray[np.float64]]:
         """Ion charge
@@ -10463,8 +9569,7 @@ class _PulseScheduleDensityControlIonMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def n_i_volume_average(self) -> _PulseScheduleReferenceDensityMany:
         """Volume averaged ion density (average over the plasma volume up to the LCFS)
@@ -10473,17 +9578,14 @@ class _PulseScheduleDensityControlIonMany:
         """
 
 class _PulseScheduleDensityControlValveItem:
-    """Gas injection valve
-    """
+    """Gas injection valve"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def flow_rate(self) -> _PulseScheduleReferenceDensityItem:
         """Flow rate of the valve
@@ -10492,21 +9594,17 @@ class _PulseScheduleDensityControlValveItem:
         """
     @property
     def species(self) -> _PulseScheduleGasMixtureConstantArrayFromItem:
-        """Species injected by the valve (may be more than one in case the valve injects a gas mixture)
-        """
+        """Species injected by the valve (may be more than one in case the valve injects a gas mixture)"""
 
 class _PulseScheduleDensityControlValveMany:
-    """Gas injection valve
-    """
+    """Gas injection valve"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def flow_rate(self) -> _PulseScheduleReferenceDensityMany:
         """Flow rate of the valve
@@ -10515,21 +9613,17 @@ class _PulseScheduleDensityControlValveMany:
         """
     @property
     def species(self) -> _PulseScheduleGasMixtureConstantArrayFromMany:
-        """Species injected by the valve (may be more than one in case the valve injects a gas mixture)
-        """
+        """Species injected by the valve (may be more than one in case the valve injects a gas mixture)"""
 
 class _PulseScheduleEcItem:
-    """Electron cyclotron heating and current drive system
-    """
+    """Electron cyclotron heating and current drive system"""
 
     @property
     def beam(self) -> _PulseScheduleEcBeamArrayFromItem:
-        """Set of Electron Cyclotron beams
-        """
+        """Set of Electron Cyclotron beams"""
     @property
     def mirror(self) -> _PulseScheduleEcMirrorArrayFromItem:
-        """Set of Electron Cyclotron mirrors
-        """
+        """Set of Electron Cyclotron mirrors"""
     @property
     def power_launched(self) -> _PulseScheduleReferenceEcItem:
         """Total EC power launched in the plasma (sum over the beams)
@@ -10538,8 +9632,7 @@ class _PulseScheduleEcItem:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -10548,17 +9641,14 @@ class _PulseScheduleEcItem:
         """
 
 class _PulseScheduleEcMany:
-    """Electron cyclotron heating and current drive system
-    """
+    """Electron cyclotron heating and current drive system"""
 
     @property
     def beam(self) -> _PulseScheduleEcBeamArrayFromMany:
-        """Set of Electron Cyclotron beams
-        """
+        """Set of Electron Cyclotron beams"""
     @property
     def mirror(self) -> _PulseScheduleEcMirrorArrayFromMany:
-        """Set of Electron Cyclotron mirrors
-        """
+        """Set of Electron Cyclotron mirrors"""
     @property
     def power_launched(self) -> _PulseScheduleReferenceEcMany:
         """Total EC power launched in the plasma (sum over the beams)
@@ -10567,8 +9657,7 @@ class _PulseScheduleEcMany:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -10577,17 +9666,14 @@ class _PulseScheduleEcMany:
         """
 
 class _PulseScheduleEcBeamItem:
-    """EC beam
-    """
+    """EC beam"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def power_launched(self) -> _PulseScheduleReferenceEcItem:
         """Beam power launched into the vacuum vessel
@@ -10614,21 +9700,17 @@ class _PulseScheduleEcBeamItem:
         """
     @property
     def polarization(self) -> _PulseScheduleEcBeamPolarizationItem:
-        """Wave polarization
-        """
+        """Wave polarization"""
 
 class _PulseScheduleEcBeamMany:
-    """EC beam
-    """
+    """EC beam"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def power_launched(self) -> _PulseScheduleReferenceEcMany:
         """Beam power launched into the vacuum vessel
@@ -10655,12 +9737,10 @@ class _PulseScheduleEcBeamMany:
         """
     @property
     def polarization(self) -> _PulseScheduleEcBeamPolarizationMany:
-        """Wave polarization
-        """
+        """Wave polarization"""
 
 class _PulseScheduleEcBeamPolarizationItem:
-    """EC beam polarization
-    """
+    """EC beam polarization"""
 
     @property
     def o_mode_fraction(self) -> _PulseScheduleReferenceEcItem:
@@ -10682,8 +9762,7 @@ class _PulseScheduleEcBeamPolarizationItem:
         """
 
 class _PulseScheduleEcBeamPolarizationMany:
-    """EC beam polarization
-    """
+    """EC beam polarization"""
 
     @property
     def o_mode_fraction(self) -> _PulseScheduleReferenceEcMany:
@@ -10705,21 +9784,17 @@ class _PulseScheduleEcBeamPolarizationMany:
         """
 
 class _PulseScheduleEcMirrorItem:
-    """EC mirror
-    """
+    """EC mirror"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “Mirror in upper port 12”
-        """
+        """Description, e.g. “Mirror in upper port 12”"""
     @property
     def movement(self) -> _PulseScheduleEcMirrorMovementArrayFromItem:
-        """Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements.
-        """
+        """Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements."""
     @property
     def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcItem:
         """Normalized toroidal flux coordinate at which the main deposition should occur. For tracking a rational surface use a negative value (for example -1.5 or -2.0)"
@@ -10728,21 +9803,17 @@ class _PulseScheduleEcMirrorItem:
         """
 
 class _PulseScheduleEcMirrorMany:
-    """EC mirror
-    """
+    """EC mirror"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “Mirror in upper port 12”
-        """
+        """Description, e.g. “Mirror in upper port 12”"""
     @property
     def movement(self) -> _PulseScheduleEcMirrorMovementArrayFromMany:
-        """Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements.
-        """
+        """Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements."""
     @property
     def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcMany:
         """Normalized toroidal flux coordinate at which the main deposition should occur. For tracking a rational surface use a negative value (for example -1.5 or -2.0)"
@@ -10751,17 +9822,14 @@ class _PulseScheduleEcMirrorMany:
         """
 
 class _PulseScheduleEcMirrorMovementItem:
-    """EC mirror movements
-    """
+    """EC mirror movements"""
 
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “Core mirror steering”
-        """
+        """Description, e.g. “Core mirror steering”"""
     @property
     def type(self) -> _PulseScheduleIdentifierItem:
-        """Type of movement
-        """
+        """Type of movement"""
     @property
     def translation(self) -> _PulseScheduleReferenceEcItem:
         """Linear displacement from reference position, along the direction vector
@@ -10776,17 +9844,14 @@ class _PulseScheduleEcMirrorMovementItem:
         """
 
 class _PulseScheduleEcMirrorMovementMany:
-    """EC mirror movements
-    """
+    """EC mirror movements"""
 
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “Core mirror steering”
-        """
+        """Description, e.g. “Core mirror steering”"""
     @property
     def type(self) -> _PulseScheduleIdentifierMany:
-        """Type of movement
-        """
+        """Type of movement"""
     @property
     def translation(self) -> _PulseScheduleReferenceEcMany:
         """Linear displacement from reference position, along the direction vector
@@ -10801,17 +9866,14 @@ class _PulseScheduleEcMirrorMovementMany:
         """
 
 class _PulseScheduleEventItem:
-    """Event
-    """
+    """Event"""
 
     @property
     def type(self) -> _PulseScheduleIdentifierItem:
-        """Type of this event
-        """
+        """Type of this event"""
     @property
     def identifier(self) -> Path[str]:
-        """Unique identifier of this event provided by the scheduling / event handler
-        """
+        """Unique identifier of this event provided by the scheduling / event handler"""
     @property
     def time_stamp(self) -> Path[float]:
         """Time stamp of this event
@@ -10826,33 +9888,26 @@ class _PulseScheduleEventItem:
         """
     @property
     def acquisition_strategy(self) -> _PulseScheduleIdentifierItem:
-        """Acquisition strategy related to this event: index = 1 : on-trigger; index = 2 : pre-trigger; index = 3 : post-trigger
-        """
+        """Acquisition strategy related to this event: index = 1 : on-trigger; index = 2 : pre-trigger; index = 3 : post-trigger"""
     @property
     def acquisition_state(self) -> _PulseScheduleIdentifierItem:
-        """Acquisition state of the related system : index = 1 : armed; index = 2 : on; index = 3 : off; index = 4 : closed
-        """
+        """Acquisition state of the related system : index = 1 : armed; index = 2 : on; index = 3 : off; index = 4 : closed"""
     @property
     def provider(self) -> Path[str]:
-        """System having generated this event
-        """
+        """System having generated this event"""
     @property
     def listeners(self) -> Path[list[str]]:
-        """Systems listening to this event
-        """
+        """Systems listening to this event"""
 
 class _PulseScheduleEventMany:
-    """Event
-    """
+    """Event"""
 
     @property
     def type(self) -> _PulseScheduleIdentifierMany:
-        """Type of this event
-        """
+        """Type of this event"""
     @property
     def identifier(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique identifier of this event provided by the scheduling / event handler
-        """
+        """Unique identifier of this event provided by the scheduling / event handler"""
     @property
     def time_stamp(self) -> Path[npt.NDArray[np.float64]]:
         """Time stamp of this event
@@ -10867,24 +9922,19 @@ class _PulseScheduleEventMany:
         """
     @property
     def acquisition_strategy(self) -> _PulseScheduleIdentifierMany:
-        """Acquisition strategy related to this event: index = 1 : on-trigger; index = 2 : pre-trigger; index = 3 : post-trigger
-        """
+        """Acquisition strategy related to this event: index = 1 : on-trigger; index = 2 : pre-trigger; index = 3 : post-trigger"""
     @property
     def acquisition_state(self) -> _PulseScheduleIdentifierMany:
-        """Acquisition state of the related system : index = 1 : armed; index = 2 : on; index = 3 : off; index = 4 : closed
-        """
+        """Acquisition state of the related system : index = 1 : armed; index = 2 : on; index = 3 : off; index = 4 : closed"""
     @property
     def provider(self) -> Path[npt.NDArray[np.str_]]:
-        """System having generated this event
-        """
+        """System having generated this event"""
     @property
     def listeners(self) -> Path[npt.NDArray[np.str_]]:
-        """Systems listening to this event
-        """
+        """Systems listening to this event"""
 
 class _PulseScheduleFluxControlItem:
-    """Flux control references
-    """
+    """Flux control references"""
 
     @property
     def ip(self) -> _PulseScheduleReferenceNoAosItem:
@@ -10912,8 +9962,7 @@ class _PulseScheduleFluxControlItem:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -10922,8 +9971,7 @@ class _PulseScheduleFluxControlItem:
         """
 
 class _PulseScheduleFluxControlMany:
-    """Flux control references
-    """
+    """Flux control references"""
 
     @property
     def ip(self) -> _PulseScheduleReferenceNoAosMany:
@@ -10951,8 +9999,7 @@ class _PulseScheduleFluxControlMany:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -10961,17 +10008,14 @@ class _PulseScheduleFluxControlMany:
         """
 
 class _PulseScheduleGapItem:
-    """Gap for describing the plasma boundary
-    """
+    """Gap for describing the plasma boundary"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def r(self) -> Path[float]:
         """Major radius of the reference point
@@ -10998,17 +10042,14 @@ class _PulseScheduleGapItem:
         """
 
 class _PulseScheduleGapMany:
-    """Gap for describing the plasma boundary
-    """
+    """Gap for describing the plasma boundary"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of the reference point
@@ -11035,13 +10076,11 @@ class _PulseScheduleGapMany:
         """
 
 class _PulseScheduleIcItem:
-    """Ion cyclotron heating and current drive system
-    """
+    """Ion cyclotron heating and current drive system"""
 
     @property
     def antenna(self) -> _PulseScheduleIcAntennaArrayFromItem:
-        """Set of ICRH antennas
-        """
+        """Set of ICRH antennas"""
     @property
     def power(self) -> _PulseScheduleReferenceIcItem:
         """Total IC power (sum over the antennas)
@@ -11050,8 +10089,7 @@ class _PulseScheduleIcItem:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11060,13 +10098,11 @@ class _PulseScheduleIcItem:
         """
 
 class _PulseScheduleIcMany:
-    """Ion cyclotron heating and current drive system
-    """
+    """Ion cyclotron heating and current drive system"""
 
     @property
     def antenna(self) -> _PulseScheduleIcAntennaArrayFromMany:
-        """Set of ICRH antennas
-        """
+        """Set of ICRH antennas"""
     @property
     def power(self) -> _PulseScheduleReferenceIcMany:
         """Total IC power (sum over the antennas)
@@ -11075,8 +10111,7 @@ class _PulseScheduleIcMany:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11085,21 +10120,17 @@ class _PulseScheduleIcMany:
         """
 
 class _PulseScheduleIcAntennaItem:
-    """IC antenna
-    """
+    """IC antenna"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def power_type(self) -> _PulseScheduleIdentifierStaticItem:
-        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the ic_antennas  IDS)
-        """
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the ic_antennas  IDS)"""
     @property
     def power(self) -> _PulseScheduleReferenceIcItem:
         """Power
@@ -11120,21 +10151,17 @@ class _PulseScheduleIcAntennaItem:
         """
 
 class _PulseScheduleIcAntennaMany:
-    """IC antenna
-    """
+    """IC antenna"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def power_type(self) -> _PulseScheduleIdentifierStaticMany:
-        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the ic_antennas  IDS)
-        """
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the ic_antennas  IDS)"""
     @property
     def power(self) -> _PulseScheduleReferenceIcMany:
         """Power
@@ -11155,13 +10182,11 @@ class _PulseScheduleIcAntennaMany:
         """
 
 class _PulseScheduleLhItem:
-    """Lower hybrid heating and current drive system
-    """
+    """Lower hybrid heating and current drive system"""
 
     @property
     def antenna(self) -> _PulseScheduleLhAntennaArrayFromItem:
-        """Set of LH antennas
-        """
+        """Set of LH antennas"""
     @property
     def power(self) -> _PulseScheduleReferenceLhItem:
         """Total LH power (sum over the antennas)
@@ -11170,8 +10195,7 @@ class _PulseScheduleLhItem:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11180,13 +10204,11 @@ class _PulseScheduleLhItem:
         """
 
 class _PulseScheduleLhMany:
-    """Lower hybrid heating and current drive system
-    """
+    """Lower hybrid heating and current drive system"""
 
     @property
     def antenna(self) -> _PulseScheduleLhAntennaArrayFromMany:
-        """Set of LH antennas
-        """
+        """Set of LH antennas"""
     @property
     def power(self) -> _PulseScheduleReferenceLhMany:
         """Total LH power (sum over the antennas)
@@ -11195,8 +10217,7 @@ class _PulseScheduleLhMany:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11205,17 +10226,14 @@ class _PulseScheduleLhMany:
         """
 
 class _PulseScheduleLhAntennaItem:
-    """LH antenna
-    """
+    """LH antenna"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def power_type(self) -> _PulseScheduleIdentifierStaticItem:
-        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the lh_antennas  IDS)
-        """
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the lh_antennas  IDS)"""
     @property
     def power(self) -> _PulseScheduleReferenceLhItem:
         """Power
@@ -11242,21 +10260,17 @@ class _PulseScheduleLhAntennaItem:
         """
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
 
 class _PulseScheduleLhAntennaMany:
-    """LH antenna
-    """
+    """LH antenna"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def power_type(self) -> _PulseScheduleIdentifierStaticMany:
-        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the lh_antennas  IDS)
-        """
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the lh_antennas  IDS)"""
     @property
     def power(self) -> _PulseScheduleReferenceLhMany:
         """Power
@@ -11283,17 +10297,14 @@ class _PulseScheduleLhAntennaMany:
         """
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
 
 class _PulseScheduleNbiItem:
-    """Neutral beam heating and current drive system
-    """
+    """Neutral beam heating and current drive system"""
 
     @property
     def unit(self) -> _PulseScheduleNbiUnitArrayFromItem:
-        """Set of NBI units
-        """
+        """Set of NBI units"""
     @property
     def power(self) -> _PulseScheduleReferenceNbiItem:
         """Total NBI power (sum over the units)
@@ -11302,8 +10313,7 @@ class _PulseScheduleNbiItem:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11312,13 +10322,11 @@ class _PulseScheduleNbiItem:
         """
 
 class _PulseScheduleNbiMany:
-    """Neutral beam heating and current drive system
-    """
+    """Neutral beam heating and current drive system"""
 
     @property
     def unit(self) -> _PulseScheduleNbiUnitArrayFromMany:
-        """Set of NBI units
-        """
+        """Set of NBI units"""
     @property
     def power(self) -> _PulseScheduleReferenceNbiMany:
         """Total NBI power (sum over the units)
@@ -11327,8 +10335,7 @@ class _PulseScheduleNbiMany:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11337,21 +10344,17 @@ class _PulseScheduleNbiMany:
         """
 
 class _PulseScheduleNbiUnitItem:
-    """NBI unit
-    """
+    """NBI unit"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def species(self) -> _PulseScheduleGasMixtureConstantArrayFromItem:
-        """Species injected by the NBI unit (may be more than one in case the unit injects a gas mixture)
-        """
+        """Species injected by the NBI unit (may be more than one in case the unit injects a gas mixture)"""
     @property
     def power(self) -> _PulseScheduleReferenceNbiItem:
         """Power launched from this unit into the vacuum vessel
@@ -11366,21 +10369,17 @@ class _PulseScheduleNbiUnitItem:
         """
 
 class _PulseScheduleNbiUnitMany:
-    """NBI unit
-    """
+    """NBI unit"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def species(self) -> _PulseScheduleGasMixtureConstantArrayFromMany:
-        """Species injected by the NBI unit (may be more than one in case the unit injects a gas mixture)
-        """
+        """Species injected by the NBI unit (may be more than one in case the unit injects a gas mixture)"""
     @property
     def power(self) -> _PulseScheduleReferenceNbiMany:
         """Power launched from this unit into the vacuum vessel
@@ -11395,8 +10394,7 @@ class _PulseScheduleNbiUnitMany:
         """
 
 class _PulseScheduleOutlineItem:
-    """RZ outline
-    """
+    """RZ outline"""
 
     @property
     def r(self) -> _PulseScheduleReferencePositionItem:
@@ -11412,8 +10410,7 @@ class _PulseScheduleOutlineItem:
         """
 
 class _PulseScheduleOutlineMany:
-    """RZ outline
-    """
+    """RZ outline"""
 
     @property
     def r(self) -> _PulseScheduleReferencePositionMany:
@@ -11429,21 +10426,17 @@ class _PulseScheduleOutlineMany:
         """
 
 class _PulseSchedulePfActiveItem:
-    """PF coils references
-    """
+    """PF coils references"""
 
     @property
     def coil(self) -> _PulseSchedulePfActiveCoilArrayFromItem:
-        """Set of poloidal field coils
-        """
+        """Set of poloidal field coils"""
     @property
     def supply(self) -> _PulseSchedulePfActiveSupplyArrayFromItem:
-        """Set of PF power supplies
-        """
+        """Set of PF power supplies"""
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11452,21 +10445,17 @@ class _PulseSchedulePfActiveItem:
         """
 
 class _PulseSchedulePfActiveMany:
-    """PF coils references
-    """
+    """PF coils references"""
 
     @property
     def coil(self) -> _PulseSchedulePfActiveCoilArrayFromMany:
-        """Set of poloidal field coils
-        """
+        """Set of poloidal field coils"""
     @property
     def supply(self) -> _PulseSchedulePfActiveSupplyArrayFromMany:
-        """Set of PF power supplies
-        """
+        """Set of PF power supplies"""
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11475,17 +10464,14 @@ class _PulseSchedulePfActiveMany:
         """
 
 class _PulseSchedulePfActiveCoilItem:
-    """PF coil
-    """
+    """PF coil"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def current(self) -> _PulseScheduleReferencePfActiveItem:
         """Reference waveform of current to be fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
@@ -11500,17 +10486,14 @@ class _PulseSchedulePfActiveCoilItem:
         """
 
 class _PulseSchedulePfActiveCoilMany:
-    """PF coil
-    """
+    """PF coil"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def current(self) -> _PulseScheduleReferencePfActiveMany:
         """Reference waveform of current to be fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
@@ -11525,17 +10508,14 @@ class _PulseSchedulePfActiveCoilMany:
         """
 
 class _PulseSchedulePfActiveSupplyItem:
-    """PF supply
-    """
+    """PF supply"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def voltage(self) -> _PulseScheduleReferencePfActiveItem:
         """Voltage at the supply output (Vside1-Vside2)
@@ -11550,17 +10530,14 @@ class _PulseSchedulePfActiveSupplyItem:
         """
 
 class _PulseSchedulePfActiveSupplyMany:
-    """PF supply
-    """
+    """PF supply"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def voltage(self) -> _PulseScheduleReferencePfActiveMany:
         """Voltage at the supply output (Vside1-Vside2)
@@ -11575,17 +10552,14 @@ class _PulseSchedulePfActiveSupplyMany:
         """
 
 class _PulseSchedulePositionItem:
-    """Position control references
-    """
+    """Position control references"""
 
     @property
     def magnetic_axis(self) -> _PulseScheduleRzItem:
-        """Magnetic axis position
-        """
+        """Magnetic axis position"""
     @property
     def geometric_axis(self) -> _PulseScheduleRzItem:
-        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)
-        """
+        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)"""
     @property
     def minor_radius(self) -> _PulseScheduleReferencePositionItem:
         """Minor radius of the plasma boundary (defined as (Rmax-Rmin) / 2 of the boundary)
@@ -11672,20 +10646,16 @@ class _PulseSchedulePositionItem:
         """
     @property
     def x_point(self) -> _PulseScheduleRzArrayFromItem:
-        """Array of X-points, for each of them the RZ position is given
-        """
+        """Array of X-points, for each of them the RZ position is given"""
     @property
     def strike_point(self) -> _PulseScheduleRzArrayFromItem:
-        """Array of strike points, for each of them the RZ position is given
-        """
+        """Array of strike points, for each of them the RZ position is given"""
     @property
     def active_limiter_point(self) -> _PulseScheduleRzItem:
-        """RZ position of the active limiter point (point of the plasma boundary in contact with the limiter)
-        """
+        """RZ position of the active limiter point (point of the plasma boundary in contact with the limiter)"""
     @property
     def boundary_outline(self) -> _PulseScheduleOutlineArrayFromItem:
-        """Set of (R,Z) points defining the outline of the plasma boundary
-        """
+        """Set of (R,Z) points defining the outline of the plasma boundary"""
     @property
     def z_r_max(self) -> _PulseScheduleReferencePositionItem:
         """Height of the separatrix point of maximum major radius
@@ -11700,16 +10670,13 @@ class _PulseSchedulePositionItem:
         """
     @property
     def gap(self) -> _PulseScheduleGapArrayFromItem:
-        """Set of gaps, defined by a reference point and a direction.
-        """
+        """Set of gaps, defined by a reference point and a direction."""
     @property
     def current_centroid(self) -> _PulseScheduleRzItem:
-        """RZ position of the current centroid
-        """
+        """RZ position of the current centroid"""
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11718,17 +10685,14 @@ class _PulseSchedulePositionItem:
         """
 
 class _PulseSchedulePositionMany:
-    """Position control references
-    """
+    """Position control references"""
 
     @property
     def magnetic_axis(self) -> _PulseScheduleRzMany:
-        """Magnetic axis position
-        """
+        """Magnetic axis position"""
     @property
     def geometric_axis(self) -> _PulseScheduleRzMany:
-        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)
-        """
+        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)"""
     @property
     def minor_radius(self) -> _PulseScheduleReferencePositionMany:
         """Minor radius of the plasma boundary (defined as (Rmax-Rmin) / 2 of the boundary)
@@ -11815,20 +10779,16 @@ class _PulseSchedulePositionMany:
         """
     @property
     def x_point(self) -> _PulseScheduleRzArrayFromMany:
-        """Array of X-points, for each of them the RZ position is given
-        """
+        """Array of X-points, for each of them the RZ position is given"""
     @property
     def strike_point(self) -> _PulseScheduleRzArrayFromMany:
-        """Array of strike points, for each of them the RZ position is given
-        """
+        """Array of strike points, for each of them the RZ position is given"""
     @property
     def active_limiter_point(self) -> _PulseScheduleRzMany:
-        """RZ position of the active limiter point (point of the plasma boundary in contact with the limiter)
-        """
+        """RZ position of the active limiter point (point of the plasma boundary in contact with the limiter)"""
     @property
     def boundary_outline(self) -> _PulseScheduleOutlineArrayFromMany:
-        """Set of (R,Z) points defining the outline of the plasma boundary
-        """
+        """Set of (R,Z) points defining the outline of the plasma boundary"""
     @property
     def z_r_max(self) -> _PulseScheduleReferencePositionMany:
         """Height of the separatrix point of maximum major radius
@@ -11843,16 +10803,13 @@ class _PulseSchedulePositionMany:
         """
     @property
     def gap(self) -> _PulseScheduleGapArrayFromMany:
-        """Set of gaps, defined by a reference point and a direction.
-        """
+        """Set of gaps, defined by a reference point and a direction."""
     @property
     def current_centroid(self) -> _PulseScheduleRzMany:
-        """RZ position of the current centroid
-        """
+        """RZ position of the current centroid"""
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -11861,13 +10818,11 @@ class _PulseSchedulePositionMany:
         """
 
 class _PulseScheduleReferenceDensityItem:
-    """Pulse schedule reference for the density_control structure
-    """
+    """Pulse schedule reference for the density_control structure"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -11876,21 +10831,17 @@ class _PulseScheduleReferenceDensityItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceDensityMany:
-    """Pulse schedule reference for the density_control structure
-    """
+    """Pulse schedule reference for the density_control structure"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -11899,21 +10850,17 @@ class _PulseScheduleReferenceDensityMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceEcItem:
-    """Pulse schedule reference for the ec structure
-    """
+    """Pulse schedule reference for the ec structure"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -11922,21 +10869,17 @@ class _PulseScheduleReferenceEcItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceEcMany:
-    """Pulse schedule reference for the ec structure
-    """
+    """Pulse schedule reference for the ec structure"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -11945,21 +10888,17 @@ class _PulseScheduleReferenceEcMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceIcItem:
-    """Pulse schedule reference for the ic structure
-    """
+    """Pulse schedule reference for the ic structure"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -11968,21 +10907,17 @@ class _PulseScheduleReferenceIcItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceIcMany:
-    """Pulse schedule reference for the ic structure
-    """
+    """Pulse schedule reference for the ic structure"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -11991,21 +10926,17 @@ class _PulseScheduleReferenceIcMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceLhItem:
-    """Pulse schedule reference for the lh structure
-    """
+    """Pulse schedule reference for the lh structure"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12014,21 +10945,17 @@ class _PulseScheduleReferenceLhItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceLhMany:
-    """Pulse schedule reference for the lh structure
-    """
+    """Pulse schedule reference for the lh structure"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12037,21 +10964,17 @@ class _PulseScheduleReferenceLhMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceNbiItem:
-    """Pulse schedule reference for the nbi structure
-    """
+    """Pulse schedule reference for the nbi structure"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12060,21 +10983,17 @@ class _PulseScheduleReferenceNbiItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceNbiMany:
-    """Pulse schedule reference for the nbi structure
-    """
+    """Pulse schedule reference for the nbi structure"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12083,21 +11002,17 @@ class _PulseScheduleReferenceNbiMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceNoAosItem:
-    """Pulse schedule reference with relative path to common time not traversing an AoS
-    """
+    """Pulse schedule reference with relative path to common time not traversing an AoS"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12106,21 +11021,17 @@ class _PulseScheduleReferenceNoAosItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferenceNoAosMany:
-    """Pulse schedule reference with relative path to common time not traversing an AoS
-    """
+    """Pulse schedule reference with relative path to common time not traversing an AoS"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12129,21 +11040,17 @@ class _PulseScheduleReferenceNoAosMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferencePfActiveItem:
-    """Pulse schedule reference for the pf_active structure
-    """
+    """Pulse schedule reference for the pf_active structure"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12152,21 +11059,17 @@ class _PulseScheduleReferencePfActiveItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferencePfActiveMany:
-    """Pulse schedule reference for the pf_active structure
-    """
+    """Pulse schedule reference for the pf_active structure"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12175,21 +11078,17 @@ class _PulseScheduleReferencePfActiveMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferencePositionItem:
-    """Pulse schedule reference for the position_control structure
-    """
+    """Pulse schedule reference for the position_control structure"""
 
     @property
     def reference_name(self) -> Path[str]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12198,21 +11097,17 @@ class _PulseScheduleReferencePositionItem:
         """
     @property
     def reference_type(self) -> Path[int]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[int]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleReferencePositionMany:
-    """Pulse schedule reference for the position_control structure
-    """
+    """Pulse schedule reference for the position_control structure"""
 
     @property
     def reference_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Reference name (e.g. in the native pulse schedule system of the device)
-        """
+        """Reference name (e.g. in the native pulse schedule system of the device)"""
     @property
     def reference(self) -> Path[npt.NDArray[np.float64]]:
         """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
@@ -12221,16 +11116,13 @@ class _PulseScheduleReferencePositionMany:
         """
     @property
     def reference_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
-        """
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node"""
     @property
     def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
-        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
-        """
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data"""
 
 class _PulseScheduleRzItem:
-    """R,Z position
-    """
+    """R,Z position"""
 
     @property
     def r(self) -> _PulseScheduleReferencePositionItem:
@@ -12246,8 +11138,7 @@ class _PulseScheduleRzItem:
         """
 
 class _PulseScheduleRzMany:
-    """R,Z position
-    """
+    """R,Z position"""
 
     @property
     def r(self) -> _PulseScheduleReferencePositionMany:
@@ -12263,8 +11154,7 @@ class _PulseScheduleRzMany:
         """
 
 class _PulseScheduleTfItem:
-    """Toroidal field references
-    """
+    """Toroidal field references"""
 
     @property
     def b_field_tor_vacuum_r(self) -> _PulseScheduleReferenceNoAosItem:
@@ -12274,8 +11164,7 @@ class _PulseScheduleTfItem:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -12284,8 +11173,7 @@ class _PulseScheduleTfItem:
         """
 
 class _PulseScheduleTfMany:
-    """Toroidal field references
-    """
+    """Toroidal field references"""
 
     @property
     def b_field_tor_vacuum_r(self) -> _PulseScheduleReferenceNoAosMany:
@@ -12295,8 +11183,7 @@ class _PulseScheduleTfMany:
         """
     @property
     def mode(self) -> Path[npt.NDArray[np.int32]]:
-        """Control mode (operation mode and/or settings used by the controller)
-        """
+        """Control mode (operation mode and/or settings used by the controller)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes located at this level of the IDS structure and below
@@ -12305,8 +11192,7 @@ class _PulseScheduleTfMany:
         """
 
 class _PulseScheduleRphiz0dStaticItem:
-    """Structure for R, Z, Phi positions (0D, static)
-    """
+    """Structure for R, Z, Phi positions (0D, static)"""
 
     @property
     def r(self) -> Path[float]:
@@ -12328,8 +11214,7 @@ class _PulseScheduleRphiz0dStaticItem:
         """
 
 class _PulseScheduleRphiz0dStaticMany:
-    """Structure for R, Z, Phi positions (0D, static)
-    """
+    """Structure for R, Z, Phi positions (0D, static)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -12546,49 +11431,38 @@ class _PulseScheduleRzArrayFromMany:
 # --------------------------------------------------------------------------
 
 class _PulseSchedulePaths:
-    """Description of Pulse Schedule, described by subsystems waveform references and an enveloppe around them. The controllers, pulse schedule and SDN are defined in separate IDSs. All names and identifiers of subsystems appearing in the pulse_schedule must be identical to those used in the IDSs describing the related subsystems.
-    """
+    """Description of Pulse Schedule, described by subsystems waveform references and an enveloppe around them. The controllers, pulse schedule and SDN are defined in separate IDSs. All names and identifiers of subsystems appearing in the pulse_schedule must be identical to those used in the IDSs describing the related subsystems."""
 
     @property
     def ic(self) -> _PulseScheduleIcItem:
-        """Ion cyclotron heating and current drive system
-        """
+        """Ion cyclotron heating and current drive system"""
     @property
     def ec(self) -> _PulseScheduleEcItem:
-        """Electron cyclotron heating and current drive system
-        """
+        """Electron cyclotron heating and current drive system"""
     @property
     def lh(self) -> _PulseScheduleLhItem:
-        """Lower Hybrid heating and current drive system
-        """
+        """Lower Hybrid heating and current drive system"""
     @property
     def nbi(self) -> _PulseScheduleNbiItem:
-        """Neutral beam heating and current drive system
-        """
+        """Neutral beam heating and current drive system"""
     @property
     def density_control(self) -> _PulseScheduleDensityControlItem:
-        """Gas injection system and density control references
-        """
+        """Gas injection system and density control references"""
     @property
     def event(self) -> _PulseScheduleEventArrayFromItem:
-        """List of events, either predefined triggers  or events recorded during the pulse
-        """
+        """List of events, either predefined triggers  or events recorded during the pulse"""
     @property
     def flux_control(self) -> _PulseScheduleFluxControlItem:
-        """Magnetic flux control references
-        """
+        """Magnetic flux control references"""
     @property
     def pf_active(self) -> _PulseSchedulePfActiveItem:
-        """Poloidal field coil references
-        """
+        """Poloidal field coil references"""
     @property
     def position_control(self) -> _PulseSchedulePositionItem:
-        """Plasma position and shape control references
-        """
+        """Plasma position and shape control references"""
     @property
     def tf(self) -> _PulseScheduleTfItem:
-        """Toroidal field references
-        """
+        """Toroidal field references"""
     @property
     def code(self) -> _PulseScheduleCodeItem: ...
 
@@ -12618,95 +11492,73 @@ class Tf:
 # ==========================================================================
 
 class _TfCodeItem:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _TfLibraryArrayFromItem:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _TfCodeMany:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _TfLibraryArrayFromMany:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _TfCoilItem:
-    """Description of a given coil
-    """
+    """Description of a given coil"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “Coil between sector 1 and 2”
-        """
+        """Description, e.g. “Coil between sector 1 and 2”"""
     @property
     def conductor(self) -> _TfCoilConductorArrayFromItem:
-        """Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current.
-        """
+        """Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current."""
     @property
     def turns(self) -> Path[float]:
         """Number of total turns in the coil. May be a fraction when describing the coil connections.
@@ -12739,21 +11591,17 @@ class _TfCoilItem:
         """
 
 class _TfCoilMany:
-    """Description of a given coil
-    """
+    """Description of a given coil"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “Coil between sector 1 and 2”
-        """
+        """Description, e.g. “Coil between sector 1 and 2”"""
     @property
     def conductor(self) -> _TfCoilConductorArrayFromMany:
-        """Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current.
-        """
+        """Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current."""
     @property
     def turns(self) -> Path[npt.NDArray[np.float64]]:
         """Number of total turns in the coil. May be a fraction when describing the coil connections.
@@ -12786,17 +11634,14 @@ class _TfCoilMany:
         """
 
 class _TfCoilConductorItem:
-    """Description of a conductor
-    """
+    """Description of a conductor"""
 
     @property
     def elements(self) -> _TfCoilConductorElementsItem:
-        """Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the conductor centre. We define a coordinate system associated to each element as follows: for the arc and circle elements: binormal = (start point - center) x (intermediate point - center). This vector points in the direction of the circle / arc axis. normal = (center - point on curve). The normal vector will rotate as the point moves around the curve. Tangent = normal x binormal. For the line element we require an extra point, using the currently redundant intermediate point to define the line element's normal axis. The local coordinates for the line element then become: tangent = end point - start point; normal = intermediate point - start point; binormal = tangent x normal. It is assumed that all the axes above are normalized such that they have a unit length.
-        """
+        """Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the conductor centre. We define a coordinate system associated to each element as follows: for the arc and circle elements: binormal = (start point - center) x (intermediate point - center). This vector points in the direction of the circle / arc axis. normal = (center - point on curve). The normal vector will rotate as the point moves around the curve. Tangent = normal x binormal. For the line element we require an extra point, using the currently redundant intermediate point to define the line element's normal axis. The local coordinates for the line element then become: tangent = end point - start point; normal = intermediate point - start point; binormal = tangent x normal. It is assumed that all the axes above are normalized such that they have a unit length."""
     @property
     def cross_section(self) -> _TfCoilCrossSectionArrayFromItem:
-        """The cross-section perpendicular to the conductor contour is described by a series of contour points, given by their relative position with respect to the start point of each element. If the size of this array of structure is equal to 1, then the cross-section is given only for the first element and translated along the conductor elements. Otherwise, it's given explictly for each element, allowing to describe changes of the cross section shape
-        """
+        """The cross-section perpendicular to the conductor contour is described by a series of contour points, given by their relative position with respect to the start point of each element. If the size of this array of structure is equal to 1, then the cross-section is given only for the first element and translated along the conductor elements. Otherwise, it's given explictly for each element, allowing to describe changes of the cross section shape"""
     @property
     def resistance(self) -> Path[float]:
         """conductor resistance
@@ -12811,17 +11656,14 @@ class _TfCoilConductorItem:
         """
 
 class _TfCoilConductorMany:
-    """Description of a conductor
-    """
+    """Description of a conductor"""
 
     @property
     def elements(self) -> _TfCoilConductorElementsMany:
-        """Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the conductor centre. We define a coordinate system associated to each element as follows: for the arc and circle elements: binormal = (start point - center) x (intermediate point - center). This vector points in the direction of the circle / arc axis. normal = (center - point on curve). The normal vector will rotate as the point moves around the curve. Tangent = normal x binormal. For the line element we require an extra point, using the currently redundant intermediate point to define the line element's normal axis. The local coordinates for the line element then become: tangent = end point - start point; normal = intermediate point - start point; binormal = tangent x normal. It is assumed that all the axes above are normalized such that they have a unit length.
-        """
+        """Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the conductor centre. We define a coordinate system associated to each element as follows: for the arc and circle elements: binormal = (start point - center) x (intermediate point - center). This vector points in the direction of the circle / arc axis. normal = (center - point on curve). The normal vector will rotate as the point moves around the curve. Tangent = normal x binormal. For the line element we require an extra point, using the currently redundant intermediate point to define the line element's normal axis. The local coordinates for the line element then become: tangent = end point - start point; normal = intermediate point - start point; binormal = tangent x normal. It is assumed that all the axes above are normalized such that they have a unit length."""
     @property
     def cross_section(self) -> _TfCoilCrossSectionArrayFromMany:
-        """The cross-section perpendicular to the conductor contour is described by a series of contour points, given by their relative position with respect to the start point of each element. If the size of this array of structure is equal to 1, then the cross-section is given only for the first element and translated along the conductor elements. Otherwise, it's given explictly for each element, allowing to describe changes of the cross section shape
-        """
+        """The cross-section perpendicular to the conductor contour is described by a series of contour points, given by their relative position with respect to the start point of each element. If the size of this array of structure is equal to 1, then the cross-section is given only for the first element and translated along the conductor elements. Otherwise, it's given explictly for each element, allowing to describe changes of the cross section shape"""
     @property
     def resistance(self) -> Path[npt.NDArray[np.float64]]:
         """conductor resistance
@@ -12836,63 +11678,49 @@ class _TfCoilConductorMany:
         """
 
 class _TfCoilConductorElementsItem:
-    """Elements descibring the conductor contour
-    """
+    """Elements descibring the conductor contour"""
 
     @property
     def types(self) -> Path[npt.NDArray[np.int32]]:
-        """Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle
-        """
+        """Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle"""
     @property
     def start_points(self) -> _TfCoilNaRphiz1dStaticItem:
-        """Position of the start point of every element
-        """
+        """Position of the start point of every element"""
     @property
     def intermediate_points(self) -> _TfCoilNaRphiz1dStaticItem:
-        """Position of an intermediate point along the circle or arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). In the case of a line segment (../types/index=1), fill this node with a point such that the vector intermediate_point - start_point defines the direction of the element's normal axis (see documentation of ../elements)
-        """
+        """Position of an intermediate point along the circle or arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). In the case of a line segment (../types/index=1), fill this node with a point such that the vector intermediate_point - start_point defines the direction of the element's normal axis (see documentation of ../elements)"""
     @property
     def end_points(self) -> _TfCoilNaRphiz1dStaticItem:
-        """Position of the end point of every element. Meaningful only if type/index = 1 or 2, fill with default/empty value otherwise
-        """
+        """Position of the end point of every element. Meaningful only if type/index = 1 or 2, fill with default/empty value otherwise"""
     @property
     def centres(self) -> _TfCoilNaRphiz1dStaticItem:
-        """Position of the centre of the arc of a circle of every element (meaningful only if type/index = 2 or 3, fill with default/empty value otherwise)
-        """
+        """Position of the centre of the arc of a circle of every element (meaningful only if type/index = 2 or 3, fill with default/empty value otherwise)"""
 
 class _TfCoilConductorElementsMany:
-    """Elements descibring the conductor contour
-    """
+    """Elements descibring the conductor contour"""
 
     @property
     def types(self) -> Path[npt.NDArray[np.int32]]:
-        """Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle
-        """
+        """Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle"""
     @property
     def start_points(self) -> _TfCoilNaRphiz1dStaticMany:
-        """Position of the start point of every element
-        """
+        """Position of the start point of every element"""
     @property
     def intermediate_points(self) -> _TfCoilNaRphiz1dStaticMany:
-        """Position of an intermediate point along the circle or arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). In the case of a line segment (../types/index=1), fill this node with a point such that the vector intermediate_point - start_point defines the direction of the element's normal axis (see documentation of ../elements)
-        """
+        """Position of an intermediate point along the circle or arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). In the case of a line segment (../types/index=1), fill this node with a point such that the vector intermediate_point - start_point defines the direction of the element's normal axis (see documentation of ../elements)"""
     @property
     def end_points(self) -> _TfCoilNaRphiz1dStaticMany:
-        """Position of the end point of every element. Meaningful only if type/index = 1 or 2, fill with default/empty value otherwise
-        """
+        """Position of the end point of every element. Meaningful only if type/index = 1 or 2, fill with default/empty value otherwise"""
     @property
     def centres(self) -> _TfCoilNaRphiz1dStaticMany:
-        """Position of the centre of the arc of a circle of every element (meaningful only if type/index = 2 or 3, fill with default/empty value otherwise)
-        """
+        """Position of the centre of the arc of a circle of every element (meaningful only if type/index = 2 or 3, fill with default/empty value otherwise)"""
 
 class _TfCoilCrossSectionItem:
-    """Coil cross-section
-    """
+    """Coil cross-section"""
 
     @property
     def geometry_type(self) -> _TfIdentifierStaticItem:
-        """Geometry type used to describe the cross section of this element. The conductor centre is given by the ../../elements description.
-        """
+        """Geometry type used to describe the cross section of this element. The conductor centre is given by the ../../elements description."""
     @property
     def width(self) -> Path[float]:
         """Full width of the rectangle or square in the normal direction, when geometry_type/index = 3 or 4. Diameter of the circle when geometry_type/index = 2. Outer diameter of the annulus in case geometry_type/index = 5
@@ -12913,8 +11741,7 @@ class _TfCoilCrossSectionItem:
         """
     @property
     def outline(self) -> _TfNormalBinormalStaticItem:
-        """Polygonal outline of the cross section in the (normal, binormal) coordinate system. Do NOT repeat the first point.
-        """
+        """Polygonal outline of the cross section in the (normal, binormal) coordinate system. Do NOT repeat the first point."""
     @property
     def area(self) -> Path[float]:
         """Area of the conductor cross-section, derived from the above geometric data
@@ -12923,13 +11750,11 @@ class _TfCoilCrossSectionItem:
         """
 
 class _TfCoilCrossSectionMany:
-    """Coil cross-section
-    """
+    """Coil cross-section"""
 
     @property
     def geometry_type(self) -> _TfIdentifierStaticMany:
-        """Geometry type used to describe the cross section of this element. The conductor centre is given by the ../../elements description.
-        """
+        """Geometry type used to describe the cross section of this element. The conductor centre is given by the ../../elements description."""
     @property
     def width(self) -> Path[npt.NDArray[np.float64]]:
         """Full width of the rectangle or square in the normal direction, when geometry_type/index = 3 or 4. Diameter of the circle when geometry_type/index = 2. Outer diameter of the annulus in case geometry_type/index = 5
@@ -12950,8 +11775,7 @@ class _TfCoilCrossSectionMany:
         """
     @property
     def outline(self) -> _TfNormalBinormalStaticMany:
-        """Polygonal outline of the cross section in the (normal, binormal) coordinate system. Do NOT repeat the first point.
-        """
+        """Polygonal outline of the cross section in the (normal, binormal) coordinate system. Do NOT repeat the first point."""
     @property
     def area(self) -> Path[npt.NDArray[np.float64]]:
         """Area of the conductor cross-section, derived from the above geometric data
@@ -12960,8 +11784,7 @@ class _TfCoilCrossSectionMany:
         """
 
 class _TfCoilNaRphiz1dStaticItem:
-    """Structure for list of R, Z, Phi positions (1D, static), with a reference to the types coordinate specific to this IDS
-    """
+    """Structure for list of R, Z, Phi positions (1D, static), with a reference to the types coordinate specific to this IDS"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -12983,8 +11806,7 @@ class _TfCoilNaRphiz1dStaticItem:
         """
 
 class _TfCoilNaRphiz1dStaticMany:
-    """Structure for list of R, Z, Phi positions (1D, static), with a reference to the types coordinate specific to this IDS
-    """
+    """Structure for list of R, Z, Phi positions (1D, static), with a reference to the types coordinate specific to this IDS"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -13006,152 +11828,117 @@ class _TfCoilNaRphiz1dStaticMany:
         """
 
 class _TfGenericGridDynamicItem:
-    """Generic grid (dynamic within a type 3 AoS)
-    """
+    """Generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _TfIdentifierDynamicAos3Item:
-        """Grid identifier
-        """
+        """Grid identifier"""
     @property
     def path(self) -> Path[str]:
-        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
-        """
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)"""
     @property
     def space(self) -> _TfGenericGridDynamicSpaceArrayFromItem:
-        """Set of grid spaces
-        """
+        """Set of grid spaces"""
     @property
     def grid_subset(self) -> _TfGenericGridDynamicGridSubsetArrayFromItem:
-        """Grid subsets
-        """
+        """Grid subsets"""
 
 class _TfGenericGridDynamicMany:
-    """Generic grid (dynamic within a type 3 AoS)
-    """
+    """Generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _TfIdentifierDynamicAos3Many:
-        """Grid identifier
-        """
+        """Grid identifier"""
     @property
     def path(self) -> Path[npt.NDArray[np.str_]]:
-        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
-        """
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)"""
     @property
     def space(self) -> _TfGenericGridDynamicSpaceArrayFromMany:
-        """Set of grid spaces
-        """
+        """Set of grid spaces"""
     @property
     def grid_subset(self) -> _TfGenericGridDynamicGridSubsetArrayFromMany:
-        """Grid subsets
-        """
+        """Grid subsets"""
 
 class _TfGenericGridDynamicGridSubsetItem:
-    """Generic grid grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _TfIdentifierDynamicAos3Item:
-        """Grid subset identifier
-        """
+        """Grid subset identifier"""
     @property
     def dimension(self) -> Path[int]:
-        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def element(self) -> _TfGenericGridDynamicGridSubsetElementArrayFromItem:
-        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
-        """
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces"""
     @property
     def base(self) -> _TfGenericGridDynamicGridSubsetMetricArrayFromItem:
-        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
-        """
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid."""
     @property
     def metric(self) -> _TfGenericGridDynamicGridSubsetMetricItem:
-        """Metric of the canonical frame onto Cartesian coordinates
-        """
+        """Metric of the canonical frame onto Cartesian coordinates"""
 
 class _TfGenericGridDynamicGridSubsetMany:
-    """Generic grid grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _TfIdentifierDynamicAos3Many:
-        """Grid subset identifier
-        """
+        """Grid subset identifier"""
     @property
     def dimension(self) -> Path[npt.NDArray[np.int32]]:
-        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def element(self) -> _TfGenericGridDynamicGridSubsetElementArrayFromMany:
-        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
-        """
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces"""
     @property
     def base(self) -> _TfGenericGridDynamicGridSubsetMetricArrayFromMany:
-        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
-        """
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid."""
     @property
     def metric(self) -> _TfGenericGridDynamicGridSubsetMetricMany:
-        """Metric of the canonical frame onto Cartesian coordinates
-        """
+        """Metric of the canonical frame onto Cartesian coordinates"""
 
 class _TfGenericGridDynamicGridSubsetElementItem:
-    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _TfGenericGridDynamicGridSubsetElementObjectArrayFromItem:
-        """Set of objects defining the element
-        """
+        """Set of objects defining the element"""
 
 class _TfGenericGridDynamicGridSubsetElementMany:
-    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _TfGenericGridDynamicGridSubsetElementObjectArrayFromMany:
-        """Set of objects defining the element
-        """
+        """Set of objects defining the element"""
 
 class _TfGenericGridDynamicGridSubsetElementObjectItem:
-    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def space(self) -> Path[int]:
-        """Index of the space from which that object is taken
-        """
+        """Index of the space from which that object is taken"""
     @property
     def dimension(self) -> Path[int]:
-        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def index(self) -> Path[int]:
-        """Object index
-        """
+        """Object index"""
 
 class _TfGenericGridDynamicGridSubsetElementObjectMany:
-    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def space(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the space from which that object is taken
-        """
+        """Index of the space from which that object is taken"""
     @property
     def dimension(self) -> Path[npt.NDArray[np.int32]]:
-        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Object index
-        """
+        """Object index"""
 
 class _TfGenericGridDynamicGridSubsetMetricItem:
-    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
-    """
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)"""
 
     @property
     def jacobian(self) -> Path[npt.NDArray[np.float64]]:
@@ -13173,8 +11960,7 @@ class _TfGenericGridDynamicGridSubsetMetricItem:
         """
 
 class _TfGenericGridDynamicGridSubsetMetricMany:
-    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
-    """
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)"""
 
     @property
     def jacobian(self) -> Path[npt.NDArray[np.float64]]:
@@ -13196,81 +11982,63 @@ class _TfGenericGridDynamicGridSubsetMetricMany:
         """
 
 class _TfGenericGridDynamicSpaceItem:
-    """Generic grid space (dynamic within a type 3 AoS)
-    """
+    """Generic grid space (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _TfIdentifierDynamicAos3Item:
-        """Space identifier
-        """
+        """Space identifier"""
     @property
     def geometry_type(self) -> _TfIdentifierDynamicAos3Item:
-        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
-        """
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)"""
     @property
     def coordinates_type(self) -> _TfIdentifierDynamicAos3ArrayFromItem:
-        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
-        """
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space."""
     @property
     def objects_per_dimension(self) -> _TfGenericGridDynamicSpaceDimensionArrayFromItem:
-        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
-        """
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described."""
 
 class _TfGenericGridDynamicSpaceMany:
-    """Generic grid space (dynamic within a type 3 AoS)
-    """
+    """Generic grid space (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _TfIdentifierDynamicAos3Many:
-        """Space identifier
-        """
+        """Space identifier"""
     @property
     def geometry_type(self) -> _TfIdentifierDynamicAos3Many:
-        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
-        """
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)"""
     @property
     def coordinates_type(self) -> _TfIdentifierDynamicAos3ArrayFromMany:
-        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
-        """
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space."""
     @property
     def objects_per_dimension(self) -> _TfGenericGridDynamicSpaceDimensionArrayFromMany:
-        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
-        """
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described."""
 
 class _TfGenericGridDynamicSpaceDimensionItem:
-    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _TfGenericGridDynamicSpaceDimensionObjectArrayFromItem:
-        """Set of objects for a given dimension
-        """
+        """Set of objects for a given dimension"""
     @property
     def geometry_content(self) -> _TfIdentifierDynamicAos3Item:
-        """Content of the ../object/geometry node for this dimension
-        """
+        """Content of the ../object/geometry node for this dimension"""
 
 class _TfGenericGridDynamicSpaceDimensionMany:
-    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _TfGenericGridDynamicSpaceDimensionObjectArrayFromMany:
-        """Set of objects for a given dimension
-        """
+        """Set of objects for a given dimension"""
     @property
     def geometry_content(self) -> _TfIdentifierDynamicAos3Many:
-        """Content of the ../object/geometry node for this dimension
-        """
+        """Content of the ../object/geometry node for this dimension"""
 
 class _TfGenericGridDynamicSpaceDimensionObjectItem:
-    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)"""
 
     @property
     def boundary(self) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
-        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
-        """
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object"""
     @property
     def geometry(self) -> Path[npt.NDArray[np.float64]]:
         """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
@@ -13279,8 +12047,7 @@ class _TfGenericGridDynamicSpaceDimensionObjectItem:
         """
     @property
     def nodes(self) -> Path[npt.NDArray[np.int32]]:
-        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
-        """
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)"""
     @property
     def measure(self) -> Path[float]:
         """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
@@ -13295,13 +12062,11 @@ class _TfGenericGridDynamicSpaceDimensionObjectItem:
         """
 
 class _TfGenericGridDynamicSpaceDimensionObjectMany:
-    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)"""
 
     @property
     def boundary(self) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
-        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
-        """
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object"""
     @property
     def geometry(self) -> Path[npt.NDArray[np.float64]]:
         """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
@@ -13310,8 +12075,7 @@ class _TfGenericGridDynamicSpaceDimensionObjectMany:
         """
     @property
     def nodes(self) -> Path[npt.NDArray[np.int32]]:
-        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
-        """
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)"""
     @property
     def measure(self) -> Path[npt.NDArray[np.float64]]:
         """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
@@ -13326,43 +12090,34 @@ class _TfGenericGridDynamicSpaceDimensionObjectMany:
         """
 
 class _TfGenericGridDynamicSpaceDimensionObjectBoundaryItem:
-    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
-    """
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)"""
 
     @property
     def index(self) -> Path[int]:
-        """Index of this (n-1)-dimensional boundary object
-        """
+        """Index of this (n-1)-dimensional boundary object"""
     @property
     def neighbours(self) -> Path[npt.NDArray[np.int32]]:
-        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
-        """
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary"""
 
 class _TfGenericGridDynamicSpaceDimensionObjectBoundaryMany:
-    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
-    """
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)"""
 
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of this (n-1)-dimensional boundary object
-        """
+        """Index of this (n-1)-dimensional boundary object"""
     @property
     def neighbours(self) -> Path[npt.NDArray[np.int32]]:
-        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
-        """
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary"""
 
 class _TfGenericGridScalarItem:
-    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[int]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[int]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """One scalar value is provided per element in the grid subset.
@@ -13377,17 +12132,14 @@ class _TfGenericGridScalarItem:
         """
 
 class _TfGenericGridScalarMany:
-    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """One scalar value is provided per element in the grid subset.
@@ -13402,134 +12154,103 @@ class _TfGenericGridScalarMany:
         """
 
 class _TfIdentifierDynamicAos3Item:
-    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _TfIdentifierDynamicAos3Many:
-    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _TfIdentifierStaticItem:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _TfIdentifierStaticMany:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _TfLibraryItem:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _TfLibraryMany:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _TfNormalBinormalStaticItem:
-    """Structure for list of normal, binormal positions (1D, static)
-    """
+    """Structure for list of normal, binormal positions (1D, static)"""
 
     @property
     def normal(self) -> Path[npt.NDArray[np.float64]]:
@@ -13545,8 +12266,7 @@ class _TfNormalBinormalStaticItem:
         """
 
 class _TfNormalBinormalStaticMany:
-    """Structure for list of normal, binormal positions (1D, static)
-    """
+    """Structure for list of normal, binormal positions (1D, static)"""
 
     @property
     def normal(self) -> Path[npt.NDArray[np.float64]]:
@@ -13562,8 +12282,7 @@ class _TfNormalBinormalStaticMany:
         """
 
 class _TfSignalFlt1dItem:
-    """Signal (FLT_1D) with its time base
-    """
+    """Signal (FLT_1D) with its time base"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -13579,8 +12298,7 @@ class _TfSignalFlt1dItem:
         """
 
 class _TfSignalFlt1dMany:
-    """Signal (FLT_1D) with its time base
-    """
+    """Signal (FLT_1D) with its time base"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -13596,13 +12314,11 @@ class _TfSignalFlt1dMany:
         """
 
 class _TfGgdItem:
-    """Toroidal field map represented on ggd
-    """
+    """Toroidal field map represented on ggd"""
 
     @property
     def grid(self) -> _TfGenericGridDynamicItem:
-        """Grid description
-        """
+        """Grid description"""
     @property
     def b_field_r(self) -> _TfGenericGridScalarArrayFromItem:
         """R component of the vacuum magnetic field, given on various grid subsets
@@ -13647,13 +12363,11 @@ class _TfGgdItem:
         """
 
 class _TfGgdMany:
-    """Toroidal field map represented on ggd
-    """
+    """Toroidal field map represented on ggd"""
 
     @property
     def grid(self) -> _TfGenericGridDynamicMany:
-        """Grid description
-        """
+        """Grid description"""
     @property
     def b_field_r(self) -> _TfGenericGridScalarArrayFromMany:
         """R component of the vacuum magnetic field, given on various grid subsets
@@ -13871,8 +12585,7 @@ class _TfGgdArrayFromMany:
 # --------------------------------------------------------------------------
 
 class _TfPaths:
-    """Toroidal field coils
-    """
+    """Toroidal field coils"""
 
     @property
     def r0(self) -> Path[float]:
@@ -13882,20 +12595,16 @@ class _TfPaths:
         """
     @property
     def is_periodic(self) -> Path[int]:
-        """Flag indicating whether coils are described one by one in the coil() structure (flag=0) or whether the coil structure represents only coils having different characteristics (flag = 1, n_coils must be filled in that case). In the latter case, the coil() sequence is repeated periodically around the torus.
-        """
+        """Flag indicating whether coils are described one by one in the coil() structure (flag=0) or whether the coil structure represents only coils having different characteristics (flag = 1, n_coils must be filled in that case). In the latter case, the coil() sequence is repeated periodically around the torus."""
     @property
     def coils_n(self) -> Path[int]:
-        """Number of coils around the torus, in case is_periodic = 1
-        """
+        """Number of coils around the torus, in case is_periodic = 1"""
     @property
     def coil(self) -> _TfCoilArrayFromItem:
-        """Set of coils around the tokamak
-        """
+        """Set of coils around the tokamak"""
     @property
     def field_map(self) -> _TfGgdArrayFromItem:
-        """Map of the vacuum field at various time slices, represented using the generic grid description
-        """
+        """Map of the vacuum field at various time slices, represented using the generic grid description"""
     @property
     def b_field_phi_vacuum_r(self) -> _TfSignalFlt1dItem:
         """Vacuum magnetic field times major radius within the cage of toroidal field coils. Positive sign means counter-clockwise when viewed from above.
@@ -13943,99 +12652,76 @@ class Wall:
 # ==========================================================================
 
 class _WallCodeItem:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _WallLibraryArrayFromItem:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _WallCodeMany:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _WallLibraryArrayFromMany:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _WallGenericGridAos3RootItem:
-    """Generic grid (being itself the root of a type 3 AoS)
-    """
+    """Generic grid (being itself the root of a type 3 AoS)"""
 
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Item:
-        """Grid identifier
-        """
+        """Grid identifier"""
     @property
     def path(self) -> Path[str]:
-        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
-        """
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)"""
     @property
     def space(self) -> _WallGenericGridDynamicSpaceArrayFromItem:
-        """Set of grid spaces
-        """
+        """Set of grid spaces"""
     @property
     def grid_subset(self) -> _WallGenericGridDynamicGridSubsetArrayFromItem:
-        """Grid subsets
-        """
+        """Grid subsets"""
     @property
     def time(self) -> Path[float]:
         """Time
@@ -14044,25 +12730,20 @@ class _WallGenericGridAos3RootItem:
         """
 
 class _WallGenericGridAos3RootMany:
-    """Generic grid (being itself the root of a type 3 AoS)
-    """
+    """Generic grid (being itself the root of a type 3 AoS)"""
 
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Many:
-        """Grid identifier
-        """
+        """Grid identifier"""
     @property
     def path(self) -> Path[npt.NDArray[np.str_]]:
-        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
-        """
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)"""
     @property
     def space(self) -> _WallGenericGridDynamicSpaceArrayFromMany:
-        """Set of grid spaces
-        """
+        """Set of grid spaces"""
     @property
     def grid_subset(self) -> _WallGenericGridDynamicGridSubsetArrayFromMany:
-        """Grid subsets
-        """
+        """Grid subsets"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Time
@@ -14071,110 +12752,85 @@ class _WallGenericGridAos3RootMany:
         """
 
 class _WallGenericGridDynamicGridSubsetItem:
-    """Generic grid grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Item:
-        """Grid subset identifier
-        """
+        """Grid subset identifier"""
     @property
     def dimension(self) -> Path[int]:
-        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def element(self) -> _WallGenericGridDynamicGridSubsetElementArrayFromItem:
-        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
-        """
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces"""
     @property
     def base(self) -> _WallGenericGridDynamicGridSubsetMetricArrayFromItem:
-        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
-        """
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid."""
     @property
     def metric(self) -> _WallGenericGridDynamicGridSubsetMetricItem:
-        """Metric of the canonical frame onto Cartesian coordinates
-        """
+        """Metric of the canonical frame onto Cartesian coordinates"""
 
 class _WallGenericGridDynamicGridSubsetMany:
-    """Generic grid grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Many:
-        """Grid subset identifier
-        """
+        """Grid subset identifier"""
     @property
     def dimension(self) -> Path[npt.NDArray[np.int32]]:
-        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def element(self) -> _WallGenericGridDynamicGridSubsetElementArrayFromMany:
-        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
-        """
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces"""
     @property
     def base(self) -> _WallGenericGridDynamicGridSubsetMetricArrayFromMany:
-        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
-        """
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid."""
     @property
     def metric(self) -> _WallGenericGridDynamicGridSubsetMetricMany:
-        """Metric of the canonical frame onto Cartesian coordinates
-        """
+        """Metric of the canonical frame onto Cartesian coordinates"""
 
 class _WallGenericGridDynamicGridSubsetElementItem:
-    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _WallGenericGridDynamicGridSubsetElementObjectArrayFromItem:
-        """Set of objects defining the element
-        """
+        """Set of objects defining the element"""
 
 class _WallGenericGridDynamicGridSubsetElementMany:
-    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _WallGenericGridDynamicGridSubsetElementObjectArrayFromMany:
-        """Set of objects defining the element
-        """
+        """Set of objects defining the element"""
 
 class _WallGenericGridDynamicGridSubsetElementObjectItem:
-    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def space(self) -> Path[int]:
-        """Index of the space from which that object is taken
-        """
+        """Index of the space from which that object is taken"""
     @property
     def dimension(self) -> Path[int]:
-        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def index(self) -> Path[int]:
-        """Object index
-        """
+        """Object index"""
 
 class _WallGenericGridDynamicGridSubsetElementObjectMany:
-    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
-    """
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)"""
 
     @property
     def space(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the space from which that object is taken
-        """
+        """Index of the space from which that object is taken"""
     @property
     def dimension(self) -> Path[npt.NDArray[np.int32]]:
-        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
-        """
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Object index
-        """
+        """Object index"""
 
 class _WallGenericGridDynamicGridSubsetMetricItem:
-    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
-    """
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)"""
 
     @property
     def jacobian(self) -> Path[npt.NDArray[np.float64]]:
@@ -14196,8 +12852,7 @@ class _WallGenericGridDynamicGridSubsetMetricItem:
         """
 
 class _WallGenericGridDynamicGridSubsetMetricMany:
-    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
-    """
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)"""
 
     @property
     def jacobian(self) -> Path[npt.NDArray[np.float64]]:
@@ -14219,81 +12874,63 @@ class _WallGenericGridDynamicGridSubsetMetricMany:
         """
 
 class _WallGenericGridDynamicSpaceItem:
-    """Generic grid space (dynamic within a type 3 AoS)
-    """
+    """Generic grid space (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Item:
-        """Space identifier
-        """
+        """Space identifier"""
     @property
     def geometry_type(self) -> _WallIdentifierDynamicAos3Item:
-        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
-        """
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)"""
     @property
     def coordinates_type(self) -> _WallIdentifierDynamicAos3ArrayFromItem:
-        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
-        """
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space."""
     @property
     def objects_per_dimension(self) -> _WallGenericGridDynamicSpaceDimensionArrayFromItem:
-        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
-        """
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described."""
 
 class _WallGenericGridDynamicSpaceMany:
-    """Generic grid space (dynamic within a type 3 AoS)
-    """
+    """Generic grid space (dynamic within a type 3 AoS)"""
 
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Many:
-        """Space identifier
-        """
+        """Space identifier"""
     @property
     def geometry_type(self) -> _WallIdentifierDynamicAos3Many:
-        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
-        """
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)"""
     @property
     def coordinates_type(self) -> _WallIdentifierDynamicAos3ArrayFromMany:
-        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
-        """
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space."""
     @property
     def objects_per_dimension(self) -> _WallGenericGridDynamicSpaceDimensionArrayFromMany:
-        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
-        """
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described."""
 
 class _WallGenericGridDynamicSpaceDimensionItem:
-    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _WallGenericGridDynamicSpaceDimensionObjectArrayFromItem:
-        """Set of objects for a given dimension
-        """
+        """Set of objects for a given dimension"""
     @property
     def geometry_content(self) -> _WallIdentifierDynamicAos3Item:
-        """Content of the ../object/geometry node for this dimension
-        """
+        """Content of the ../object/geometry node for this dimension"""
 
 class _WallGenericGridDynamicSpaceDimensionMany:
-    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)"""
 
     @property
     def object(self) -> _WallGenericGridDynamicSpaceDimensionObjectArrayFromMany:
-        """Set of objects for a given dimension
-        """
+        """Set of objects for a given dimension"""
     @property
     def geometry_content(self) -> _WallIdentifierDynamicAos3Many:
-        """Content of the ../object/geometry node for this dimension
-        """
+        """Content of the ../object/geometry node for this dimension"""
 
 class _WallGenericGridDynamicSpaceDimensionObjectItem:
-    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)"""
 
     @property
     def boundary(self) -> _WallGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
-        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
-        """
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object"""
     @property
     def geometry(self) -> Path[npt.NDArray[np.float64]]:
         """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
@@ -14302,8 +12939,7 @@ class _WallGenericGridDynamicSpaceDimensionObjectItem:
         """
     @property
     def nodes(self) -> Path[npt.NDArray[np.int32]]:
-        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
-        """
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)"""
     @property
     def measure(self) -> Path[float]:
         """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
@@ -14318,13 +12954,11 @@ class _WallGenericGridDynamicSpaceDimensionObjectItem:
         """
 
 class _WallGenericGridDynamicSpaceDimensionObjectMany:
-    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
-    """
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)"""
 
     @property
     def boundary(self) -> _WallGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
-        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
-        """
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object"""
     @property
     def geometry(self) -> Path[npt.NDArray[np.float64]]:
         """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
@@ -14333,8 +12967,7 @@ class _WallGenericGridDynamicSpaceDimensionObjectMany:
         """
     @property
     def nodes(self) -> Path[npt.NDArray[np.int32]]:
-        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
-        """
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)"""
     @property
     def measure(self) -> Path[npt.NDArray[np.float64]]:
         """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
@@ -14349,111 +12982,86 @@ class _WallGenericGridDynamicSpaceDimensionObjectMany:
         """
 
 class _WallGenericGridDynamicSpaceDimensionObjectBoundaryItem:
-    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
-    """
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)"""
 
     @property
     def index(self) -> Path[int]:
-        """Index of this (n-1)-dimensional boundary object
-        """
+        """Index of this (n-1)-dimensional boundary object"""
     @property
     def neighbours(self) -> Path[npt.NDArray[np.int32]]:
-        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
-        """
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary"""
 
 class _WallGenericGridDynamicSpaceDimensionObjectBoundaryMany:
-    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
-    """
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)"""
 
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of this (n-1)-dimensional boundary object
-        """
+        """Index of this (n-1)-dimensional boundary object"""
     @property
     def neighbours(self) -> Path[npt.NDArray[np.int32]]:
-        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
-        """
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary"""
 
 class _WallGenericGridIdentifierItem:
-    """Identifier values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Identifier values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[int]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[int]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def identifiers(self) -> _WallIdentifierDynamicAos31dItem:
-        """Identifier values, one value is provided per element in the grid subset. If the size of the child arrays is 1, their value applies to all elements of the subset.
-        """
+        """Identifier values, one value is provided per element in the grid subset. If the size of the child arrays is 1, their value applies to all elements of the subset."""
 
 class _WallGenericGridIdentifierMany:
-    """Identifier values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Identifier values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def identifiers(self) -> _WallIdentifierDynamicAos31dMany:
-        """Identifier values, one value is provided per element in the grid subset. If the size of the child arrays is 1, their value applies to all elements of the subset.
-        """
+        """Identifier values, one value is provided per element in the grid subset. If the size of the child arrays is 1, their value applies to all elements of the subset."""
 
 class _WallGenericGridIdentifierSingleItem:
-    """Identifier value (single value per subset) on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Identifier value (single value per subset) on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[int]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[int]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Item:
-        """Identifier value for the grid subset
-        """
+        """Identifier value for the grid subset"""
 
 class _WallGenericGridIdentifierSingleMany:
-    """Identifier value (single value per subset) on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Identifier value (single value per subset) on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def identifier(self) -> _WallIdentifierDynamicAos3Many:
-        """Identifier value for the grid subset
-        """
+        """Identifier value for the grid subset"""
 
 class _WallGenericGridScalarItem:
-    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[int]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[int]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """One scalar value is provided per element in the grid subset.
@@ -14468,17 +13076,14 @@ class _WallGenericGridScalarItem:
         """
 
 class _WallGenericGridScalarMany:
-    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """One scalar value is provided per element in the grid subset.
@@ -14493,17 +13098,14 @@ class _WallGenericGridScalarMany:
         """
 
 class _WallGenericGridVectorItem:
-    """Vector values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Vector values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[int]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[int]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """List of vector components, one list per element in the grid subset. First dimension: element index. Second dimension: vector component index.
@@ -14518,17 +13120,14 @@ class _WallGenericGridVectorItem:
         """
 
 class _WallGenericGridVectorMany:
-    """Vector values on a generic grid (dynamic within a type 3 AoS)
-    """
+    """Vector values on a generic grid (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def values(self) -> Path[npt.NDArray[np.float64]]:
         """List of vector components, one list per element in the grid subset. First dimension: element index. Second dimension: vector component index.
@@ -14543,17 +13142,14 @@ class _WallGenericGridVectorMany:
         """
 
 class _WallGenericGridVectorComponentsRphizItem:
-    """Vector components in predefined directions on a generic grid, R, Z and toroidal directions only (dynamic within a type 3 AoS)
-    """
+    """Vector components in predefined directions on a generic grid, R, Z and toroidal directions only (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[int]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[int]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Component along the major radius axis, one scalar value is provided per element in the grid subset.
@@ -14592,17 +13188,14 @@ class _WallGenericGridVectorComponentsRphizItem:
         """
 
 class _WallGenericGridVectorComponentsRphizMany:
-    """Vector components in predefined directions on a generic grid, R, Z and toroidal directions only (dynamic within a type 3 AoS)
-    """
+    """Vector components in predefined directions on a generic grid, R, Z and toroidal directions only (dynamic within a type 3 AoS)"""
 
     @property
     def grid_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid used to represent this quantity
-        """
+        """Index of the grid used to represent this quantity"""
     @property
     def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-        """
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index"""
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
         """Component along the major radius axis, one scalar value is provided per element in the grid subset.
@@ -14641,168 +13234,129 @@ class _WallGenericGridVectorComponentsRphizMany:
         """
 
 class _WallIdentifierDynamicAos3Item:
-    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _WallIdentifierDynamicAos3Many:
-    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _WallIdentifierDynamicAos31dItem:
-    """Standard type for identifiers (1D arrays for each node), dynamic within type 3 array of structures (index on time). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (1D arrays for each node), dynamic within type 3 array of structures (index on time). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def names(self) -> Path[list[str]]:
-        """Short string identifiers
-        """
+        """Short string identifiers"""
     @property
     def indices(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifiers (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifiers (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def descriptions(self) -> Path[list[str]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _WallIdentifierDynamicAos31dMany:
-    """Standard type for identifiers (1D arrays for each node), dynamic within type 3 array of structures (index on time). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (1D arrays for each node), dynamic within type 3 array of structures (index on time). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def names(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifiers
-        """
+        """Short string identifiers"""
     @property
     def indices(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifiers (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifiers (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def descriptions(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _WallIdentifierStaticItem:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _WallIdentifierStaticMany:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _WallLibraryItem:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _WallLibraryMany:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _WallPlasmaCompositionNeutralElementItem:
-    """Element entering in the composition of the neutral atom or molecule (within a type 3 AoS)
-    """
+    """Element entering in the composition of the neutral atom or molecule (within a type 3 AoS)"""
 
     @property
     def a(self) -> Path[float]:
@@ -14818,12 +13372,10 @@ class _WallPlasmaCompositionNeutralElementItem:
         """
     @property
     def atoms_n(self) -> Path[int]:
-        """Number of atoms of this element in the molecule
-        """
+        """Number of atoms of this element in the molecule"""
 
 class _WallPlasmaCompositionNeutralElementMany:
-    """Element entering in the composition of the neutral atom or molecule (within a type 3 AoS)
-    """
+    """Element entering in the composition of the neutral atom or molecule (within a type 3 AoS)"""
 
     @property
     def a(self) -> Path[npt.NDArray[np.float64]]:
@@ -14839,12 +13391,10 @@ class _WallPlasmaCompositionNeutralElementMany:
         """
     @property
     def atoms_n(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of atoms of this element in the molecule
-        """
+        """Number of atoms of this element in the molecule"""
 
 class _WallPlasmaCompositionNeutralElementConstantItem:
-    """Element entering in the composition of the neutral atom or molecule (constant)
-    """
+    """Element entering in the composition of the neutral atom or molecule (constant)"""
 
     @property
     def a(self) -> Path[float]:
@@ -14860,12 +13410,10 @@ class _WallPlasmaCompositionNeutralElementConstantItem:
         """
     @property
     def atoms_n(self) -> Path[int]:
-        """Number of atoms of this element in the molecule
-        """
+        """Number of atoms of this element in the molecule"""
 
 class _WallPlasmaCompositionNeutralElementConstantMany:
-    """Element entering in the composition of the neutral atom or molecule (constant)
-    """
+    """Element entering in the composition of the neutral atom or molecule (constant)"""
 
     @property
     def a(self) -> Path[npt.NDArray[np.float64]]:
@@ -14881,12 +13429,10 @@ class _WallPlasmaCompositionNeutralElementConstantMany:
         """
     @property
     def atoms_n(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of atoms of this element in the molecule
-        """
+        """Number of atoms of this element in the molecule"""
 
 class _WallRz1dDynamicAosTimeItem:
-    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time), with time as sibling)
-    """
+    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time), with time as sibling)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -14908,8 +13454,7 @@ class _WallRz1dDynamicAosTimeItem:
         """
 
 class _WallRz1dDynamicAosTimeMany:
-    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time), with time as sibling)
-    """
+    """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time), with time as sibling)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -14931,8 +13476,7 @@ class _WallRz1dDynamicAosTimeMany:
         """
 
 class _WallRz1dStaticItem:
-    """Structure for list of R, Z positions (1D, constant)
-    """
+    """Structure for list of R, Z positions (1D, constant)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -14948,8 +13492,7 @@ class _WallRz1dStaticItem:
         """
 
 class _WallRz1dStaticMany:
-    """Structure for list of R, Z positions (1D, constant)
-    """
+    """Structure for list of R, Z positions (1D, constant)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -14965,8 +13508,7 @@ class _WallRz1dStaticMany:
         """
 
 class _WallSignalFlt1dItem:
-    """Signal (FLT_1D) with its time base
-    """
+    """Signal (FLT_1D) with its time base"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -14982,8 +13524,7 @@ class _WallSignalFlt1dItem:
         """
 
 class _WallSignalFlt1dMany:
-    """Signal (FLT_1D) with its time base
-    """
+    """Signal (FLT_1D) with its time base"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -14999,13 +13540,11 @@ class _WallSignalFlt1dMany:
         """
 
 class _WallTemperatureReferenceItem:
-    """Structure describing the reference temperature for which static data are given
-    """
+    """Structure describing the reference temperature for which static data are given"""
 
     @property
     def description(self) -> Path[str]:
-        """Description of how the reference temperature is defined : for which object, at which location, ...
-        """
+        """Description of how the reference temperature is defined : for which object, at which location, ..."""
     @property
     def data(self) -> Path[float]:
         """Reference temperature
@@ -15014,13 +13553,11 @@ class _WallTemperatureReferenceItem:
         """
 
 class _WallTemperatureReferenceMany:
-    """Structure describing the reference temperature for which static data are given
-    """
+    """Structure describing the reference temperature for which static data are given"""
 
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description of how the reference temperature is defined : for which object, at which location, ...
-        """
+        """Description of how the reference temperature is defined : for which object, at which location, ..."""
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
         """Reference temperature
@@ -15029,47 +13566,37 @@ class _WallTemperatureReferenceMany:
         """
 
 class _WallVessel2dItem:
-    """2D vessel description
-    """
+    """2D vessel description"""
 
     @property
     def type(self) -> _WallIdentifierStaticItem:
-        """Type of the description. index = 0 for the official single/multiple annular representation and 1 for the official block element representation for each unit. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index=2
-        """
+        """Type of the description. index = 0 for the official single/multiple annular representation and 1 for the official block element representation for each unit. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index=2"""
     @property
     def unit(self) -> _WallVessel2dUnitArrayFromItem:
-        """Set of units
-        """
+        """Set of units"""
 
 class _WallVessel2dMany:
-    """2D vessel description
-    """
+    """2D vessel description"""
 
     @property
     def type(self) -> _WallIdentifierStaticMany:
-        """Type of the description. index = 0 for the official single/multiple annular representation and 1 for the official block element representation for each unit. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index=2
-        """
+        """Type of the description. index = 0 for the official single/multiple annular representation and 1 for the official block element representation for each unit. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index=2"""
     @property
     def unit(self) -> _WallVessel2dUnitArrayFromMany:
-        """Set of units
-        """
+        """Set of units"""
 
 class _WallVessel2dAnnularItem:
-    """2D vessel annular description
-    """
+    """2D vessel annular description"""
 
     @property
     def outline_inner(self) -> _WallRz1dStaticItem:
-        """Inner vessel outline. Repeat the first point in case of a closed contour
-        """
+        """Inner vessel outline. Repeat the first point in case of a closed contour"""
     @property
     def outline_outer(self) -> _WallRz1dStaticItem:
-        """Outer vessel outline. Repeat the first point in case of a closed contour
-        """
+        """Outer vessel outline. Repeat the first point in case of a closed contour"""
     @property
     def centreline(self) -> _WallRz1dStaticItem:
-        """Centreline, i.e. middle of the vessel layer as a series of point. Repeat the first point in case of a closed contour
-        """
+        """Centreline, i.e. middle of the vessel layer as a series of point. Repeat the first point in case of a closed contour"""
     @property
     def thickness(self) -> Path[npt.NDArray[np.float64]]:
         """Thickness of the vessel layer  in the perpendicular direction to the centreline. Thickness(i) is the thickness of the layer between centreline/r(i),z(i) and centreline/r(i+1),z(i+1), so its size is equal to the length of centreline/r-1 if the thickness is varying. If the thickness is constant for all points, allocate this node to size 1 to store a single value.
@@ -15084,21 +13611,17 @@ class _WallVessel2dAnnularItem:
         """
 
 class _WallVessel2dAnnularMany:
-    """2D vessel annular description
-    """
+    """2D vessel annular description"""
 
     @property
     def outline_inner(self) -> _WallRz1dStaticMany:
-        """Inner vessel outline. Repeat the first point in case of a closed contour
-        """
+        """Inner vessel outline. Repeat the first point in case of a closed contour"""
     @property
     def outline_outer(self) -> _WallRz1dStaticMany:
-        """Outer vessel outline. Repeat the first point in case of a closed contour
-        """
+        """Outer vessel outline. Repeat the first point in case of a closed contour"""
     @property
     def centreline(self) -> _WallRz1dStaticMany:
-        """Centreline, i.e. middle of the vessel layer as a series of point. Repeat the first point in case of a closed contour
-        """
+        """Centreline, i.e. middle of the vessel layer as a series of point. Repeat the first point in case of a closed contour"""
     @property
     def thickness(self) -> Path[npt.NDArray[np.float64]]:
         """Thickness of the vessel layer  in the perpendicular direction to the centreline. Thickness(i) is the thickness of the layer between centreline/r(i),z(i) and centreline/r(i+1),z(i+1), so its size is equal to the length of centreline/r-1 if the thickness is varying. If the thickness is constant for all points, allocate this node to size 1 to store a single value.
@@ -15113,17 +13636,14 @@ class _WallVessel2dAnnularMany:
         """
 
 class _WallVessel2dElementItem:
-    """2D vessel block element description
-    """
+    """2D vessel block element description"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the block element
-        """
+        """Name of the block element"""
     @property
     def outline(self) -> _WallRz1dStaticItem:
-        """Outline of the block element. Repeat the first point in case of a closed contour
-        """
+        """Outline of the block element. Repeat the first point in case of a closed contour"""
     @property
     def midplane_thickness(self) -> Path[float]:
         """Thickness of this element evaluated at the midplane (whenever relevant)
@@ -15144,17 +13664,14 @@ class _WallVessel2dElementItem:
         """
 
 class _WallVessel2dElementMany:
-    """2D vessel block element description
-    """
+    """2D vessel block element description"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the block element
-        """
+        """Name of the block element"""
     @property
     def outline(self) -> _WallRz1dStaticMany:
-        """Outline of the block element. Repeat the first point in case of a closed contour
-        """
+        """Outline of the block element. Repeat the first point in case of a closed contour"""
     @property
     def midplane_thickness(self) -> Path[npt.NDArray[np.float64]]:
         """Thickness of this element evaluated at the midplane (whenever relevant)
@@ -15175,29 +13692,23 @@ class _WallVessel2dElementMany:
         """
 
 class _WallVessel2dUnitItem:
-    """2D vessel unit description
-    """
+    """2D vessel unit description"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def annular(self) -> _WallVessel2dAnnularItem:
-        """Annular representation of a layer by two contours, inner and outer. Alternatively, the layer can be described by a centreline and thickness.
-        """
+        """Annular representation of a layer by two contours, inner and outer. Alternatively, the layer can be described by a centreline and thickness."""
     @property
     def element(self) -> _WallVessel2dElementArrayFromItem:
-        """Set of block elements
-        """
+        """Set of block elements"""
     @property
     def material(self) -> _WallIdentifierStaticArrayFromItem:
-        """Set of materials in this unit
-        """
+        """Set of materials in this unit"""
     @property
     def material_volume_fraction(self) -> Path[npt.NDArray[np.float64]]:
         """Fraction of the volume of each material in this unit
@@ -15206,29 +13717,23 @@ class _WallVessel2dUnitItem:
         """
 
 class _WallVessel2dUnitMany:
-    """2D vessel unit description
-    """
+    """2D vessel unit description"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def annular(self) -> _WallVessel2dAnnularMany:
-        """Annular representation of a layer by two contours, inner and outer. Alternatively, the layer can be described by a centreline and thickness.
-        """
+        """Annular representation of a layer by two contours, inner and outer. Alternatively, the layer can be described by a centreline and thickness."""
     @property
     def element(self) -> _WallVessel2dElementArrayFromMany:
-        """Set of block elements
-        """
+        """Set of block elements"""
     @property
     def material(self) -> _WallIdentifierStaticArrayFromMany:
-        """Set of materials in this unit
-        """
+        """Set of materials in this unit"""
     @property
     def material_volume_fraction(self) -> Path[npt.NDArray[np.float64]]:
         """Fraction of the volume of each material in this unit
@@ -15237,93 +13742,72 @@ class _WallVessel2dUnitMany:
         """
 
 class _Wall2dItem:
-    """2D wall description
-    """
+    """2D wall description"""
 
     @property
     def type(self) -> _WallIdentifierStaticItem:
-        """Type of the description
-        """
+        """Type of the description"""
     @property
     def limiter(self) -> _Wall2dLimiterItem:
-        """Description of the immobile limiting surface(s) or plasma facing components for defining the Last Closed Flux Surface.
-        """
+        """Description of the immobile limiting surface(s) or plasma facing components for defining the Last Closed Flux Surface."""
     @property
     def mobile(self) -> _Wall2dMobileItem:
-        """In case of mobile plasma facing components, use the time-dependent description below this node to provide the full outline of the closest PFC surfaces to the plasma. Even in such a case, the 'limiter' structure is still used to provide the outermost limiting surface (can be used e.g. to define the boundary of the mesh of equilibrium reconstruction codes)
-        """
+        """In case of mobile plasma facing components, use the time-dependent description below this node to provide the full outline of the closest PFC surfaces to the plasma. Even in such a case, the 'limiter' structure is still used to provide the outermost limiting surface (can be used e.g. to define the boundary of the mesh of equilibrium reconstruction codes)"""
     @property
     def vessel(self) -> _WallVessel2dItem:
-        """Mechanical structure of the vacuum vessel. The vessel is described as a set of nested layers with given physics properties; Two representations are admitted for each vessel unit : annular (two contours) or block elements.
-        """
+        """Mechanical structure of the vacuum vessel. The vessel is described as a set of nested layers with given physics properties; Two representations are admitted for each vessel unit : annular (two contours) or block elements."""
 
 class _Wall2dMany:
-    """2D wall description
-    """
+    """2D wall description"""
 
     @property
     def type(self) -> _WallIdentifierStaticMany:
-        """Type of the description
-        """
+        """Type of the description"""
     @property
     def limiter(self) -> _Wall2dLimiterMany:
-        """Description of the immobile limiting surface(s) or plasma facing components for defining the Last Closed Flux Surface.
-        """
+        """Description of the immobile limiting surface(s) or plasma facing components for defining the Last Closed Flux Surface."""
     @property
     def mobile(self) -> _Wall2dMobileMany:
-        """In case of mobile plasma facing components, use the time-dependent description below this node to provide the full outline of the closest PFC surfaces to the plasma. Even in such a case, the 'limiter' structure is still used to provide the outermost limiting surface (can be used e.g. to define the boundary of the mesh of equilibrium reconstruction codes)
-        """
+        """In case of mobile plasma facing components, use the time-dependent description below this node to provide the full outline of the closest PFC surfaces to the plasma. Even in such a case, the 'limiter' structure is still used to provide the outermost limiting surface (can be used e.g. to define the boundary of the mesh of equilibrium reconstruction codes)"""
     @property
     def vessel(self) -> _WallVessel2dMany:
-        """Mechanical structure of the vacuum vessel. The vessel is described as a set of nested layers with given physics properties; Two representations are admitted for each vessel unit : annular (two contours) or block elements.
-        """
+        """Mechanical structure of the vacuum vessel. The vessel is described as a set of nested layers with given physics properties; Two representations are admitted for each vessel unit : annular (two contours) or block elements."""
 
 class _Wall2dLimiterItem:
-    """2D limiter description
-    """
+    """2D limiter description"""
 
     @property
     def type(self) -> _WallIdentifierStaticItem:
-        """Type of the limiter description. index = 0 for the official single contour limiter and 1 for the official disjoint PFC structure like first wall. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index =2
-        """
+        """Type of the limiter description. index = 0 for the official single contour limiter and 1 for the official disjoint PFC structure like first wall. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index =2"""
     @property
     def unit(self) -> _Wall2dLimiterUnitArrayFromItem:
-        """Set of limiter units. Whenever relevant, multiple units should be ordered so that they define contiguous sections, clockwise in the poloidal direction.
-        """
+        """Set of limiter units. Whenever relevant, multiple units should be ordered so that they define contiguous sections, clockwise in the poloidal direction."""
 
 class _Wall2dLimiterMany:
-    """2D limiter description
-    """
+    """2D limiter description"""
 
     @property
     def type(self) -> _WallIdentifierStaticMany:
-        """Type of the limiter description. index = 0 for the official single contour limiter and 1 for the official disjoint PFC structure like first wall. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index =2
-        """
+        """Type of the limiter description. index = 0 for the official single contour limiter and 1 for the official disjoint PFC structure like first wall. Additional representations needed on a code-by-code basis follow same incremental pair tagging starting on index =2"""
     @property
     def unit(self) -> _Wall2dLimiterUnitArrayFromMany:
-        """Set of limiter units. Whenever relevant, multiple units should be ordered so that they define contiguous sections, clockwise in the poloidal direction.
-        """
+        """Set of limiter units. Whenever relevant, multiple units should be ordered so that they define contiguous sections, clockwise in the poloidal direction."""
 
 class _Wall2dLimiterUnitItem:
-    """2D limiter unit description
-    """
+    """2D limiter unit description"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
-        """
+        """Short string identifier (unique for a given device). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def component_type(self) -> _WallIdentifierStaticItem:
-        """Type of component of this unit
-        """
+        """Type of component of this unit"""
     @property
     def outline(self) -> _WallRz1dStaticItem:
-        """Irregular outline of the limiting surface. Repeat the first point in case of a closed contour
-        """
+        """Irregular outline of the limiting surface. Repeat the first point in case of a closed contour"""
     @property
     def phi_extensions(self) -> Path[npt.NDArray[np.float64]]:
         """Simplified description of toroidal angle extensions of the unit, by a list of zones defined by their centre and full width (in toroidal angle).  In each of these zones, the unit outline remains the same. Leave this node empty for an axisymmetric unit. The first dimension gives the centre and full width toroidal angle values for the unit. The second dimension represents the toroidal occurrences of the unit countour (i.e. the number of toroidal zones).
@@ -15356,25 +13840,20 @@ class _Wall2dLimiterUnitItem:
         """
 
 class _Wall2dLimiterUnitMany:
-    """2D limiter unit description
-    """
+    """2D limiter unit description"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
-        """
+        """Short string identifier (unique for a given device). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def component_type(self) -> _WallIdentifierStaticMany:
-        """Type of component of this unit
-        """
+        """Type of component of this unit"""
     @property
     def outline(self) -> _WallRz1dStaticMany:
-        """Irregular outline of the limiting surface. Repeat the first point in case of a closed contour
-        """
+        """Irregular outline of the limiting surface. Repeat the first point in case of a closed contour"""
     @property
     def phi_extensions(self) -> Path[npt.NDArray[np.float64]]:
         """Simplified description of toroidal angle extensions of the unit, by a list of zones defined by their centre and full width (in toroidal angle).  In each of these zones, the unit outline remains the same. Leave this node empty for an axisymmetric unit. The first dimension gives the centre and full width toroidal angle values for the unit. The second dimension represents the toroidal occurrences of the unit countour (i.e. the number of toroidal zones).
@@ -15407,43 +13886,34 @@ class _Wall2dLimiterUnitMany:
         """
 
 class _Wall2dMobileItem:
-    """2D mobile parts description
-    """
+    """2D mobile parts description"""
 
     @property
     def type(self) -> _WallIdentifierStaticItem:
-        """Type of the description
-        """
+        """Type of the description"""
     @property
     def unit(self) -> _Wall2dMobileUnitArrayFromItem:
-        """Set of mobile units
-        """
+        """Set of mobile units"""
 
 class _Wall2dMobileMany:
-    """2D mobile parts description
-    """
+    """2D mobile parts description"""
 
     @property
     def type(self) -> _WallIdentifierStaticMany:
-        """Type of the description
-        """
+        """Type of the description"""
     @property
     def unit(self) -> _Wall2dMobileUnitArrayFromMany:
-        """Set of mobile units
-        """
+        """Set of mobile units"""
 
 class _Wall2dMobileUnitItem:
-    """2D mobile parts description
-    """
+    """2D mobile parts description"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the mobile unit
-        """
+        """Name of the mobile unit"""
     @property
     def outline(self) -> _WallRz1dDynamicAosTimeArrayFromItem:
-        """Irregular outline of the mobile unit, for a set of time slices. Repeat the first point in case of a closed contour
-        """
+        """Irregular outline of the mobile unit, for a set of time slices. Repeat the first point in case of a closed contour"""
     @property
     def phi_extensions(self) -> Path[npt.NDArray[np.float64]]:
         """Simplified description of toroidal angle extensions of the unit, by a list of zones defined by their centre and full width (in toroidal angle).  In each of these zones, the unit outline remains the same. Leave this node empty for an axisymmetric unit. The first dimension gives the centre and full width toroidal angle values for the unit. The second dimension represents the toroidal occurrences of the unit countour (i.e. the number of toroidal zones).
@@ -15458,17 +13928,14 @@ class _Wall2dMobileUnitItem:
         """
 
 class _Wall2dMobileUnitMany:
-    """2D mobile parts description
-    """
+    """2D mobile parts description"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the mobile unit
-        """
+        """Name of the mobile unit"""
     @property
     def outline(self) -> _WallRz1dDynamicAosTimeArrayFromMany:
-        """Irregular outline of the mobile unit, for a set of time slices. Repeat the first point in case of a closed contour
-        """
+        """Irregular outline of the mobile unit, for a set of time slices. Repeat the first point in case of a closed contour"""
     @property
     def phi_extensions(self) -> Path[npt.NDArray[np.float64]]:
         """Simplified description of toroidal angle extensions of the unit, by a list of zones defined by their centre and full width (in toroidal angle).  In each of these zones, the unit outline remains the same. Leave this node empty for an axisymmetric unit. The first dimension gives the centre and full width toroidal angle values for the unit. The second dimension represents the toroidal occurrences of the unit countour (i.e. the number of toroidal zones).
@@ -15483,79 +13950,61 @@ class _Wall2dMobileUnitMany:
         """
 
 class _WallDescriptionGgdItem:
-    """3D wall description using the GGD
-    """
+    """3D wall description using the GGD"""
 
     @property
     def type(self) -> _WallIdentifierStaticItem:
-        """Type of wall: index = 0 for gas tight, 1 for a wall with holes/open ports, 2 for a thin wall description
-        """
+        """Type of wall: index = 0 for gas tight, 1 for a wall with holes/open ports, 2 for a thin wall description"""
     @property
     def grid_ggd(self) -> _WallGenericGridAos3RootArrayFromItem:
-        """Wall geometry described using the Generic Grid Description, for various time slices (in case of mobile wall elements). The timebase of this array of structure must be a subset of the timebase on which physical quantities are described (../ggd structure). Grid_subsets are used to describe various  wall components in a modular way.
-        """
+        """Wall geometry described using the Generic Grid Description, for various time slices (in case of mobile wall elements). The timebase of this array of structure must be a subset of the timebase on which physical quantities are described (../ggd structure). Grid_subsets are used to describe various  wall components in a modular way."""
     @property
     def material(self) -> _WallDescriptionGgdMaterialArrayFromItem:
-        """Material of each grid_ggd object, given for each slice of the grid_ggd time base (the material is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """Material of each grid_ggd object, given for each slice of the grid_ggd time base (the material is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def component(self) -> _WallDescriptionGgdComponentArrayFromItem:
-        """Description of the components represented by various subsets, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """Description of the components represented by various subsets, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def thickness(self) -> _WallDescriptionGgdThicknessArrayFromItem:
-        """In the case of a thin wall description, effective thickness of each surface element of grid_ggd, given for each slice of the grid_ggd time base (the thickness is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """In the case of a thin wall description, effective thickness of each surface element of grid_ggd, given for each slice of the grid_ggd time base (the thickness is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def brdf(self) -> _WallDescriptionGgdBrdfArrayFromItem:
-        """Bidirectional Reflectance Distribution Function, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """Bidirectional Reflectance Distribution Function, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def ggd(self) -> _WallDescriptionGgdGgdArrayFromItem:
-        """Wall physics quantities represented using the general grid description, for various time slices.
-        """
+        """Wall physics quantities represented using the general grid description, for various time slices."""
 
 class _WallDescriptionGgdMany:
-    """3D wall description using the GGD
-    """
+    """3D wall description using the GGD"""
 
     @property
     def type(self) -> _WallIdentifierStaticMany:
-        """Type of wall: index = 0 for gas tight, 1 for a wall with holes/open ports, 2 for a thin wall description
-        """
+        """Type of wall: index = 0 for gas tight, 1 for a wall with holes/open ports, 2 for a thin wall description"""
     @property
     def grid_ggd(self) -> _WallGenericGridAos3RootArrayFromMany:
-        """Wall geometry described using the Generic Grid Description, for various time slices (in case of mobile wall elements). The timebase of this array of structure must be a subset of the timebase on which physical quantities are described (../ggd structure). Grid_subsets are used to describe various  wall components in a modular way.
-        """
+        """Wall geometry described using the Generic Grid Description, for various time slices (in case of mobile wall elements). The timebase of this array of structure must be a subset of the timebase on which physical quantities are described (../ggd structure). Grid_subsets are used to describe various  wall components in a modular way."""
     @property
     def material(self) -> _WallDescriptionGgdMaterialArrayFromMany:
-        """Material of each grid_ggd object, given for each slice of the grid_ggd time base (the material is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """Material of each grid_ggd object, given for each slice of the grid_ggd time base (the material is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def component(self) -> _WallDescriptionGgdComponentArrayFromMany:
-        """Description of the components represented by various subsets, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """Description of the components represented by various subsets, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def thickness(self) -> _WallDescriptionGgdThicknessArrayFromMany:
-        """In the case of a thin wall description, effective thickness of each surface element of grid_ggd, given for each slice of the grid_ggd time base (the thickness is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """In the case of a thin wall description, effective thickness of each surface element of grid_ggd, given for each slice of the grid_ggd time base (the thickness is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def brdf(self) -> _WallDescriptionGgdBrdfArrayFromMany:
-        """Bidirectional Reflectance Distribution Function, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)
-        """
+        """Bidirectional Reflectance Distribution Function, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)"""
     @property
     def ggd(self) -> _WallDescriptionGgdGgdArrayFromMany:
-        """Wall physics quantities represented using the general grid description, for various time slices.
-        """
+        """Wall physics quantities represented using the general grid description, for various time slices."""
 
 class _WallDescriptionGgdBrdfItem:
-    """Bidirectional Reflectance Distribution Function of each wall surface element with GGD description
-    """
+    """Bidirectional Reflectance Distribution Function of each wall surface element with GGD description"""
 
     @property
     def type(self) -> _WallGenericGridIdentifierArrayFromItem:
-        """The BRDF model type is described for various wall components (grid subsets), using the identifier convention below
-        """
+        """The BRDF model type is described for various wall components (grid subsets), using the identifier convention below"""
     @property
     def parameters(self) -> _WallGenericGridVectorArrayFromItem:
         """Parameters of the BRDF model for various wall components (grid subsets)
@@ -15570,13 +14019,11 @@ class _WallDescriptionGgdBrdfItem:
         """
 
 class _WallDescriptionGgdBrdfMany:
-    """Bidirectional Reflectance Distribution Function of each wall surface element with GGD description
-    """
+    """Bidirectional Reflectance Distribution Function of each wall surface element with GGD description"""
 
     @property
     def type(self) -> _WallGenericGridIdentifierArrayFromMany:
-        """The BRDF model type is described for various wall components (grid subsets), using the identifier convention below
-        """
+        """The BRDF model type is described for various wall components (grid subsets), using the identifier convention below"""
     @property
     def parameters(self) -> _WallGenericGridVectorArrayFromMany:
         """Parameters of the BRDF model for various wall components (grid subsets)
@@ -15591,17 +14038,14 @@ class _WallDescriptionGgdBrdfMany:
         """
 
 class _WallDescriptionGgdComponentItem:
-    """Component type for GGD description
-    """
+    """Component type for GGD description"""
 
     @property
     def identifiers(self) -> Path[list[str]]:
-        """Identifiers of the components (described in the various grid_subsets). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
-        """
+        """Identifiers of the components (described in the various grid_subsets). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna"""
     @property
     def type(self) -> _WallGenericGridIdentifierSingleArrayFromItem:
-        """The component type is given for various grid_subsets, using the identifier convention below
-        """
+        """The component type is given for various grid_subsets, using the identifier convention below"""
     @property
     def time(self) -> Path[float]:
         """Time
@@ -15610,17 +14054,14 @@ class _WallDescriptionGgdComponentItem:
         """
 
 class _WallDescriptionGgdComponentMany:
-    """Component type for GGD description
-    """
+    """Component type for GGD description"""
 
     @property
     def identifiers(self) -> Path[npt.NDArray[np.str_]]:
-        """Identifiers of the components (described in the various grid_subsets). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
-        """
+        """Identifiers of the components (described in the various grid_subsets). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna"""
     @property
     def type(self) -> _WallGenericGridIdentifierSingleArrayFromMany:
-        """The component type is given for various grid_subsets, using the identifier convention below
-        """
+        """The component type is given for various grid_subsets, using the identifier convention below"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Time
@@ -15629,55 +14070,43 @@ class _WallDescriptionGgdComponentMany:
         """
 
 class _WallDescriptionGgdEnergyItem:
-    """Patricle energy fluxes related to the 3D wall description using the GGD
-    """
+    """Patricle energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def radiation(self) -> _WallDescriptionGgdEnergySimpleItem:
-        """Total radiation, not split by process
-        """
+        """Total radiation, not split by process"""
     @property
     def current(self) -> _WallDescriptionGgdEnergySimpleItem:
-        """Current energy fluxes
-        """
+        """Current energy fluxes"""
     @property
     def recombination(self) -> _WallDescriptionGgdRecombinationItem:
-        """Wall recombination
-        """
+        """Wall recombination"""
     @property
     def kinetic(self) -> _WallDescriptionGgdKineticItem:
-        """Energy fluxes due to the kinetic energy of particles
-        """
+        """Energy fluxes due to the kinetic energy of particles"""
 
 class _WallDescriptionGgdEnergyMany:
-    """Patricle energy fluxes related to the 3D wall description using the GGD
-    """
+    """Patricle energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def radiation(self) -> _WallDescriptionGgdEnergySimpleMany:
-        """Total radiation, not split by process
-        """
+        """Total radiation, not split by process"""
     @property
     def current(self) -> _WallDescriptionGgdEnergySimpleMany:
-        """Current energy fluxes
-        """
+        """Current energy fluxes"""
     @property
     def recombination(self) -> _WallDescriptionGgdRecombinationMany:
-        """Wall recombination
-        """
+        """Wall recombination"""
     @property
     def kinetic(self) -> _WallDescriptionGgdKineticMany:
-        """Energy fluxes due to the kinetic energy of particles
-        """
+        """Energy fluxes due to the kinetic energy of particles"""
 
 class _WallDescriptionGgdEnergyIonItem:
-    """Ion energy fluxes related to the 3D wall description using the GGD
-    """
+    """Ion energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[float]:
         """Ion charge (of the dominant ionization state; lumped ions are allowed)
@@ -15686,12 +14115,10 @@ class _WallDescriptionGgdEnergyIonItem:
         """
     @property
     def name(self) -> Path[str]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def neutral_index(self) -> Path[int]:
-        """Index of the corresponding neutral species in the ../../neutral array
-        """
+        """Index of the corresponding neutral species in the ../../neutral array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -15706,21 +14133,17 @@ class _WallDescriptionGgdEnergyIonItem:
         """
     @property
     def multiple_states_flag(self) -> Path[int]:
-        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure
-        """
+        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure"""
     @property
     def state(self) -> _WallDescriptionGgdEnergyIonStateArrayFromItem:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdEnergyIonMany:
-    """Ion energy fluxes related to the 3D wall description using the GGD
-    """
+    """Ion energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[npt.NDArray[np.float64]]:
         """Ion charge (of the dominant ionization state; lumped ions are allowed)
@@ -15729,12 +14152,10 @@ class _WallDescriptionGgdEnergyIonMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def neutral_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the corresponding neutral species in the ../../neutral array
-        """
+        """Index of the corresponding neutral species in the ../../neutral array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -15749,16 +14170,13 @@ class _WallDescriptionGgdEnergyIonMany:
         """
     @property
     def multiple_states_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure
-        """
+        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure"""
     @property
     def state(self) -> _WallDescriptionGgdEnergyIonStateArrayFromMany:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdEnergyIonStateItem:
-    """Ion state energy fluxes related to the 3D wall description using the GGD
-    """
+    """Ion state energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def z_min(self) -> Path[float]:
@@ -15774,8 +14192,7 @@ class _WallDescriptionGgdEnergyIonStateItem:
         """
     @property
     def name(self) -> Path[str]:
-        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
-        """
+        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)"""
     @property
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
@@ -15784,12 +14201,10 @@ class _WallDescriptionGgdEnergyIonStateItem:
         """
     @property
     def vibrational_mode(self) -> Path[str]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def electron_configuration(self) -> Path[str]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -15804,8 +14219,7 @@ class _WallDescriptionGgdEnergyIonStateItem:
         """
 
 class _WallDescriptionGgdEnergyIonStateMany:
-    """Ion state energy fluxes related to the 3D wall description using the GGD
-    """
+    """Ion state energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def z_min(self) -> Path[npt.NDArray[np.float64]]:
@@ -15821,8 +14235,7 @@ class _WallDescriptionGgdEnergyIonStateMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
-        """
+        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)"""
     @property
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
@@ -15831,12 +14244,10 @@ class _WallDescriptionGgdEnergyIonStateMany:
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -15851,21 +14262,17 @@ class _WallDescriptionGgdEnergyIonStateMany:
         """
 
 class _WallDescriptionGgdEnergyNeutralItem:
-    """Neutral energy fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[str]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def ion_index(self) -> Path[int]:
-        """Index of the corresponding ion species in the ../../ion array
-        """
+        """Index of the corresponding ion species in the ../../ion array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -15880,29 +14287,23 @@ class _WallDescriptionGgdEnergyNeutralItem:
         """
     @property
     def multiple_states_flag(self) -> Path[int]:
-        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure
-        """
+        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure"""
     @property
     def state(self) -> _WallDescriptionGgdEnergyNeutralStateArrayFromItem:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdEnergyNeutralMany:
-    """Neutral energy fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def ion_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the corresponding ion species in the ../../ion array
-        """
+        """Index of the corresponding ion species in the ../../ion array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -15917,21 +14318,17 @@ class _WallDescriptionGgdEnergyNeutralMany:
         """
     @property
     def multiple_states_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure
-        """
+        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure"""
     @property
     def state(self) -> _WallDescriptionGgdEnergyNeutralStateArrayFromMany:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdEnergyNeutralStateItem:
-    """Neutral state energy fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral state energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def name(self) -> Path[str]:
-        """String identifying state
-        """
+        """String identifying state"""
     @property
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
@@ -15940,16 +14337,13 @@ class _WallDescriptionGgdEnergyNeutralStateItem:
         """
     @property
     def vibrational_mode(self) -> Path[str]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def neutral_type(self) -> _WallIdentifierDynamicAos3Item:
-        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
-        """
+        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI"""
     @property
     def electron_configuration(self) -> Path[str]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -15964,13 +14358,11 @@ class _WallDescriptionGgdEnergyNeutralStateItem:
         """
 
 class _WallDescriptionGgdEnergyNeutralStateMany:
-    """Neutral state energy fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral state energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying state
-        """
+        """String identifying state"""
     @property
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
@@ -15979,16 +14371,13 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def neutral_type(self) -> _WallIdentifierDynamicAos3Many:
-        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
-        """
+        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI"""
     @property
     def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -16003,8 +14392,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
         """
 
 class _WallDescriptionGgdEnergySimpleItem:
-    """Incident and emitted energy fluxes related to the 3D wall description using the GGD
-    """
+    """Incident and emitted energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
@@ -16020,8 +14408,7 @@ class _WallDescriptionGgdEnergySimpleItem:
         """
 
 class _WallDescriptionGgdEnergySimpleMany:
-    """Incident and emitted energy fluxes related to the 3D wall description using the GGD
-    """
+    """Incident and emitted energy fluxes related to the 3D wall description using the GGD"""
 
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
@@ -16037,8 +14424,7 @@ class _WallDescriptionGgdEnergySimpleMany:
         """
 
 class _WallDescriptionGgdGgdItem:
-    """Physics quantities related to the 3D wall description using the GGD
-    """
+    """Physics quantities related to the 3D wall description using the GGD"""
 
     @property
     def power_density(self) -> _WallGenericGridScalarArrayFromItem:
@@ -16060,16 +14446,13 @@ class _WallDescriptionGgdGgdItem:
         """
     @property
     def recycling(self) -> _WallDescriptionGgdRecyclingItem:
-        """Fraction of incoming particles that is reflected back to the vacuum chamber
-        """
+        """Fraction of incoming particles that is reflected back to the vacuum chamber"""
     @property
     def particle_fluxes(self) -> _WallDescriptionGgdParticleItem:
-        """Particle fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted
-        """
+        """Particle fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted"""
     @property
     def energy_fluxes(self) -> _WallDescriptionGgdEnergyItem:
-        """Energy fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted
-        """
+        """Energy fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted"""
     @property
     def j_total(self) -> _WallGenericGridVectorComponentsRphizArrayFromItem:
         """Total current density, given on various grid subsets
@@ -16126,8 +14509,7 @@ class _WallDescriptionGgdGgdItem:
         """
 
 class _WallDescriptionGgdGgdMany:
-    """Physics quantities related to the 3D wall description using the GGD
-    """
+    """Physics quantities related to the 3D wall description using the GGD"""
 
     @property
     def power_density(self) -> _WallGenericGridScalarArrayFromMany:
@@ -16149,16 +14531,13 @@ class _WallDescriptionGgdGgdMany:
         """
     @property
     def recycling(self) -> _WallDescriptionGgdRecyclingMany:
-        """Fraction of incoming particles that is reflected back to the vacuum chamber
-        """
+        """Fraction of incoming particles that is reflected back to the vacuum chamber"""
     @property
     def particle_fluxes(self) -> _WallDescriptionGgdParticleMany:
-        """Particle fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted
-        """
+        """Particle fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted"""
     @property
     def energy_fluxes(self) -> _WallDescriptionGgdEnergyMany:
-        """Energy fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted
-        """
+        """Energy fluxes. The incident and emitted components are distinguished. The net flux received by the wall is equal to incident - emitted"""
     @property
     def j_total(self) -> _WallGenericGridVectorComponentsRphizArrayFromMany:
         """Total current density, given on various grid subsets
@@ -16215,47 +14594,37 @@ class _WallDescriptionGgdGgdMany:
         """
 
 class _WallDescriptionGgdKineticItem:
-    """Energy fluxes due to kinetic energy of particles related to the 3D wall description using the GGD
-    """
+    """Energy fluxes due to kinetic energy of particles related to the 3D wall description using the GGD"""
 
     @property
     def electrons(self) -> _WallDescriptionGgdEnergySimpleItem:
-        """Electron fluxes. Fluxes are given at the wall, after the sheath.
-        """
+        """Electron fluxes. Fluxes are given at the wall, after the sheath."""
     @property
     def ion(self) -> _WallDescriptionGgdEnergyIonArrayFromItem:
-        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below. Fluxes are given at the wall, after the sheath.
-        """
+        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below. Fluxes are given at the wall, after the sheath."""
     @property
     def neutral(self) -> _WallDescriptionGgdEnergyNeutralArrayFromItem:
-        """Neutral species fluxes
-        """
+        """Neutral species fluxes"""
 
 class _WallDescriptionGgdKineticMany:
-    """Energy fluxes due to kinetic energy of particles related to the 3D wall description using the GGD
-    """
+    """Energy fluxes due to kinetic energy of particles related to the 3D wall description using the GGD"""
 
     @property
     def electrons(self) -> _WallDescriptionGgdEnergySimpleMany:
-        """Electron fluxes. Fluxes are given at the wall, after the sheath.
-        """
+        """Electron fluxes. Fluxes are given at the wall, after the sheath."""
     @property
     def ion(self) -> _WallDescriptionGgdEnergyIonArrayFromMany:
-        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below. Fluxes are given at the wall, after the sheath.
-        """
+        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below. Fluxes are given at the wall, after the sheath."""
     @property
     def neutral(self) -> _WallDescriptionGgdEnergyNeutralArrayFromMany:
-        """Neutral species fluxes
-        """
+        """Neutral species fluxes"""
 
 class _WallDescriptionGgdMaterialItem:
-    """Material forming the wall with GGD description
-    """
+    """Material forming the wall with GGD description"""
 
     @property
     def grid_subset(self) -> _WallGenericGridIdentifierArrayFromItem:
-        """Material is described for various wall components (grid subsets), using the identifier convention below
-        """
+        """Material is described for various wall components (grid subsets), using the identifier convention below"""
     @property
     def time(self) -> Path[float]:
         """Time
@@ -16264,13 +14633,11 @@ class _WallDescriptionGgdMaterialItem:
         """
 
 class _WallDescriptionGgdMaterialMany:
-    """Material forming the wall with GGD description
-    """
+    """Material forming the wall with GGD description"""
 
     @property
     def grid_subset(self) -> _WallGenericGridIdentifierArrayFromMany:
-        """Material is described for various wall components (grid subsets), using the identifier convention below
-        """
+        """Material is described for various wall components (grid subsets), using the identifier convention below"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Time
@@ -16279,42 +14646,33 @@ class _WallDescriptionGgdMaterialMany:
         """
 
 class _WallDescriptionGgdParticleItem:
-    """Patricle fluxes related to the 3D wall description using the GGD
-    """
+    """Patricle fluxes related to the 3D wall description using the GGD"""
 
     @property
     def electrons(self) -> _WallDescriptionGgdParticleElItem:
-        """Electron fluxes
-        """
+        """Electron fluxes"""
     @property
     def ion(self) -> _WallDescriptionGgdParticleIonArrayFromItem:
-        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below
-        """
+        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below"""
     @property
     def neutral(self) -> _WallDescriptionGgdParticleNeutralArrayFromItem:
-        """Neutral species fluxes
-        """
+        """Neutral species fluxes"""
 
 class _WallDescriptionGgdParticleMany:
-    """Patricle fluxes related to the 3D wall description using the GGD
-    """
+    """Patricle fluxes related to the 3D wall description using the GGD"""
 
     @property
     def electrons(self) -> _WallDescriptionGgdParticleElMany:
-        """Electron fluxes
-        """
+        """Electron fluxes"""
     @property
     def ion(self) -> _WallDescriptionGgdParticleIonArrayFromMany:
-        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below
-        """
+        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below"""
     @property
     def neutral(self) -> _WallDescriptionGgdParticleNeutralArrayFromMany:
-        """Neutral species fluxes
-        """
+        """Neutral species fluxes"""
 
 class _WallDescriptionGgdParticleElItem:
-    """Electron fluxes related to the 3D wall description using the GGD
-    """
+    """Electron fluxes related to the 3D wall description using the GGD"""
 
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
@@ -16330,8 +14688,7 @@ class _WallDescriptionGgdParticleElItem:
         """
 
 class _WallDescriptionGgdParticleElMany:
-    """Electron fluxes related to the 3D wall description using the GGD
-    """
+    """Electron fluxes related to the 3D wall description using the GGD"""
 
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
@@ -16347,13 +14704,11 @@ class _WallDescriptionGgdParticleElMany:
         """
 
 class _WallDescriptionGgdParticleIonItem:
-    """Ion fluxes related to the 3D wall description using the GGD
-    """
+    """Ion fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[float]:
         """Ion charge (of the dominant ionization state; lumped ions are allowed)
@@ -16362,12 +14717,10 @@ class _WallDescriptionGgdParticleIonItem:
         """
     @property
     def name(self) -> Path[str]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def neutral_index(self) -> Path[int]:
-        """Index of the corresponding neutral species in the ../../neutral array
-        """
+        """Index of the corresponding neutral species in the ../../neutral array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -16382,21 +14735,17 @@ class _WallDescriptionGgdParticleIonItem:
         """
     @property
     def multiple_states_flag(self) -> Path[int]:
-        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure
-        """
+        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure"""
     @property
     def state(self) -> _WallDescriptionGgdParticleIonStateArrayFromItem:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdParticleIonMany:
-    """Ion fluxes related to the 3D wall description using the GGD
-    """
+    """Ion fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[npt.NDArray[np.float64]]:
         """Ion charge (of the dominant ionization state; lumped ions are allowed)
@@ -16405,12 +14754,10 @@ class _WallDescriptionGgdParticleIonMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def neutral_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the corresponding neutral species in the ../../neutral array
-        """
+        """Index of the corresponding neutral species in the ../../neutral array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -16425,16 +14772,13 @@ class _WallDescriptionGgdParticleIonMany:
         """
     @property
     def multiple_states_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure
-        """
+        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure"""
     @property
     def state(self) -> _WallDescriptionGgdParticleIonStateArrayFromMany:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdParticleIonStateItem:
-    """Ion state fluxes related to the 3D wall description using the GGD
-    """
+    """Ion state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def z_min(self) -> Path[float]:
@@ -16450,8 +14794,7 @@ class _WallDescriptionGgdParticleIonStateItem:
         """
     @property
     def name(self) -> Path[str]:
-        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
-        """
+        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)"""
     @property
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
@@ -16460,12 +14803,10 @@ class _WallDescriptionGgdParticleIonStateItem:
         """
     @property
     def vibrational_mode(self) -> Path[str]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def electron_configuration(self) -> Path[str]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -16480,8 +14821,7 @@ class _WallDescriptionGgdParticleIonStateItem:
         """
 
 class _WallDescriptionGgdParticleIonStateMany:
-    """Ion state fluxes related to the 3D wall description using the GGD
-    """
+    """Ion state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def z_min(self) -> Path[npt.NDArray[np.float64]]:
@@ -16497,8 +14837,7 @@ class _WallDescriptionGgdParticleIonStateMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
-        """
+        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)"""
     @property
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
@@ -16507,12 +14846,10 @@ class _WallDescriptionGgdParticleIonStateMany:
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -16527,21 +14864,17 @@ class _WallDescriptionGgdParticleIonStateMany:
         """
 
 class _WallDescriptionGgdParticleNeutralItem:
-    """Neutral fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[str]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def ion_index(self) -> Path[int]:
-        """Index of the corresponding ion species in the ../../ion array
-        """
+        """Index of the corresponding ion species in the ../../ion array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -16556,29 +14889,23 @@ class _WallDescriptionGgdParticleNeutralItem:
         """
     @property
     def multiple_states_flag(self) -> Path[int]:
-        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure
-        """
+        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure"""
     @property
     def state(self) -> _WallDescriptionGgdParticleNeutralStateArrayFromItem:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdParticleNeutralMany:
-    """Neutral fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def ion_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the corresponding ion species in the ../../ion array
-        """
+        """Index of the corresponding ion species in the ../../ion array"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -16593,21 +14920,17 @@ class _WallDescriptionGgdParticleNeutralMany:
         """
     @property
     def multiple_states_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure
-        """
+        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure"""
     @property
     def state(self) -> _WallDescriptionGgdParticleNeutralStateArrayFromMany:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdParticleNeutralStateItem:
-    """Neutral state fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def name(self) -> Path[str]:
-        """String identifying state
-        """
+        """String identifying state"""
     @property
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
@@ -16616,16 +14939,13 @@ class _WallDescriptionGgdParticleNeutralStateItem:
         """
     @property
     def vibrational_mode(self) -> Path[str]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def neutral_type(self) -> _WallIdentifierDynamicAos3Item:
-        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
-        """
+        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI"""
     @property
     def electron_configuration(self) -> Path[str]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromItem:
         """Incident fluxes for various wall components (grid subsets)
@@ -16640,13 +14960,11 @@ class _WallDescriptionGgdParticleNeutralStateItem:
         """
 
 class _WallDescriptionGgdParticleNeutralStateMany:
-    """Neutral state fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying state
-        """
+        """String identifying state"""
     @property
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
@@ -16655,16 +14973,13 @@ class _WallDescriptionGgdParticleNeutralStateMany:
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def neutral_type(self) -> _WallIdentifierDynamicAos3Many:
-        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
-        """
+        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI"""
     @property
     def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def incident(self) -> _WallGenericGridScalarArrayFromMany:
         """Incident fluxes for various wall components (grid subsets)
@@ -16679,65 +14994,51 @@ class _WallDescriptionGgdParticleNeutralStateMany:
         """
 
 class _WallDescriptionGgdRecombinationItem:
-    """Energy fluxes due to recombination related to the 3D wall description using the GGD
-    """
+    """Energy fluxes due to recombination related to the 3D wall description using the GGD"""
 
     @property
     def ion(self) -> _WallDescriptionGgdEnergyIonArrayFromItem:
-        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below
-        """
+        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below"""
     @property
     def neutral(self) -> _WallDescriptionGgdEnergyNeutralArrayFromItem:
-        """Neutral species fluxes
-        """
+        """Neutral species fluxes"""
 
 class _WallDescriptionGgdRecombinationMany:
-    """Energy fluxes due to recombination related to the 3D wall description using the GGD
-    """
+    """Energy fluxes due to recombination related to the 3D wall description using the GGD"""
 
     @property
     def ion(self) -> _WallDescriptionGgdEnergyIonArrayFromMany:
-        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below
-        """
+        """Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below"""
     @property
     def neutral(self) -> _WallDescriptionGgdEnergyNeutralArrayFromMany:
-        """Neutral species fluxes
-        """
+        """Neutral species fluxes"""
 
 class _WallDescriptionGgdRecyclingItem:
-    """Recycling coefficients in the 3D wall description using the GGD
-    """
+    """Recycling coefficients in the 3D wall description using the GGD"""
 
     @property
     def ion(self) -> _WallDescriptionGgdRecyclingIonArrayFromItem:
-        """Recycling coefficients for the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below
-        """
+        """Recycling coefficients for the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below"""
     @property
     def neutral(self) -> _WallDescriptionGgdRecyclingNeutralArrayFromItem:
-        """Recycling coefficients for the various neutral species
-        """
+        """Recycling coefficients for the various neutral species"""
 
 class _WallDescriptionGgdRecyclingMany:
-    """Recycling coefficients in the 3D wall description using the GGD
-    """
+    """Recycling coefficients in the 3D wall description using the GGD"""
 
     @property
     def ion(self) -> _WallDescriptionGgdRecyclingIonArrayFromMany:
-        """Recycling coefficients for the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below
-        """
+        """Recycling coefficients for the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below"""
     @property
     def neutral(self) -> _WallDescriptionGgdRecyclingNeutralArrayFromMany:
-        """Recycling coefficients for the various neutral species
-        """
+        """Recycling coefficients for the various neutral species"""
 
 class _WallDescriptionGgdRecyclingIonItem:
-    """Ion fluxes related to the 3D wall description using the GGD
-    """
+    """Ion fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[float]:
         """Ion charge (of the dominant ionization state; lumped ions are allowed)
@@ -16746,12 +15047,10 @@ class _WallDescriptionGgdRecyclingIonItem:
         """
     @property
     def name(self) -> Path[str]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def neutral_index(self) -> Path[int]:
-        """Index of the corresponding neutral species in the ../../neutral array
-        """
+        """Index of the corresponding neutral species in the ../../neutral array"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromItem:
         """Recycling coefficient for various wall components (grid subsets)
@@ -16760,21 +15059,17 @@ class _WallDescriptionGgdRecyclingIonItem:
         """
     @property
     def multiple_states_flag(self) -> Path[int]:
-        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure
-        """
+        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure"""
     @property
     def state(self) -> _WallDescriptionGgdRecyclingIonStateArrayFromItem:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdRecyclingIonMany:
-    """Ion fluxes related to the 3D wall description using the GGD
-    """
+    """Ion fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def z_ion(self) -> Path[npt.NDArray[np.float64]]:
         """Ion charge (of the dominant ionization state; lumped ions are allowed)
@@ -16783,12 +15078,10 @@ class _WallDescriptionGgdRecyclingIonMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
-        """
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)"""
     @property
     def neutral_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the corresponding neutral species in the ../../neutral array
-        """
+        """Index of the corresponding neutral species in the ../../neutral array"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromMany:
         """Recycling coefficient for various wall components (grid subsets)
@@ -16797,16 +15090,13 @@ class _WallDescriptionGgdRecyclingIonMany:
         """
     @property
     def multiple_states_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure
-        """
+        """Multiple states calculation flag : 0-Only the 'ion' level is considered and the 'state' array of structure is empty; 1-Ion states are considered and are described in the 'state' array of structure"""
     @property
     def state(self) -> _WallDescriptionGgdRecyclingIonStateArrayFromMany:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdRecyclingIonStateItem:
-    """Ion state fluxes related to the 3D wall description using the GGD
-    """
+    """Ion state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def z_min(self) -> Path[float]:
@@ -16822,8 +15112,7 @@ class _WallDescriptionGgdRecyclingIonStateItem:
         """
     @property
     def name(self) -> Path[str]:
-        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
-        """
+        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)"""
     @property
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
@@ -16832,12 +15121,10 @@ class _WallDescriptionGgdRecyclingIonStateItem:
         """
     @property
     def vibrational_mode(self) -> Path[str]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def electron_configuration(self) -> Path[str]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromItem:
         """Recycling coefficient for various wall components (grid subsets)
@@ -16846,8 +15133,7 @@ class _WallDescriptionGgdRecyclingIonStateItem:
         """
 
 class _WallDescriptionGgdRecyclingIonStateMany:
-    """Ion state fluxes related to the 3D wall description using the GGD
-    """
+    """Ion state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def z_min(self) -> Path[npt.NDArray[np.float64]]:
@@ -16863,8 +15149,7 @@ class _WallDescriptionGgdRecyclingIonStateMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
-        """
+        """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)"""
     @property
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
@@ -16873,12 +15158,10 @@ class _WallDescriptionGgdRecyclingIonStateMany:
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromMany:
         """Recycling coefficient for various wall components (grid subsets)
@@ -16887,21 +15170,17 @@ class _WallDescriptionGgdRecyclingIonStateMany:
         """
 
 class _WallDescriptionGgdRecyclingNeutralItem:
-    """Neutral fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[str]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def ion_index(self) -> Path[int]:
-        """Index of the corresponding ion species in the ../../ion array
-        """
+        """Index of the corresponding ion species in the ../../ion array"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromItem:
         """Recycling coefficient for various wall components (grid subsets)
@@ -16910,29 +15189,23 @@ class _WallDescriptionGgdRecyclingNeutralItem:
         """
     @property
     def multiple_states_flag(self) -> Path[int]:
-        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure
-        """
+        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure"""
     @property
     def state(self) -> _WallDescriptionGgdRecyclingNeutralStateArrayFromItem:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdRecyclingNeutralMany:
-    """Neutral fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral fluxes related to the 3D wall description using the GGD"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying neutral (e.g. H, D, T, He, C, ...)
-        """
+        """String identifying neutral (e.g. H, D, T, He, C, ...)"""
     @property
     def ion_index(self) -> Path[npt.NDArray[np.int32]]:
-        """Index of the corresponding ion species in the ../../ion array
-        """
+        """Index of the corresponding ion species in the ../../ion array"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromMany:
         """Recycling coefficient for various wall components (grid subsets)
@@ -16941,21 +15214,17 @@ class _WallDescriptionGgdRecyclingNeutralMany:
         """
     @property
     def multiple_states_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure
-        """
+        """Multiple states calculation flag : 0-Only one state is considered; 1-Multiple states are considered and are described in the state structure"""
     @property
     def state(self) -> _WallDescriptionGgdRecyclingNeutralStateArrayFromMany:
-        """Fluxes related to the different states of the species
-        """
+        """Fluxes related to the different states of the species"""
 
 class _WallDescriptionGgdRecyclingNeutralStateItem:
-    """Neutral state fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def name(self) -> Path[str]:
-        """String identifying state
-        """
+        """String identifying state"""
     @property
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
@@ -16964,16 +15233,13 @@ class _WallDescriptionGgdRecyclingNeutralStateItem:
         """
     @property
     def vibrational_mode(self) -> Path[str]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def neutral_type(self) -> _WallIdentifierDynamicAos3Item:
-        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
-        """
+        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI"""
     @property
     def electron_configuration(self) -> Path[str]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromItem:
         """Recycling coefficient for various wall components (grid subsets)
@@ -16982,13 +15248,11 @@ class _WallDescriptionGgdRecyclingNeutralStateItem:
         """
 
 class _WallDescriptionGgdRecyclingNeutralStateMany:
-    """Neutral state fluxes related to the 3D wall description using the GGD
-    """
+    """Neutral state fluxes related to the 3D wall description using the GGD"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying state
-        """
+        """String identifying state"""
     @property
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
@@ -16997,16 +15261,13 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
-        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
-        """
+        """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature."""
     @property
     def neutral_type(self) -> _WallIdentifierDynamicAos3Many:
-        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
-        """
+        """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI"""
     @property
     def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
-        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
-        """
+        """Configuration of atomic orbitals of this state, e.g. 1s2-2s1"""
     @property
     def coefficient(self) -> _WallGenericGridScalarArrayFromMany:
         """Recycling coefficient for various wall components (grid subsets)
@@ -17015,8 +15276,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
         """
 
 class _WallDescriptionGgdThicknessItem:
-    """Thickness of a thin wall with GGD description
-    """
+    """Thickness of a thin wall with GGD description"""
 
     @property
     def grid_subset(self) -> _WallGenericGridScalarArrayFromItem:
@@ -17032,8 +15292,7 @@ class _WallDescriptionGgdThicknessItem:
         """
 
 class _WallDescriptionGgdThicknessMany:
-    """Thickness of a thin wall with GGD description
-    """
+    """Thickness of a thin wall with GGD description"""
 
     @property
     def grid_subset(self) -> _WallGenericGridScalarArrayFromMany:
@@ -17049,17 +15308,14 @@ class _WallDescriptionGgdThicknessMany:
         """
 
 class _WallGlobalQuantititesItem:
-    """Simple 0D description of plasma-wall interaction
-    """
+    """Simple 0D description of plasma-wall interaction"""
 
     @property
     def electrons(self) -> _WallGlobalQuantititesElectronsItem:
-        """Quantities related to electrons
-        """
+        """Quantities related to electrons"""
     @property
     def neutral(self) -> _WallGlobalQuantititesNeutralArrayFromItem:
-        """Quantities related to the various neutral species
-        """
+        """Quantities related to the various neutral species"""
     @property
     def temperature(self) -> Path[npt.NDArray[np.float64]]:
         """Wall temperature
@@ -17134,17 +15390,14 @@ class _WallGlobalQuantititesItem:
         """
 
 class _WallGlobalQuantititesMany:
-    """Simple 0D description of plasma-wall interaction
-    """
+    """Simple 0D description of plasma-wall interaction"""
 
     @property
     def electrons(self) -> _WallGlobalQuantititesElectronsMany:
-        """Quantities related to electrons
-        """
+        """Quantities related to electrons"""
     @property
     def neutral(self) -> _WallGlobalQuantititesNeutralArrayFromMany:
-        """Quantities related to the various neutral species
-        """
+        """Quantities related to the various neutral species"""
     @property
     def temperature(self) -> Path[npt.NDArray[np.float64]]:
         """Wall temperature
@@ -17219,8 +15472,7 @@ class _WallGlobalQuantititesMany:
         """
 
 class _WallGlobalQuantititesElectronsItem:
-    """Simple 0D description of plasma-wall interaction, related to electrons
-    """
+    """Simple 0D description of plasma-wall interaction, related to electrons"""
 
     @property
     def pumping_speed(self) -> Path[npt.NDArray[np.float64]]:
@@ -17248,8 +15500,7 @@ class _WallGlobalQuantititesElectronsItem:
         """
 
 class _WallGlobalQuantititesElectronsMany:
-    """Simple 0D description of plasma-wall interaction, related to electrons
-    """
+    """Simple 0D description of plasma-wall interaction, related to electrons"""
 
     @property
     def pumping_speed(self) -> Path[npt.NDArray[np.float64]]:
@@ -17277,17 +15528,14 @@ class _WallGlobalQuantititesElectronsMany:
         """
 
 class _WallGlobalQuantititesNeutralItem:
-    """Simple 0D description of plasma-wall interaction, related to a given neutral species
-    """
+    """Simple 0D description of plasma-wall interaction, related to a given neutral species"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementConstantArrayFromItem:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[str]:
-        """String identifying the species (e.g. H, D, CD4, ...)
-        """
+        """String identifying the species (e.g. H, D, CD4, ...)"""
     @property
     def pumping_speed(self) -> Path[npt.NDArray[np.float64]]:
         """Pumped particle flux for that species
@@ -17332,21 +15580,17 @@ class _WallGlobalQuantititesNeutralItem:
         """
     @property
     def incident_species(self) -> _WallGlobalQuantititesNeutralOriginArrayFromItem:
-        """Sputtering coefficients due to a set of incident species
-        """
+        """Sputtering coefficients due to a set of incident species"""
 
 class _WallGlobalQuantititesNeutralMany:
-    """Simple 0D description of plasma-wall interaction, related to a given neutral species
-    """
+    """Simple 0D description of plasma-wall interaction, related to a given neutral species"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementConstantArrayFromMany:
-        """List of elements forming the atom or molecule
-        """
+        """List of elements forming the atom or molecule"""
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying the species (e.g. H, D, CD4, ...)
-        """
+        """String identifying the species (e.g. H, D, CD4, ...)"""
     @property
     def pumping_speed(self) -> Path[npt.NDArray[np.float64]]:
         """Pumped particle flux for that species
@@ -17391,21 +15635,17 @@ class _WallGlobalQuantititesNeutralMany:
         """
     @property
     def incident_species(self) -> _WallGlobalQuantititesNeutralOriginArrayFromMany:
-        """Sputtering coefficients due to a set of incident species
-        """
+        """Sputtering coefficients due to a set of incident species"""
 
 class _WallGlobalQuantititesNeutralOriginItem:
-    """This structure allows distinguishing the species causing the sputtering
-    """
+    """This structure allows distinguishing the species causing the sputtering"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementConstantArrayFromItem:
-        """List of elements forming the atom or molecule of the incident species
-        """
+        """List of elements forming the atom or molecule of the incident species"""
     @property
     def name(self) -> Path[str]:
-        """String identifying the incident species (e.g. H, D, CD4, ...)
-        """
+        """String identifying the incident species (e.g. H, D, CD4, ...)"""
     @property
     def angles(self) -> Path[npt.NDArray[np.float64]]:
         """Array of incident angles of this incident species, on which the physical sputtering coefficient is tabulated
@@ -17432,17 +15672,14 @@ class _WallGlobalQuantititesNeutralOriginItem:
         """
 
 class _WallGlobalQuantititesNeutralOriginMany:
-    """This structure allows distinguishing the species causing the sputtering
-    """
+    """This structure allows distinguishing the species causing the sputtering"""
 
     @property
     def element(self) -> _WallPlasmaCompositionNeutralElementConstantArrayFromMany:
-        """List of elements forming the atom or molecule of the incident species
-        """
+        """List of elements forming the atom or molecule of the incident species"""
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """String identifying the incident species (e.g. H, D, CD4, ...)
-        """
+        """String identifying the incident species (e.g. H, D, CD4, ...)"""
     @property
     def angles(self) -> Path[npt.NDArray[np.float64]]:
         """Array of incident angles of this incident species, on which the physical sputtering coefficient is tabulated
@@ -17972,13 +16209,11 @@ class _WallGlobalQuantititesNeutralOriginArrayFromMany:
 # --------------------------------------------------------------------------
 
 class _WallPaths:
-    """Description of the torus wall and its interaction with the plasma
-    """
+    """Description of the torus wall and its interaction with the plasma"""
 
     @property
     def temperature_reference(self) -> _WallTemperatureReferenceItem:
-        """Reference temperature for which the machine description data is given in this IDS
-        """
+        """Reference temperature for which the machine description data is given in this IDS"""
     @property
     def first_wall_surface_area(self) -> Path[float]:
         """First wall surface area
@@ -18005,16 +16240,13 @@ class _WallPaths:
         """
     @property
     def global_quantities(self) -> _WallGlobalQuantititesItem:
-        """Simple 0D description of plasma-wall interaction
-        """
+        """Simple 0D description of plasma-wall interaction"""
     @property
     def description_2d(self) -> _Wall2dArrayFromItem:
-        """Set of 2D wall descriptions, for each type of possible physics or engineering configurations necessary (gas tight vs wall with ports and holes, coarse vs fine representation, single contour limiter, disjoint gapped plasma facing components, ...). A simplified description of the toroidal extension of the 2D contours is also provided by using the phi_extensions nodes.
-        """
+        """Set of 2D wall descriptions, for each type of possible physics or engineering configurations necessary (gas tight vs wall with ports and holes, coarse vs fine representation, single contour limiter, disjoint gapped plasma facing components, ...). A simplified description of the toroidal extension of the 2D contours is also provided by using the phi_extensions nodes."""
     @property
     def description_ggd(self) -> _WallDescriptionGgdArrayFromItem:
-        """Set of 3D wall descriptions, described using the GGD, for each type of possible physics or engineering configurations necessary (gas tight vs wall with ports and holes, coarse vs fine representation, ...).
-        """
+        """Set of 3D wall descriptions, described using the GGD, for each type of possible physics or engineering configurations necessary (gas tight vs wall with ports and holes, coarse vs fine representation, ...)."""
     @property
     def code(self) -> _WallCodeItem: ...
 
@@ -18044,217 +16276,166 @@ class Magnetics:
 # ==========================================================================
 
 class _MagneticsCodeItem:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _MagneticsLibraryArrayFromItem:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _MagneticsCodeMany:
-    """Generic decription of the code-specific parameters for the code that has produced this IDS
-    """
+    """Generic decription of the code-specific parameters for the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software generating IDS
-        """
+        """Name of software generating IDS"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
     @property
     def output_flag(self) -> Path[npt.NDArray[np.int32]]:
-        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-        """
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used."""
     @property
     def library(self) -> _MagneticsLibraryArrayFromMany:
-        """List of external libraries used by the code that has produced this IDS
-        """
+        """List of external libraries used by the code that has produced this IDS"""
 
 class _MagneticsIdentifierStaticItem:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[int]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[str]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _MagneticsIdentifierStaticMany:
-    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-    """
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified."""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier
-        """
+        """Short string identifier"""
     @property
     def index(self) -> Path[npt.NDArray[np.int32]]:
-        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-        """
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index."""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Verbose description
-        """
+        """Verbose description"""
 
 class _MagneticsLibraryItem:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[str]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[str]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[str]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[str]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[str]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _MagneticsLibraryMany:
-    """Library used by the code that has produced this IDS
-    """
+    """Library used by the code that has produced this IDS"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of software
-        """
+        """Name of software"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Short description of the software (type, purpose)
-        """
+        """Short description of the software (type, purpose)"""
     @property
     def commit(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique commit reference of software
-        """
+        """Unique commit reference of software"""
     @property
     def version(self) -> Path[npt.NDArray[np.str_]]:
-        """Unique version (tag) of software
-        """
+        """Unique version (tag) of software"""
     @property
     def repository(self) -> Path[npt.NDArray[np.str_]]:
-        """URL of software repository
-        """
+        """URL of software repository"""
     @property
     def parameters(self) -> Path[npt.NDArray[np.str_]]:
-        """List of the code specific parameters in XML format
-        """
+        """List of the code specific parameters in XML format"""
 
 class _MagneticsLineOfSight2pointsRzItem:
-    """Generic description of a line of sight, defined by two points, in R and Z only
-    """
+    """Generic description of a line of sight, defined by two points, in R and Z only"""
 
     @property
     def first_point(self) -> _MagneticsRz0dStaticItem:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _MagneticsRz0dStaticItem:
-        """Position of the second point
-        """
+        """Position of the second point"""
 
 class _MagneticsLineOfSight2pointsRzMany:
-    """Generic description of a line of sight, defined by two points, in R and Z only
-    """
+    """Generic description of a line of sight, defined by two points, in R and Z only"""
 
     @property
     def first_point(self) -> _MagneticsRz0dStaticMany:
-        """Position of the first point
-        """
+        """Position of the first point"""
     @property
     def second_point(self) -> _MagneticsRz0dStaticMany:
-        """Position of the second point
-        """
+        """Position of the second point"""
 
 class _MagneticsBpolProbeItem:
-    """Poloidal field probes
-    """
+    """Poloidal field probes"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> _MagneticsIdentifierStaticItem:
-        """Probe type
-        """
+        """Probe type"""
     @property
     def position(self) -> _MagneticsRphiz0dStaticItem:
-        """R, Z, Phi position of the coil centre
-        """
+        """R, Z, Phi position of the coil centre"""
     @property
     def poloidal_angle(self) -> Path[float]:
         """Angle of the sensor normal vector (vector parallel to the the axis of the coil, n on the diagram) with respect to horizontal plane (clockwise theta-like angle). Zero if sensor normal vector fully in the horizontal plane and oriented towards increasing major radius. Values in [0 , 2Pi]
@@ -18269,8 +16450,7 @@ class _MagneticsBpolProbeItem:
         """
     @property
     def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
-        """Indices (from the b_field_pol_probe array of structure) of the two probes used to build the field difference field(second index) - field(first index). Use only if ../type/index = 6, leave empty otherwise
-        """
+        """Indices (from the b_field_pol_probe array of structure) of the two probes used to build the field difference field(second index) - field(first index). Use only if ../type/index = 6, leave empty otherwise"""
     @property
     def bandwidth_3db(self) -> Path[npt.NDArray[np.float64]]:
         """3dB bandwith (first index : lower frequency bound, second index : upper frequency bound)
@@ -18291,8 +16471,7 @@ class _MagneticsBpolProbeItem:
         """
     @property
     def turns(self) -> Path[int]:
-        """Turns in the coil, including sign
-        """
+        """Turns in the coil, including sign"""
     @property
     def field(self) -> _MagneticsSignalFlt1dValidityItem:
         """Magnetic field component in direction of sensor normal axis (n) averaged over sensor volume defined by area and length, where n = cos(poloidal_angle)*cos(toroidal_angle)*grad(R) - sin(poloidal_angle)*grad(Z) + cos(poloidal_angle)*sin(toroidal_angle)*grad(Phi)/norm(grad(Phi))
@@ -18307,29 +16486,23 @@ class _MagneticsBpolProbeItem:
         """
     @property
     def non_linear_response(self) -> _MagneticsBpolProbeNonLinearItem:
-        """Non-linear response of the probe (typically in case of a Hall probe)
-        """
+        """Non-linear response of the probe (typically in case of a Hall probe)"""
 
 class _MagneticsBpolProbeMany:
-    """Poloidal field probes
-    """
+    """Poloidal field probes"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> _MagneticsIdentifierStaticMany:
-        """Probe type
-        """
+        """Probe type"""
     @property
     def position(self) -> _MagneticsRphiz0dStaticMany:
-        """R, Z, Phi position of the coil centre
-        """
+        """R, Z, Phi position of the coil centre"""
     @property
     def poloidal_angle(self) -> Path[npt.NDArray[np.float64]]:
         """Angle of the sensor normal vector (vector parallel to the the axis of the coil, n on the diagram) with respect to horizontal plane (clockwise theta-like angle). Zero if sensor normal vector fully in the horizontal plane and oriented towards increasing major radius. Values in [0 , 2Pi]
@@ -18344,8 +16517,7 @@ class _MagneticsBpolProbeMany:
         """
     @property
     def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
-        """Indices (from the b_field_pol_probe array of structure) of the two probes used to build the field difference field(second index) - field(first index). Use only if ../type/index = 6, leave empty otherwise
-        """
+        """Indices (from the b_field_pol_probe array of structure) of the two probes used to build the field difference field(second index) - field(first index). Use only if ../type/index = 6, leave empty otherwise"""
     @property
     def bandwidth_3db(self) -> Path[npt.NDArray[np.float64]]:
         """3dB bandwith (first index : lower frequency bound, second index : upper frequency bound)
@@ -18366,8 +16538,7 @@ class _MagneticsBpolProbeMany:
         """
     @property
     def turns(self) -> Path[npt.NDArray[np.int32]]:
-        """Turns in the coil, including sign
-        """
+        """Turns in the coil, including sign"""
     @property
     def field(self) -> _MagneticsSignalFlt1dValidityMany:
         """Magnetic field component in direction of sensor normal axis (n) averaged over sensor volume defined by area and length, where n = cos(poloidal_angle)*cos(toroidal_angle)*grad(R) - sin(poloidal_angle)*grad(Z) + cos(poloidal_angle)*sin(toroidal_angle)*grad(Phi)/norm(grad(Phi))
@@ -18382,12 +16553,10 @@ class _MagneticsBpolProbeMany:
         """
     @property
     def non_linear_response(self) -> _MagneticsBpolProbeNonLinearMany:
-        """Non-linear response of the probe (typically in case of a Hall probe)
-        """
+        """Non-linear response of the probe (typically in case of a Hall probe)"""
 
 class _MagneticsBpolProbeNonLinearItem:
-    """Non-linear response of the probe
-    """
+    """Non-linear response of the probe"""
 
     @property
     def b_field_linear(self) -> Path[npt.NDArray[np.float64]]:
@@ -18403,8 +16572,7 @@ class _MagneticsBpolProbeNonLinearItem:
         """
 
 class _MagneticsBpolProbeNonLinearMany:
-    """Non-linear response of the probe
-    """
+    """Non-linear response of the probe"""
 
     @property
     def b_field_linear(self) -> Path[npt.NDArray[np.float64]]:
@@ -18420,29 +16588,23 @@ class _MagneticsBpolProbeNonLinearMany:
         """
 
 class _MagneticsFluxLoopItem:
-    """Flux loops
-    """
+    """Flux loops"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> _MagneticsIdentifierStaticItem:
-        """Flux loop type
-        """
+        """Flux loop type"""
     @property
     def position(self) -> _MagneticsRphiz0dStaticArrayFromItem:
-        """List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)
-        """
+        """List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)"""
     @property
     def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
-        """Indices (from the flux_loop array of structures) of the two loops used to build a differential measurement: loop(second index) - loop(first index). Use only if ../type/index = 6, leave empty otherwise.
-        """
+        """Indices (from the flux_loop array of structures) of the two loops used to build a differential measurement: loop(second index) - loop(first index). Use only if ../type/index = 6, leave empty otherwise."""
     @property
     def area(self) -> Path[float]:
         """Effective area (ratio between flux and average magnetic field over the loop). Leave empty if ../type/index = 6 (differential loop)
@@ -18469,33 +16631,26 @@ class _MagneticsFluxLoopItem:
         """
     @property
     def greens(self) -> _MagneticsFluxLoopGreensItem:
-        """Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source
-        """
+        """Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source"""
 
 class _MagneticsFluxLoopMany:
-    """Flux loops
-    """
+    """Flux loops"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def type(self) -> _MagneticsIdentifierStaticMany:
-        """Flux loop type
-        """
+        """Flux loop type"""
     @property
     def position(self) -> _MagneticsRphiz0dStaticArrayFromMany:
-        """List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)
-        """
+        """List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)"""
     @property
     def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
-        """Indices (from the flux_loop array of structures) of the two loops used to build a differential measurement: loop(second index) - loop(first index). Use only if ../type/index = 6, leave empty otherwise.
-        """
+        """Indices (from the flux_loop array of structures) of the two loops used to build a differential measurement: loop(second index) - loop(first index). Use only if ../type/index = 6, leave empty otherwise."""
     @property
     def area(self) -> Path[npt.NDArray[np.float64]]:
         """Effective area (ratio between flux and average magnetic field over the loop). Leave empty if ../type/index = 6 (differential loop)
@@ -18522,37 +16677,32 @@ class _MagneticsFluxLoopMany:
         """
     @property
     def greens(self) -> _MagneticsFluxLoopGreensMany:
-        """Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source
-        """
+        """Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source"""
 
 class _MagneticsFluxLoopGreensItem:
-    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs"""
 
     @property
     def pf_active(self) -> _MagneticsFluxLoopGreensPfActiveArrayFromItem:
         """Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
-`coil` array of structures
+        `coil` array of structures
         """
 
 class _MagneticsFluxLoopGreensMany:
-    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs"""
 
     @property
     def pf_active(self) -> _MagneticsFluxLoopGreensPfActiveArrayFromMany:
         """Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
-`coil` array of structures
+        `coil` array of structures
         """
 
 class _MagneticsFluxLoopGreensPfActiveItem:
-    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Name of the coil, matching `pf_active/coil/name`, e.g. `"BVL"`
-        """
+        """Name of the coil, matching `pf_active/coil/name`, e.g. `"BVL"`"""
     @property
     def value(self) -> Path[float]:
         """Poloidal flux at the flux loop, per ampere in the coil
@@ -18561,13 +16711,11 @@ class _MagneticsFluxLoopGreensPfActiveItem:
         """
 
 class _MagneticsFluxLoopGreensPfActiveMany:
-    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the coil, matching `pf_active/coil/name`, e.g. `"BVL"`
-        """
+        """Name of the coil, matching `pf_active/coil/name`, e.g. `"BVL"`"""
     @property
     def value(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux at the flux loop, per ampere in the coil
@@ -18576,13 +16724,11 @@ class _MagneticsFluxLoopGreensPfActiveMany:
         """
 
 class _MagneticsMethodDistinctItem:
-    """Processed quantities derived from the magnetic measurements, using various methods
-    """
+    """Processed quantities derived from the magnetic measurements, using various methods"""
 
     @property
     def method_name(self) -> Path[str]:
-        """Name of the calculation method
-        """
+        """Name of the calculation method"""
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
         """Data
@@ -18597,13 +16743,11 @@ class _MagneticsMethodDistinctItem:
         """
 
 class _MagneticsMethodDistinctMany:
-    """Processed quantities derived from the magnetic measurements, using various methods
-    """
+    """Processed quantities derived from the magnetic measurements, using various methods"""
 
     @property
     def method_name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the calculation method
-        """
+        """Name of the calculation method"""
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
         """Data
@@ -18618,29 +16762,23 @@ class _MagneticsMethodDistinctMany:
         """
 
 class _MagneticsRogowskiItem:
-    """Rogowski coil
-    """
+    """Rogowski coil"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def measured_quantity(self) -> _MagneticsIdentifierStaticItem:
-        """Quantity measured by the sensor
-        """
+        """Quantity measured by the sensor"""
     @property
     def position(self) -> _MagneticsRphiz0dStaticArrayFromItem:
-        """List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order
-        """
+        """List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order"""
     @property
     def indices_compound(self) -> Path[npt.NDArray[np.int32]]:
-        """Indices (from the rogowski_coil array of structure) of the partial Rogowskis used to build the coumpound signal (sum of the partial Rogowski signals). Can be set to any unique integer value for each section of a compound Rogowski coil. Use only if ../measure_quantity/index = 5, leave empty otherwise
-        """
+        """Indices (from the rogowski_coil array of structure) of the partial Rogowskis used to build the coumpound signal (sum of the partial Rogowski signals). Can be set to any unique integer value for each section of a compound Rogowski coil. Use only if ../measure_quantity/index = 5, leave empty otherwise"""
     @property
     def area(self) -> Path[float]:
         """Effective area of the loop wrapped around the guiding centre. In case of multiple layers, sum of the areas of each layer
@@ -18662,34 +16800,28 @@ class _MagneticsRogowskiItem:
     @property
     def gaps(self) -> _MagneticsRogowskiGapsArrayFromItem:
         """The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
-integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
-divided by MU_0
+        integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
+        divided by MU_0
         """
 
 class _MagneticsRogowskiMany:
-    """Rogowski coil
-    """
+    """Rogowski coil"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def measured_quantity(self) -> _MagneticsIdentifierStaticMany:
-        """Quantity measured by the sensor
-        """
+        """Quantity measured by the sensor"""
     @property
     def position(self) -> _MagneticsRphiz0dStaticArrayFromMany:
-        """List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order
-        """
+        """List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order"""
     @property
     def indices_compound(self) -> Path[npt.NDArray[np.int32]]:
-        """Indices (from the rogowski_coil array of structure) of the partial Rogowskis used to build the coumpound signal (sum of the partial Rogowski signals). Can be set to any unique integer value for each section of a compound Rogowski coil. Use only if ../measure_quantity/index = 5, leave empty otherwise
-        """
+        """Indices (from the rogowski_coil array of structure) of the partial Rogowskis used to build the coumpound signal (sum of the partial Rogowski signals). Can be set to any unique integer value for each section of a compound Rogowski coil. Use only if ../measure_quantity/index = 5, leave empty otherwise"""
     @property
     def area(self) -> Path[npt.NDArray[np.float64]]:
         """Effective area of the loop wrapped around the guiding centre. In case of multiple layers, sum of the areas of each layer
@@ -18711,25 +16843,23 @@ class _MagneticsRogowskiMany:
     @property
     def gaps(self) -> _MagneticsRogowskiGapsArrayFromMany:
         """The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
-integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
-divided by MU_0
+        integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
+        divided by MU_0
         """
 
 class _MagneticsRogowskiGapsItem:
-    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier for the gap, unique within the Rogowski coil
-        """
+        """Short string identifier for the gap, unique within the Rogowski coil"""
     @property
     def r_start(self) -> Path[float]:
         """Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
-line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
-line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
+        line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
+        line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
 
-        Units: m
+                Units: m
         """
     @property
     def r_end(self) -> Path[float]:
@@ -18751,20 +16881,18 @@ line integral which the winding misses, the gap runs in the direction of the coi
         """
 
 class _MagneticsRogowskiGapsMany:
-    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
-    """
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier for the gap, unique within the Rogowski coil
-        """
+        """Short string identifier for the gap, unique within the Rogowski coil"""
     @property
     def r_start(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
-line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
-line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
+        line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
+        line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
 
-        Units: m
+                Units: m
         """
     @property
     def r_end(self) -> Path[npt.NDArray[np.float64]]:
@@ -18786,21 +16914,17 @@ line integral which the winding misses, the gap runs in the direction of the coi
         """
 
 class _MagneticsShuntItem:
-    """Shunt for current measurement (often located in the divertor structure)
-    """
+    """Shunt for current measurement (often located in the divertor structure)"""
 
     @property
     def name(self) -> Path[str]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[str]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def position(self) -> _MagneticsLineOfSight2pointsRzItem:
-        """Position of shunt terminals
-        """
+        """Position of shunt terminals"""
     @property
     def resistance(self) -> Path[float]:
         """Shunt resistance
@@ -18815,33 +16939,26 @@ class _MagneticsShuntItem:
         """
     @property
     def divertor_index(self) -> Path[int]:
-        """If the shunt is located on a given divertor, index of that divertor in the divertors IDS
-        """
+        """If the shunt is located on a given divertor, index of that divertor in the divertors IDS"""
     @property
     def target_index(self) -> Path[int]:
-        """If the shunt is located on a divertor target, index of that target in the divertors IDS
-        """
+        """If the shunt is located on a divertor target, index of that target in the divertors IDS"""
     @property
     def tile_index(self) -> Path[int]:
-        """If the shunt is located on a divertor tile, index of that tile in the divertors IDS
-        """
+        """If the shunt is located on a divertor tile, index of that tile in the divertors IDS"""
 
 class _MagneticsShuntMany:
-    """Shunt for current measurement (often located in the divertor structure)
-    """
+    """Shunt for current measurement (often located in the divertor structure)"""
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Short string identifier (unique for a given device)
-        """
+        """Short string identifier (unique for a given device)"""
     @property
     def description(self) -> Path[npt.NDArray[np.str_]]:
-        """Description, e.g. “channel viewing the upper divertor”
-        """
+        """Description, e.g. “channel viewing the upper divertor”"""
     @property
     def position(self) -> _MagneticsLineOfSight2pointsRzMany:
-        """Position of shunt terminals
-        """
+        """Position of shunt terminals"""
     @property
     def resistance(self) -> Path[npt.NDArray[np.float64]]:
         """Shunt resistance
@@ -18856,20 +16973,16 @@ class _MagneticsShuntMany:
         """
     @property
     def divertor_index(self) -> Path[npt.NDArray[np.int32]]:
-        """If the shunt is located on a given divertor, index of that divertor in the divertors IDS
-        """
+        """If the shunt is located on a given divertor, index of that divertor in the divertors IDS"""
     @property
     def target_index(self) -> Path[npt.NDArray[np.int32]]:
-        """If the shunt is located on a divertor target, index of that target in the divertors IDS
-        """
+        """If the shunt is located on a divertor target, index of that target in the divertors IDS"""
     @property
     def tile_index(self) -> Path[npt.NDArray[np.int32]]:
-        """If the shunt is located on a divertor tile, index of that tile in the divertors IDS
-        """
+        """If the shunt is located on a divertor tile, index of that tile in the divertors IDS"""
 
 class _MagneticsRphiz0dStaticItem:
-    """Structure for R, Z, Phi positions (0D, static)
-    """
+    """Structure for R, Z, Phi positions (0D, static)"""
 
     @property
     def r(self) -> Path[float]:
@@ -18891,8 +17004,7 @@ class _MagneticsRphiz0dStaticItem:
         """
 
 class _MagneticsRphiz0dStaticMany:
-    """Structure for R, Z, Phi positions (0D, static)
-    """
+    """Structure for R, Z, Phi positions (0D, static)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -18914,8 +17026,7 @@ class _MagneticsRphiz0dStaticMany:
         """
 
 class _MagneticsRz0dStaticItem:
-    """Structure for a single R, Z position (0D, static)
-    """
+    """Structure for a single R, Z position (0D, static)"""
 
     @property
     def r(self) -> Path[float]:
@@ -18931,8 +17042,7 @@ class _MagneticsRz0dStaticItem:
         """
 
 class _MagneticsRz0dStaticMany:
-    """Structure for a single R, Z position (0D, static)
-    """
+    """Structure for a single R, Z position (0D, static)"""
 
     @property
     def r(self) -> Path[npt.NDArray[np.float64]]:
@@ -18948,8 +17058,7 @@ class _MagneticsRz0dStaticMany:
         """
 
 class _MagneticsSignalFlt1dValidityItem:
-    """Signal (FLT_1D) with its time base and validity flags
-    """
+    """Signal (FLT_1D) with its time base and validity flags"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -18959,12 +17068,10 @@ class _MagneticsSignalFlt1dValidityItem:
         """
     @property
     def validity_timed(self) -> Path[npt.NDArray[np.int32]]:
-        """Indicator of the validity of the data for each time slice. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
-        """
+        """Indicator of the validity of the data for each time slice. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)"""
     @property
     def validity(self) -> Path[int]:
-        """Indicator of the validity of the data for the whole acquisition period. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
-        """
+        """Indicator of the validity of the data for the whole acquisition period. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Time
@@ -18973,8 +17080,7 @@ class _MagneticsSignalFlt1dValidityItem:
         """
 
 class _MagneticsSignalFlt1dValidityMany:
-    """Signal (FLT_1D) with its time base and validity flags
-    """
+    """Signal (FLT_1D) with its time base and validity flags"""
 
     @property
     def data(self) -> Path[npt.NDArray[np.float64]]:
@@ -18984,12 +17090,10 @@ class _MagneticsSignalFlt1dValidityMany:
         """
     @property
     def validity_timed(self) -> Path[npt.NDArray[np.int32]]:
-        """Indicator of the validity of the data for each time slice. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
-        """
+        """Indicator of the validity of the data for each time slice. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)"""
     @property
     def validity(self) -> Path[npt.NDArray[np.int32]]:
-        """Indicator of the validity of the data for the whole acquisition period. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
-        """
+        """Indicator of the validity of the data for the whole acquisition period. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)"""
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Time
@@ -19105,33 +17209,26 @@ class _MagneticsRphiz0dStaticArrayFromMany:
 # --------------------------------------------------------------------------
 
 class _MagneticsPaths:
-    """Magnetic diagnostics for equilibrium identification and plasma shape control.
-    """
+    """Magnetic diagnostics for equilibrium identification and plasma shape control."""
 
     @property
     def flux_loop(self) -> _MagneticsFluxLoopArrayFromItem:
-        """Flux loops; partial flux loops can be described. In case of differential loops, the geometry of differential flux loops is stored in the flux_loop indices of the primitive loops. Signals may be stored on the primitive loop indices but this is optional if the index of the primitive loop is referenced by a differential loop index
-        """
+        """Flux loops; partial flux loops can be described. In case of differential loops, the geometry of differential flux loops is stored in the flux_loop indices of the primitive loops. Signals may be stored on the primitive loop indices but this is optional if the index of the primitive loop is referenced by a differential loop index"""
     @property
     def b_field_pol_probe(self) -> _MagneticsBpolProbeArrayFromItem:
-        """Poloidal field probes
-        """
+        """Poloidal field probes"""
     @property
     def b_field_pol_probe_equivalent(self) -> Path[npt.NDArray[np.int32]]:
-        """Indices of equivalent poloidal field probes (from the b_field_pol_probe array) that differ only by their toroidal position and have the same (R,Z) position and the same coil orientation (poloidal and toroidal angles). Sets of equivalent probes (i.e. sets of (R, Z, poloidal_angle and toroidal_angle) values) are grouped by the first coordinate and the coils belonging to a given set are listed along the second coordinate. As an example, if there are N probes in a poloidal cross section that are replicated at the same poloidal positions and with the same orientation at 8 toroidal positions, the matrix will be of size Nx8.
-        """
+        """Indices of equivalent poloidal field probes (from the b_field_pol_probe array) that differ only by their toroidal position and have the same (R,Z) position and the same coil orientation (poloidal and toroidal angles). Sets of equivalent probes (i.e. sets of (R, Z, poloidal_angle and toroidal_angle) values) are grouped by the first coordinate and the coils belonging to a given set are listed along the second coordinate. As an example, if there are N probes in a poloidal cross section that are replicated at the same poloidal positions and with the same orientation at 8 toroidal positions, the matrix will be of size Nx8."""
     @property
     def b_field_phi_probe(self) -> _MagneticsBpolProbeArrayFromItem:
-        """Toroidal field probes
-        """
+        """Toroidal field probes"""
     @property
     def rogowski_coil(self) -> _MagneticsRogowskiArrayFromItem:
-        """Set of Rogowski coils. If some of the coils form a compound Rogowski sensor, they must be entered in contiguous order
-        """
+        """Set of Rogowski coils. If some of the coils form a compound Rogowski sensor, they must be entered in contiguous order"""
     @property
     def shunt(self) -> _MagneticsShuntArrayFromItem:
-        """Set of shunt resistances through which currents in the divertor structure are measured. Shunts are modelled as piecewise straight line segments in the poloidal plane.
-        """
+        """Set of shunt resistances through which currents in the divertor structure are measured. Shunts are modelled as piecewise straight line segments in the poloidal plane."""
     @property
     def ip(self) -> _MagneticsMethodDistinctArrayFromItem:
         """Plasma current. Positive sign means counter-clockwise when viewed from above. The array of structure corresponds to a set of calculation methods (starting with the generally recommended method).

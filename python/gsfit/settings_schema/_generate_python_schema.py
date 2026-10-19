@@ -8,6 +8,8 @@ The dataclass of the root element has `XSD_PATH`, the path of its XML schema, wh
 A link to another XML file, e.g. `<grid href="grid.xml"/>`, names the XML schema of that file in `<xs:appinfo><schema>`,
 and has the type of that schema's root element, e.g. `Grid`, imported from its module.
 So `GsfitCodeSettings`, in `gsfit_code_settings.py`, holds all of GSFit's settings: `GSFIT_code_settings.xml` with every link followed, however deep.
+A link to a file whose root element holds only one element, named as the link, is collapsed: its field has the type of that element, e.g. `b_field_pol_probe: KeyedList[BFieldPolProbe]`
+for the probes in `constraints_b_field_pol_probe.xml`, rather than the type of the root element, `ConstraintsBFieldPolProbe`, which holds them; see `ModuleBuilder`.
 Enumerations become `typing.Literal` aliases, `<xs:documentation>` becomes docstrings, and the units in `<xs:appinfo>` become comments.
 A matrix, an element holding one `<row>` per row, becomes a 2D numpy array, `npt.NDArray[np.float64]`, rather than a class; see `matrix_row_element`.
 A repeated element which an `xs:key` or `xs:unique` keeps unique by one of its child elements, e.g. each `<tree>` by its `<tree_name>` in `workflow.xsd`,
@@ -93,6 +95,9 @@ SUPPORTED_XS_ATTRIBUTES: dict[str, set[str]] = {
     "pattern": {"value"},
 }
 
+# The sentence added to the documentation of a `KeyedList` field, e.g. for `tree`, keyed by `tree_name`
+KEYED_LIST_DOCUMENTATION: str = "A `KeyedList`, which can be indexed by `{key_name}` as well as by position, e.g. `{name}[{key_name}]`"
+
 # Names a field cannot take, as the generated modules use them
 RESERVED_NAMES: set[str] = {"KEY", "KeyedList", "XSD_PATH", "bool", "dataclass", "field", "float", "int", "list", "np", "npt", "str", "typing"}
 
@@ -104,6 +109,7 @@ class FieldDefinition:
     default: str  # e.g. `None`, or "" for a required field
     documentation: str
     units: str
+    key: str = ""  # e.g. "tree_name" for a `KeyedList` keyed by it, otherwise ""
 
 
 @dataclass
@@ -145,11 +151,16 @@ def main() -> None:
             raise NotImplementedError(f"{xsd_path.name}: the root element has no name")
         root_class_names_by_xsd_path[xsd_path.relative_to(schema_path).as_posix()] = pascal_case(root_name)
 
-    # One module per XML schema, at the same path, e.g. `wall/wall.xsd` -> `wall/wall.py`
+    # One module per XML schema, at the same path, e.g. `wall/wall.xsd` -> `wall/wall.py`.
+    # Each is built once, when it is first needed: here, or by a module linking to it, as a collapsed link takes its types from the linked module
+    module_builders_by_xsd_path: dict[str, ModuleBuilder] = {}
     written_paths: list[Path] = []
     for xsd_path in xsd_paths:
-        module_builder: ModuleBuilder = ModuleBuilder(xsd_path, schema_path, root_class_names_by_xsd_path)
-        module_path: Path = output_path / module_relative_path(xsd_path.relative_to(schema_path).as_posix())
+        xsd_relative_path: str = xsd_path.relative_to(schema_path).as_posix()
+        if xsd_relative_path not in module_builders_by_xsd_path:
+            module_builders_by_xsd_path[xsd_relative_path] = ModuleBuilder(xsd_path, schema_path, root_class_names_by_xsd_path, module_builders_by_xsd_path)
+        module_builder: ModuleBuilder = module_builders_by_xsd_path[xsd_relative_path]
+        module_path: Path = output_path / module_relative_path(xsd_relative_path)
         module_path.parent.mkdir(parents=True, exist_ok=True)
         module_path.write_text(module_builder.render(), encoding="utf-8")
         written_paths.append(module_path)
@@ -198,21 +209,36 @@ class ModuleBuilder:
     Its field has the type of that XML schema's root element, e.g. `grid: Grid`, imported from that XML schema's module, because
     `read_xml_settings_to_dataclasses` reads the linked file in the link's place, checked against the `XSD_PATH` of that type.
 
+    A link to a file whose root element holds only one element, named as the link, is collapsed, e.g. `<b_field_pol_probe href="constraints_b_field_pol_probe.xml"/>`,
+    whose root element, `<constraints__b_field_pol_probe>`, holds only the `<b_field_pol_probe>` elements, one per probe. Its field has the type of that element,
+    as the linked module defines it, e.g. `b_field_pol_probe: KeyedList[BFieldPolProbe]`, so the probes are `constraints.b_field_pol_probe` rather than
+    `constraints.b_field_pol_probe.b_field_pol_probe`. The field names the class of the linked file's root element in its `linked_file_root` metadata,
+    e.g. `ConstraintsBFieldPolProbe`, which `read_xml_settings_to_dataclasses` reads the linked file into, and which `dataclass_to_element` writes it from.
+
     A repeated element with a key, e.g. `<tree>` keyed by its `<tree_name>`, has a `KeyedList` for its field, e.g. `tree: KeyedList[WorkflowTree]`,
     and the class of its items names the key in `KEY`, e.g. `WorkflowTree.KEY = "tree_name"`; see `list_keys`.
     """
 
-    def __init__(self, xsd_path: Path, schema_path: Path, root_class_names_by_xsd_path: dict[str, str]) -> None:
+    def __init__(
+        self,
+        xsd_path: Path,
+        schema_path: Path,
+        root_class_names_by_xsd_path: dict[str, str],
+        module_builders_by_xsd_path: dict[str, "ModuleBuilder"],
+    ) -> None:
         """
         :param xsd_path: Path to the XML schema
         :param schema_path: Directory holding every XML schema, which their paths are relative to
         :param root_class_names_by_xsd_path: Class of the root element of every XML schema, by its path, e.g. "equilibrium/grid.xsd" -> "Grid", for the links
+        :param module_builders_by_xsd_path: The module of each XML schema built so far, by its path, which a collapsed link takes its types from.
+            The module of a linked XML schema is built, and added, when it is first needed
         """
 
         self.xsd_path: Path = xsd_path
         self.schema_path: Path = schema_path
         self.xsd_relative_path: str = xsd_path.relative_to(schema_path).as_posix()  # e.g. "wall/wall.xsd"
         self.root_class_names_by_xsd_path: dict[str, str] = root_class_names_by_xsd_path
+        self.module_builders_by_xsd_path: dict[str, ModuleBuilder] = module_builders_by_xsd_path
         # Raises `xmlschema.XMLSchemaParseError` if the XML schema is itself not valid
         self.xml_schema: xmlschema.XMLSchema = xmlschema.XMLSchema(xsd_path)
         check_supported(self.xml_schema.root, xsd_path)
@@ -222,8 +248,12 @@ class ModuleBuilder:
         # The keys of the repeated child elements of each complex type with a class, e.g. `{"tree": "tree_name"}`; see `list_keys`
         self.list_keys_by_complex_type: dict[XsdComplexType, dict[str, str]] = {}
         self.type_alias_definitions: list[TypeAliasDefinition] = []
-        # The classes of the root elements of the linked XML files, and the modules `render` imports them from, e.g. "WallSettings" -> ".wall.wall"
+        # The classes of the linked XML files, and the modules `render` imports them from, e.g. "WallSettings" -> ".wall.wall"
         self.imported_module_names_by_class_name: dict[str, str] = {}
+        # The classes of the root elements of the linked XML files, which are the types of the links which are not collapsed, e.g. "WallSettings"
+        self.link_class_names: set[str] = set()
+        # Each collapsed link, as its field is written, e.g. "b_field_pol_probe: KeyedList[BFieldPolProbe]", for the module's docstring
+        self.collapsed_links: list[str] = []
         # Whether a field is a matrix, a numpy array, so the module imports numpy
         self.uses_numpy: bool = False
         # Whether a field is a `KeyedList`, so the module imports it
@@ -243,6 +273,7 @@ class ModuleBuilder:
         root_elements: list[XsdElement] = list(self.xml_schema.elements.values())
         if len(root_elements) != 1 or root_elements[0].local_name is None:
             raise NotImplementedError(f"{xsd_path.name}: {len(root_elements)} root elements, rather than one with a name")
+        self.root_element: XsdElement = root_elements[0]
         self.root_element_name: str = root_elements[0].local_name
         documentation, _ = read_annotation(root_elements[0])
         self.root_class_name: str = self.element_type(root_elements[0], parent_class_name="", documentation=documentation)
@@ -447,6 +478,7 @@ class ModuleBuilder:
         # A link to another XML file, e.g. `<grid href="grid.xml"/>`, has the type of the root element of the XML schema it names, e.g. `Grid`
         xsd_type: XsdComplexType | XsdSimpleType = element.type
         python_type: str
+        default: str = ""
         is_link: bool = (
             isinstance(xsd_type, XsdComplexType)
             and isinstance(xsd_type.content, XsdGroup)
@@ -469,18 +501,79 @@ class ModuleBuilder:
                 raise ValueError(f"{self.xsd_path.name}: the link `{name}` names the XML schema {linked_xsd_relative_path}, which does not exist")
             python_type = self.root_class_names_by_xsd_path[linked_xsd_relative_path]
             linked_module_name: str = relative_module_name(self.xsd_relative_path, linked_xsd_relative_path)
-            if python_type not in self.imported_module_names_by_class_name:
-                if python_type in self.taken_names:
-                    raise ValueError(f"{self.xsd_path.name}: {python_type}, from {linked_xsd_relative_path}, has the same name as a class of this XML schema")
-                self.imported_module_names_by_class_name[python_type] = linked_module_name
-                self.taken_names.add(python_type)
-            elif self.imported_module_names_by_class_name[python_type] != linked_module_name:
-                raise ValueError(f"{self.xsd_path.name}: {python_type} is the root element of two linked XML schemas")
+
+            # The linked XML schema's module, built now if it has not been yet, as a collapsed link takes its types from it
+            if linked_xsd_relative_path not in self.module_builders_by_xsd_path:
+                self.module_builders_by_xsd_path[linked_xsd_relative_path] = ModuleBuilder(
+                    self.schema_path / linked_xsd_relative_path, self.schema_path, self.root_class_names_by_xsd_path, self.module_builders_by_xsd_path
+                )
+            linked_module_builder: ModuleBuilder = self.module_builders_by_xsd_path[linked_xsd_relative_path]
+
+            # A link to a file whose root element holds only one element, named as the link, is collapsed; see the class's docstring
+            linked_root_type: XsdComplexType | XsdSimpleType = linked_module_builder.root_element.type
+            linked_root_child_elements: list[XsdElement] = []
+            if isinstance(linked_root_type, XsdComplexType) and isinstance(linked_root_type.content, XsdGroup) and len(linked_root_type.attributes) == 0:
+                for particle in linked_root_type.content:
+                    if isinstance(particle, XsdElement):
+                        linked_root_child_elements.append(particle)
+            is_collapsed_link: bool = len(linked_root_child_elements) == 1 and linked_root_child_elements[0].local_name == name
+
+            # Imported from the linked module: the class of its root element, and for a collapsed link, the class of the element it holds too
+            imported_class_names: list[str] = [python_type]
+            linked_field_definition: FieldDefinition | None = None
+            if is_collapsed_link:
+                if element.max_occurs != 1 or element.min_occurs != 1:
+                    raise NotImplementedError(f"{self.xsd_path.name}: the link `{name}` is repeated or optional, so cannot be collapsed")
+                linked_item_class_name: str | None = linked_module_builder.class_names_by_complex_type.get(linked_root_child_elements[0].type)
+                if linked_item_class_name is None:
+                    raise NotImplementedError(
+                        f"{self.xsd_path.name}: the link `{name}` is collapsed, but the element it holds, in {linked_xsd_relative_path}, has no child elements or attributes"
+                    )
+                imported_class_names.append(linked_item_class_name)
+                for class_definition in linked_module_builder.class_definitions:
+                    if class_definition.name == python_type:
+                        linked_field_definition = class_definition.field_definitions[0]
+                        # The link's documentation, and that of the linked file's root element, which both describe the whole file
+                        documentation = f"{documentation}\n{class_definition.documentation}".strip()
+            for imported_class_name in imported_class_names:
+                if imported_class_name not in self.imported_module_names_by_class_name:
+                    if imported_class_name in self.taken_names:
+                        raise ValueError(
+                            f"{self.xsd_path.name}: {imported_class_name}, from {linked_xsd_relative_path}, has the same name as a class of this XML schema"
+                        )
+                    self.imported_module_names_by_class_name[imported_class_name] = linked_module_name
+                    self.taken_names.add(imported_class_name)
+                elif self.imported_module_names_by_class_name[imported_class_name] != linked_module_name:
+                    raise ValueError(f"{self.xsd_path.name}: {imported_class_name} is a class of two linked XML schemas")
+
+            # A collapsed link's field is the field of the linked file's root element, which names that root element's class in its metadata
+            if linked_field_definition is not None:
+                linked_file_root_metadata: str = f'metadata={{"linked_file_root": {python_type}}}'
+                if linked_field_definition.default == "":
+                    default = f"field({linked_file_root_metadata})"
+                elif linked_field_definition.default.startswith("field("):
+                    default = f"{linked_field_definition.default.removesuffix(')')}, {linked_file_root_metadata})"
+                else:
+                    default = f"field(default={linked_field_definition.default}, {linked_file_root_metadata})"
+                if linked_field_definition.key != "":
+                    self.uses_keyed_list = True
+                    if documentation != "":
+                        documentation = documentation.removesuffix(".") + ".\n"
+                    documentation += KEYED_LIST_DOCUMENTATION.format(key_name=linked_field_definition.key, name=name)
+                self.collapsed_links.append(f"{name}: {linked_field_definition.python_type}")
+                return FieldDefinition(
+                    name=name,
+                    python_type=linked_field_definition.python_type,
+                    default=default,
+                    documentation=documentation,
+                    units=linked_field_definition.units,
+                    key=linked_field_definition.key,
+                )
+            self.link_class_names.add(python_type)
         else:
             python_type = self.element_type(element, parent_class_name=class_name, documentation=documentation)
 
         # `max_occurs` is None for `maxOccurs="unbounded"`
-        default: str = ""
         if element.max_occurs != 1:
             if element.nillable:
                 raise NotImplementedError(f"{self.xsd_path.name}: {name} is both repeated and nillable")
@@ -504,7 +597,7 @@ class ModuleBuilder:
                     default = "field(default_factory=KeyedList)"
                 if documentation != "":
                     documentation = documentation.removesuffix(".") + ".\n"
-                documentation += f"A `KeyedList`, which can be indexed by `{key_name}` as well as by position, e.g. `{name}[{key_name}]`"
+                documentation += KEYED_LIST_DOCUMENTATION.format(key_name=key_name, name=name)
             else:
                 python_type = f"list[{python_type}]"
                 if element.min_occurs == 0:
@@ -515,7 +608,7 @@ class ModuleBuilder:
             if element.min_occurs == 0:
                 default = "None"
 
-        return FieldDefinition(name=name, python_type=python_type, default=default, documentation=documentation, units=units)
+        return FieldDefinition(name=name, python_type=python_type, default=default, documentation=documentation, units=units, key=key_name)
 
     def attribute_field(self, attribute: XsdAttribute) -> FieldDefinition:
         """
@@ -556,10 +649,19 @@ class ModuleBuilder:
             f"This module defines the types of `{xml_relative_path}`, generated from the XML schema `{SCHEMA_PATH}/{self.xsd_relative_path}`.",
             f"Its root element, `<{self.root_element_name}>`, is `{self.root_class_name}`.",
         ]
-        if len(imports) > 0:
+        link_imports: list[tuple[int, str, str]] = []
+        for link_import in imports:
+            if link_import[2] in self.link_class_names:
+                link_imports.append(link_import)
+        if len(link_imports) > 0:
             lines.append(
-                f"Each link to another XML file has the type of that file's root element, e.g. `{imports[0][2]}`, from `{imports[0][1]}`, "
+                f"Each link to another XML file has the type of that file's root element, e.g. `{link_imports[0][2]}`, from `{link_imports[0][1]}`, "
                 "as the linked file is read in the link's place."
+            )
+        if len(self.collapsed_links) > 0:
+            lines.append(
+                "A link to a file whose root element holds only one element, named as the link, is collapsed: it has the type of that element, "
+                f"e.g. `{self.collapsed_links[0]}`, and names the class of the file's root element in its `linked_file_root` metadata."
             )
         lines.append('"""')
         lines.append("")

@@ -277,24 +277,8 @@ impl Equilibrium {
 
         // Only the Rogowski coils in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, are copied, and each of them has to
         // be in the magnetics IDS. Checked before anything is copied
-        let settings_names: Vec<String> = self
-            .equilibrium_ids
-            .code
-            .parameters_parsed
-            .constraints
-            .rogowski_coil
-            .rogowski_coil(..)
-            .name
-            .to_vec();
-        let settings_weights: Array1<f64> = self
-            .equilibrium_ids
-            .code
-            .parameters_parsed
-            .constraints
-            .rogowski_coil
-            .rogowski_coil(..)
-            .weight
-            .to_array();
+        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.rogowski_coil(..).name.to_vec();
+        let settings_weights: Array1<f64> = self.equilibrium_ids.code.parameters_parsed.constraints.rogowski_coil(..).weight.to_array();
         let n_settings: usize = settings_names.len();
         for i_settings in 0..n_settings {
             let settings_name: &str = &settings_names[i_settings];
@@ -392,15 +376,7 @@ impl Equilibrium {
 
         // Only the Rogowski coils in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, which `copy_from_magnetics_ids` copies,
         // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
-        let settings_names: Vec<String> = self
-            .equilibrium_ids
-            .code
-            .parameters_parsed
-            .constraints
-            .rogowski_coil
-            .rogowski_coil(..)
-            .name
-            .to_vec();
+        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.rogowski_coil(..).name.to_vec();
 
         // The grid. `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)` because GSFit solves
         // on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives

@@ -38,6 +38,9 @@ def read_xml_settings_to_dataclasses(
     The XML file can link to other XML files, which can link to others in turn, e.g. GSFit's `GSFIT_code_settings.xml` holds
     `<equilibrium href="equilibrium/equilibrium.xml"/>` inside `<ids>`, and `equilibrium.xml` holds `<grid href="grid.xml"/>`.
     A link is followed when the type of its field is the dataclass of the linked file's root element, e.g. `grid: Grid`, and the linked file is read in its place.
+    A collapsed link, to a file whose root element holds only one element, named as the link, is followed too: its field holds that element, e.g.
+    `b_field_pol_probe: KeyedList[BFieldPolProbe]` for `<b_field_pol_probe href="constraints_b_field_pol_probe.xml"/>`, and names the dataclass of the linked file's
+    root element in its `linked_file_root` metadata, e.g. `ConstraintsBFieldPolProbe`, which the linked file is read into before the field takes what it holds.
     Otherwise the link is read like any other element, e.g. into a dataclass with an `href` field.
     A file linked from several places, e.g. `workflow.xml`, which every IDS's file links to, is read once, and every link to it holds the same dataclass.
     So a setting changed in Python through one of the links, e.g. `settings.ids.pf_active.workflow.tree["PSU2COIL"].run_name = "RUN02"`, is changed for all of them,
@@ -117,6 +120,7 @@ def _decoded_xml_to_dataclass(
     * `list[...]`, for a repeated element, e.g. `list[FluxLoop]`, or a space-separated list, e.g. "0.1 0.2 0.3" -> `list[float]`
     * `KeyedList[...]`, for a repeated element with a key, e.g. `KeyedList[WorkflowTree]`, which can also be indexed by key, e.g. `["ELMAG"]`; see `KeyedList`
     * `npt.NDArray[np.float64]`, for a matrix with one `<row>` per row; see `matrix_row_element`
+    A link to another XML file is followed, and the linked file read in its place; see `read_xml_settings_to_dataclasses`.
 
     :param dataclass_type: Dataclass of the element, e.g. `Grid`
     :param element_data: The element, as decoded by `xmlschema`: the name of each child element or attribute -> its value.
@@ -137,6 +141,11 @@ def _decoded_xml_to_dataclass(
         element_data = {}
 
     field_types: dict[str, typing.Any] = typing.get_type_hints(dataclass_type)
+    # The dataclass of the linked file's root element, for each collapsed link, by the name of its field, e.g. "b_field_pol_probe" -> `ConstraintsBFieldPolProbe`
+    linked_file_roots: dict[str, typing.Any] = {}
+    for dataclass_field in dataclasses.fields(typing.cast(typing.Any, dataclass_type)):
+        if "linked_file_root" in dataclass_field.metadata:
+            linked_file_roots[dataclass_field.name] = dataclass_field.metadata["linked_file_root"]
     field_values: dict[str, typing.Any] = {}
     for key, value in element_data.items():
         if key.startswith(("@xmlns", "@xsi:")):
@@ -148,6 +157,11 @@ def _decoded_xml_to_dataclass(
         if field_name not in field_types:
             raise TypeError(f"{xml_file_path}: `{'/'.join(field_names)}` has no field in `{dataclass_type.__name__}`")
         field_type: typing.Any = field_types[field_name]
+
+        # A collapsed link, e.g. `<b_field_pol_probe href="constraints_b_field_pol_probe.xml"/>`, is followed as any other link, into the dataclass of the
+        # linked file's root element, e.g. `ConstraintsBFieldPolProbe`. The field then takes the one element that root element holds, below
+        if field_name in linked_file_roots:
+            field_type = linked_file_roots[field_name]
 
         # An optional field, `X | None`, holds an `X` when its element is given, unless the element is nil
         value_type: typing.Any = field_type
@@ -258,7 +272,10 @@ def _decoded_xml_to_dataclass(
                     raise TypeError(f"{xml_file_path}: `{'/'.join(field_names)}` is {plain_value!r}, which is not a `{plain_type.__name__}`")
             item_values.append(item)
 
-        if not is_list:
+        if field_name in linked_file_roots:
+            # The linked file's root element holds only one element, named as the link, e.g. `b_field_pol_probe`, which is what the field holds
+            field_values[field_name] = getattr(item_values[0], field_name)
+        elif not is_list:
             field_values[field_name] = item_values[0]
         elif typing.get_origin(value_type) is KeyedList:
             field_values[field_name] = KeyedList(item_values)

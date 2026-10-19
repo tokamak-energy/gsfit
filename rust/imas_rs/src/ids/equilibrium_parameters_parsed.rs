@@ -7,12 +7,9 @@
 
 use super::equilibrium::{
     EquilibriumCodeParametersParsed, EquilibriumCodeParametersParsedBFieldPolProbe, EquilibriumCodeParametersParsedDiamagneticFlux,
-    EquilibriumCodeParametersParsedEfitPolynomial, EquilibriumCodeParametersParsedEquilibriumConstraints,
-    EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe, EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux,
-    EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop, EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux,
-    EquilibriumCodeParametersParsedEquilibriumConstraintsPressure, EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil,
-    EquilibriumCodeParametersParsedFluxLoop, EquilibriumCodeParametersParsedGrid, EquilibriumCodeParametersParsedInitialGuess,
-    EquilibriumCodeParametersParsedIsoflux, EquilibriumCodeParametersParsedNumerics, EquilibriumCodeParametersParsedNumericsNonlinearSolver,
+    EquilibriumCodeParametersParsedEfitPolynomial, EquilibriumCodeParametersParsedEquilibriumConstraints, EquilibriumCodeParametersParsedFluxLoop,
+    EquilibriumCodeParametersParsedGrid, EquilibriumCodeParametersParsedInitialGuess, EquilibriumCodeParametersParsedIsoflux,
+    EquilibriumCodeParametersParsedNumerics, EquilibriumCodeParametersParsedNumericsNonlinearSolver,
     EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov, EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard,
     EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard, EquilibriumCodeParametersParsedPassive, EquilibriumCodeParametersParsedPfPassiveDof,
     EquilibriumCodeParametersParsedPressure, EquilibriumCodeParametersParsedPressureThomsonScattering, EquilibriumCodeParametersParsedRegularisationBuilder,
@@ -30,6 +27,8 @@ impl EquilibriumCodeParametersParsed {
     /// `serialise_python_dataclass_to_imas_parameters_input` writes it, e.g. `<grid><n_r>81</n_r>...</grid>`. Each
     /// element is read into the field of the same name. One which is left out is left unset, and the XML is not
     /// checked against its XML schema here: that was done when it was written.
+    /// A link to a file whose root element holds only one element, named as the link, is collapsed, e.g.
+    /// `code/parameters_parsed/constraints/b_field_pol_probe`: the field is read from that element, inside the linked file's root element.
     ///
     /// # Errors
     /// The XML is not well-formed, its root element is not `<equilibrium_settings>`, it holds an element which is
@@ -433,41 +432,84 @@ fn read_equilibrium_code_parameters_parsed_equilibrium_constraints(
         let child_name: &str = child.tag_name().name();
         match child_name {
             "b_field_pol_probe" => {
-                parsed.b_field_pol_probe =
-                    read_equilibrium_code_parameters_parsed_equilibrium_constraints_b_field_pol_probe(child, &format!("{path}/b_field_pol_probe"))?
+                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it
+                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {
+                    let grandchild_name: &str = grandchild.tag_name().name();
+                    match grandchild_name {
+                        "b_field_pol_probe" => {
+                            let child_path: String = format!("{path}/b_field_pol_probe({})", parsed.b_field_pol_probe.len());
+                            parsed
+                                .b_field_pol_probe
+                                .push(read_equilibrium_code_parameters_parsed_b_field_pol_probe(grandchild, &child_path)?);
+                        }
+                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),
+                    }
+                }
             }
-            "flux_loop" => parsed.flux_loop = read_equilibrium_code_parameters_parsed_equilibrium_constraints_flux_loop(child, &format!("{path}/flux_loop"))?,
+            "flux_loop" => {
+                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it
+                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {
+                    let grandchild_name: &str = grandchild.tag_name().name();
+                    match grandchild_name {
+                        "flux_loop" => {
+                            let child_path: String = format!("{path}/flux_loop({})", parsed.flux_loop.len());
+                            parsed
+                                .flux_loop
+                                .push(read_equilibrium_code_parameters_parsed_flux_loop(grandchild, &child_path)?);
+                        }
+                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),
+                    }
+                }
+            }
             "rogowski_coil" => {
-                parsed.rogowski_coil = read_equilibrium_code_parameters_parsed_equilibrium_constraints_rogowski_coil(child, &format!("{path}/rogowski_coil"))?
+                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it
+                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {
+                    let grandchild_name: &str = grandchild.tag_name().name();
+                    match grandchild_name {
+                        "rogowski_coil" => {
+                            let child_path: String = format!("{path}/rogowski_coil({})", parsed.rogowski_coil.len());
+                            parsed
+                                .rogowski_coil
+                                .push(read_equilibrium_code_parameters_parsed_rogowski_coil(grandchild, &child_path)?);
+                        }
+                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),
+                    }
+                }
             }
             "diamagnetic_flux" => {
-                parsed.diamagnetic_flux =
-                    read_equilibrium_code_parameters_parsed_equilibrium_constraints_diamagnetic_flux(child, &format!("{path}/diamagnetic_flux"))?
+                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it
+                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {
+                    let grandchild_name: &str = grandchild.tag_name().name();
+                    match grandchild_name {
+                        "diamagnetic_flux" => {
+                            parsed.diamagnetic_flux = read_equilibrium_code_parameters_parsed_diamagnetic_flux(grandchild, &format!("{path}/diamagnetic_flux"))?
+                        }
+                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),
+                    }
+                }
             }
-            "isoflux" => parsed.isoflux = read_equilibrium_code_parameters_parsed_equilibrium_constraints_isoflux(child, &format!("{path}/isoflux"))?,
-            "pressure" => parsed.pressure = read_equilibrium_code_parameters_parsed_equilibrium_constraints_pressure(child, &format!("{path}/pressure"))?,
-            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
-        }
-    }
-
-    Ok(parsed)
-}
-
-/// Read `EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe` from its XML element, whose path is `path`
-fn read_equilibrium_code_parameters_parsed_equilibrium_constraints_b_field_pol_probe(
-    node: Node<'_, '_>,
-    path: &str,
-) -> Result<EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe, String> {
-    let mut parsed: EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe =
-        EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe::default();
-    for child in child_elements(node, path)? {
-        let child_name: &str = child.tag_name().name();
-        match child_name {
-            "b_field_pol_probe" => {
-                let child_path: String = format!("{path}/b_field_pol_probe({})", parsed.b_field_pol_probe.len());
-                parsed
-                    .b_field_pol_probe
-                    .push(read_equilibrium_code_parameters_parsed_b_field_pol_probe(child, &child_path)?);
+            "isoflux" => {
+                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it
+                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {
+                    let grandchild_name: &str = grandchild.tag_name().name();
+                    match grandchild_name {
+                        "isoflux" => {
+                            let child_path: String = format!("{path}/isoflux({})", parsed.isoflux.len());
+                            parsed.isoflux.push(read_equilibrium_code_parameters_parsed_isoflux(grandchild, &child_path)?);
+                        }
+                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),
+                    }
+                }
+            }
+            "pressure" => {
+                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it
+                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {
+                    let grandchild_name: &str = grandchild.tag_name().name();
+                    match grandchild_name {
+                        "pressure" => parsed.pressure = read_equilibrium_code_parameters_parsed_pressure(grandchild, &format!("{path}/pressure"))?,
+                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),
+                    }
+                }
             }
             _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
         }
@@ -494,26 +536,6 @@ fn read_equilibrium_code_parameters_parsed_b_field_pol_probe(node: Node<'_, '_>,
     Ok(parsed)
 }
 
-/// Read `EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop` from its XML element, whose path is `path`
-fn read_equilibrium_code_parameters_parsed_equilibrium_constraints_flux_loop(
-    node: Node<'_, '_>,
-    path: &str,
-) -> Result<EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop, String> {
-    let mut parsed: EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop = EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop::default();
-    for child in child_elements(node, path)? {
-        let child_name: &str = child.tag_name().name();
-        match child_name {
-            "flux_loop" => {
-                let child_path: String = format!("{path}/flux_loop({})", parsed.flux_loop.len());
-                parsed.flux_loop.push(read_equilibrium_code_parameters_parsed_flux_loop(child, &child_path)?);
-            }
-            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
-        }
-    }
-
-    Ok(parsed)
-}
-
 /// Read `EquilibriumCodeParametersParsedFluxLoop` from its XML element, whose path is `path`
 fn read_equilibrium_code_parameters_parsed_flux_loop(node: Node<'_, '_>, path: &str) -> Result<EquilibriumCodeParametersParsedFluxLoop, String> {
     let mut parsed: EquilibriumCodeParametersParsedFluxLoop = EquilibriumCodeParametersParsedFluxLoop::default();
@@ -525,29 +547,6 @@ fn read_equilibrium_code_parameters_parsed_flux_loop(node: Node<'_, '_>, path: &
             "weight" => parsed.weight = read_double(child, &format!("{path}/weight"))?,
             "include" => parsed.include = read_boolean(child, &format!("{path}/include"))?,
             "comment" => parsed.comment = read_string(child, &format!("{path}/comment"))?,
-            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
-        }
-    }
-
-    Ok(parsed)
-}
-
-/// Read `EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil` from its XML element, whose path is `path`
-fn read_equilibrium_code_parameters_parsed_equilibrium_constraints_rogowski_coil(
-    node: Node<'_, '_>,
-    path: &str,
-) -> Result<EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil, String> {
-    let mut parsed: EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil =
-        EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil::default();
-    for child in child_elements(node, path)? {
-        let child_name: &str = child.tag_name().name();
-        match child_name {
-            "rogowski_coil" => {
-                let child_path: String = format!("{path}/rogowski_coil({})", parsed.rogowski_coil.len());
-                parsed
-                    .rogowski_coil
-                    .push(read_equilibrium_code_parameters_parsed_rogowski_coil(child, &child_path)?);
-            }
             _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
         }
     }
@@ -573,26 +572,6 @@ fn read_equilibrium_code_parameters_parsed_rogowski_coil(node: Node<'_, '_>, pat
     Ok(parsed)
 }
 
-/// Read `EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux` from its XML element, whose path is `path`
-fn read_equilibrium_code_parameters_parsed_equilibrium_constraints_diamagnetic_flux(
-    node: Node<'_, '_>,
-    path: &str,
-) -> Result<EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux, String> {
-    let mut parsed: EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux =
-        EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux::default();
-    for child in child_elements(node, path)? {
-        let child_name: &str = child.tag_name().name();
-        match child_name {
-            "diamagnetic_flux" => {
-                parsed.diamagnetic_flux = read_equilibrium_code_parameters_parsed_diamagnetic_flux(child, &format!("{path}/diamagnetic_flux"))?
-            }
-            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
-        }
-    }
-
-    Ok(parsed)
-}
-
 /// Read `EquilibriumCodeParametersParsedDiamagneticFlux` from its XML element, whose path is `path`
 fn read_equilibrium_code_parameters_parsed_diamagnetic_flux(node: Node<'_, '_>, path: &str) -> Result<EquilibriumCodeParametersParsedDiamagneticFlux, String> {
     let mut parsed: EquilibriumCodeParametersParsedDiamagneticFlux = EquilibriumCodeParametersParsedDiamagneticFlux::default();
@@ -603,26 +582,6 @@ fn read_equilibrium_code_parameters_parsed_diamagnetic_flux(node: Node<'_, '_>, 
             "weight" => parsed.weight = read_double(child, &format!("{path}/weight"))?,
             "include" => parsed.include = read_boolean(child, &format!("{path}/include"))?,
             "comment" => parsed.comment = read_string(child, &format!("{path}/comment"))?,
-            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
-        }
-    }
-
-    Ok(parsed)
-}
-
-/// Read `EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux` from its XML element, whose path is `path`
-fn read_equilibrium_code_parameters_parsed_equilibrium_constraints_isoflux(
-    node: Node<'_, '_>,
-    path: &str,
-) -> Result<EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux, String> {
-    let mut parsed: EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux = EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux::default();
-    for child in child_elements(node, path)? {
-        let child_name: &str = child.tag_name().name();
-        match child_name {
-            "isoflux" => {
-                let child_path: String = format!("{path}/isoflux({})", parsed.isoflux.len());
-                parsed.isoflux.push(read_equilibrium_code_parameters_parsed_isoflux(child, &child_path)?);
-            }
             _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
         }
     }
@@ -641,23 +600,6 @@ fn read_equilibrium_code_parameters_parsed_isoflux(node: Node<'_, '_>, path: &st
             "weight" => parsed.weight = read_double(child, &format!("{path}/weight"))?,
             "include" => parsed.include = read_boolean(child, &format!("{path}/include"))?,
             "comment" => parsed.comment = read_string(child, &format!("{path}/comment"))?,
-            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
-        }
-    }
-
-    Ok(parsed)
-}
-
-/// Read `EquilibriumCodeParametersParsedEquilibriumConstraintsPressure` from its XML element, whose path is `path`
-fn read_equilibrium_code_parameters_parsed_equilibrium_constraints_pressure(
-    node: Node<'_, '_>,
-    path: &str,
-) -> Result<EquilibriumCodeParametersParsedEquilibriumConstraintsPressure, String> {
-    let mut parsed: EquilibriumCodeParametersParsedEquilibriumConstraintsPressure = EquilibriumCodeParametersParsedEquilibriumConstraintsPressure::default();
-    for child in child_elements(node, path)? {
-        let child_name: &str = child.tag_name().name();
-        match child_name {
-            "pressure" => parsed.pressure = read_equilibrium_code_parameters_parsed_pressure(child, &format!("{path}/pressure"))?,
             _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
         }
     }

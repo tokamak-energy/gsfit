@@ -76,7 +76,7 @@ impl FittedMagneticSensors {
     /// * `parameters_parsed` - GSFit's settings, `code/parameters_parsed`, which hold each sensor's `include` and `expected_value`
     pub fn new(time_slice: &EquilibriumTimeSlice, parameters_parsed: &EquilibriumCodeParametersParsed) -> Self {
         // Poloidal field probes
-        let settings_b_field_pol_probes = &parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe;
+        let settings_b_field_pol_probes = &parameters_parsed.constraints.b_field_pol_probe;
         let n_b_field_pol_probe: usize = time_slice.constraints.b_field_pol_probe.len();
         let mut b_field_pol_probe_constraints: Vec<(String, bool, f64, f64, f64, String)> = Vec::with_capacity(n_b_field_pol_probe);
         for i_b_field_pol_probe in 0..n_b_field_pol_probe {
@@ -101,7 +101,7 @@ impl FittedMagneticSensors {
         }
 
         // Flux loops
-        let settings_flux_loops = &parameters_parsed.constraints.flux_loop.flux_loop;
+        let settings_flux_loops = &parameters_parsed.constraints.flux_loop;
         let n_flux_loop: usize = time_slice.constraints.flux_loop.len();
         let mut flux_loop_constraints: Vec<(String, bool, f64, f64, f64, String)> = Vec::with_capacity(n_flux_loop);
         for i_flux_loop in 0..n_flux_loop {
@@ -126,7 +126,7 @@ impl FittedMagneticSensors {
         }
 
         // Rogowski coils
-        let settings_rogowski_coils = &parameters_parsed.constraints.rogowski_coil.rogowski_coil;
+        let settings_rogowski_coils = &parameters_parsed.constraints.rogowski_coil;
         let n_rogowski_coil: usize = time_slice.constraints.rogowski_coil.len();
         let mut rogowski_coil_constraints: Vec<(String, bool, f64, f64, f64, String)> = Vec::with_capacity(n_rogowski_coil);
         for i_rogowski_coil in 0..n_rogowski_coil {
@@ -152,7 +152,7 @@ impl FittedMagneticSensors {
 
         // The diamagnetic flux: a single constraint, as the data dictionary has one, with no name. Its fit settings are optional, and their
         // `include` is required, so it is unset only when they are left out
-        let settings_diamagnetic_flux = &parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux;
+        let settings_diamagnetic_flux = &parameters_parsed.constraints.diamagnetic_flux;
         let constraint = &time_slice.constraints.diamagnetic_flux;
         let mut diamagnetic_flux_constraints: Vec<(String, bool, f64, f64, f64, String)> = Vec::new();
         if settings_diamagnetic_flux.include != EMPTY_INT {

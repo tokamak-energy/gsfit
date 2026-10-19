@@ -9,6 +9,7 @@ from diagnostic_and_simulation_base import DiagnosticAndSimulationBase
 from .database_readers import get_database_reader
 from .database_writers import get_database_writer
 from .settings_schema.python.gsfit_code_settings import GsfitCodeSettings
+from gsfit_rs.imas import equilibrium_paths as ep
 
 if typing.TYPE_CHECKING:
     from imas.ids_toplevel import IDSToplevel
@@ -120,8 +121,6 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
 
         self.set_environment_variables()
 
-        self.setup_timeslices()
-
         # Read in all the machine settings and initalise the following Rust implementations:
         # `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall`, `magnetics`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
         # and the optional `pulse_schedule`
@@ -204,44 +203,6 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
             database_writer = get_database_writer(database_writer_method)
 
         return database_writer.get_workflow_names(self)
-
-    def setup_timeslices(self) -> None:
-        """
-        Calculates the timeslices to reconstruct, and stores them in `self.results["TIME"]`
-        """
-
-        # Extract the timeslice settings from the JSON file
-        timeslices_settings = self.settings_xml.ids.equilibrium.timeslices
-
-        # Calculate the timeslices
-        match timeslices_settings.method:
-            case "arange":
-                time = np.arange(
-                    timeslices_settings.arange.time_start,
-                    timeslices_settings.arange.time_end,
-                    timeslices_settings.arange.dt,
-                )
-            case "linspace":
-                time = np.linspace(
-                    timeslices_settings.linspace.time_start,
-                    timeslices_settings.linspace.time_end,
-                    timeslices_settings.linspace.n_time,
-                )
-            case "user_defined":
-                time = np.array(timeslices_settings.user_defined)
-            case "good_pressure_sensors":
-                # TODO: needs implementing...
-                raise ValueError("Needs implementing...")
-                # # Reconstruct only the time-slices where the pressure sensors are "good".
-                # # The `BAD_MA` reading lives in the `st40_mdsplus_with_digital_filter` reader.
-                # from .database_readers.st40_mdsplus_with_digital_filter.setup_pressure_sensors import get_good_pressure_sensor_times
-
-                # time = get_good_pressure_sensor_times(pulseNo=self.pulseNo, settings=self.settings)
-            case _:
-                raise ValueError(f"Unknown timeslices method: {timeslices_settings.method}")
-
-        # Store the times to reconstruct
-        self.results["TIME"] = time
 
     def set_environment_variables(self) -> None:
         """
@@ -348,62 +309,106 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         database_reader = get_database_reader(database_reader_method)
         settings_xml = self.settings_xml
 
-        # `equilibrium` is in IDS structure, built from its settings alone
+        # `equilibrium` IDS
         tic = time_py.time()
-        self.equilibrium = database_reader.setup_equilibrium(pulseNo=self.pulseNo, settings=settings_xml.ids.equilibrium, **kwargs)
+        self.equilibrium = database_reader.setup_equilibrium(
+            pulseNo=self.pulseNo,
+            settings=settings_xml.ids.equilibrium,
+            **kwargs,
+        )
         toc = time_py.time()
         self.logger.info(msg=f"`equilibrium` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # `wall` is in IDS structure
+        # `wall` IDS
         tic = time_py.time()
-        self.wall = database_reader.setup_wall(pulseNo=self.pulseNo, settings=settings_xml.ids.wall, **kwargs)
+        self.wall = database_reader.setup_wall(
+            pulseNo=self.pulseNo,
+            settings=settings_xml.ids.wall,
+            **kwargs,
+        )
+        self.equilibrium.copy_from_wall_ids(self.wall)
         toc = time_py.time()
         self.logger.info(msg=f"`wall` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # `tf` is in IDS structure
+        # `tf` IDS
         tic = time_py.time()
-        self.tf = database_reader.setup_tf(pulseNo=self.pulseNo, settings=settings_xml.ids.tf, **kwargs)
+        self.tf = database_reader.setup_tf(
+            pulseNo=self.pulseNo,
+            settings=settings_xml.ids.tf,
+            **kwargs,
+        )
+        self.equilibrium.copy_from_tf_ids(self.tf)
         toc = time_py.time()
         self.logger.info(msg=f"`tf` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # `pulse_schedule` is in IDS structure
+        # `pulse_schedule` IDS
         tic = time_py.time()
-        self.pulse_schedule = database_reader.setup_pulse_schedule(pulseNo=self.pulseNo, settings=settings_xml.ids.pulse_schedule, **kwargs)
+        self.pulse_schedule = database_reader.setup_pulse_schedule(
+            pulseNo=self.pulseNo,
+            settings=settings_xml.ids.pulse_schedule,
+            **kwargs,
+        )
+        self.equilibrium.copy_from_pulse_schedule_ids(self.pulse_schedule)
         toc = time_py.time()
         self.logger.info(msg=f"`pulse_schedule` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-
-        # `pf_passive` is in IDS structure
+        # `pf_passive` IDS
         tic = time_py.time()
-        self.pf_passive = database_reader.setup_pf_passive(pulseNo=self.pulseNo, settings=self.settings_xml.ids.pf_passive, settings_equilibrium=self.settings_xml.ids.equilibrium, **kwargs)
+        self.pf_passive = database_reader.setup_pf_passive(
+            pulseNo=self.pulseNo,
+            settings=self.settings_xml.ids.pf_passive,
+            settings_equilibrium=self.settings_xml.ids.equilibrium,
+            **kwargs,
+        )
+        self.equilibrium.copy_from_pf_passive_ids(self.pf_passive)
         toc = time_py.time()
         self.logger.info(msg=f"`pf_passive` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # `pf_active` is in IDS structure
+        # `pf_active` IDS
         tic = time_py.time()
-        self.pf_active = database_reader.setup_pf_active(pulseNo=self.pulseNo, settings=self.settings_xml.ids.pf_active, **kwargs)
+        self.pf_active = database_reader.setup_pf_active(
+            pulseNo=self.pulseNo,
+            settings=self.settings_xml.ids.pf_active,
+            **kwargs,
+        )
+        self.equilibrium.copy_from_pf_active_ids(self.pf_active)
         toc = time_py.time()
         self.logger.info(msg=f"`pf_active` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        times_to_reconstruct = self.results["TIME"]
-
+        
+        times_to_reconstruct = self.equilibrium.get(ep.time_slice[:].time)
         tic = time_py.time()
-        self.isoflux = database_reader.setup_isoflux_sensors(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_isoflux_sensors=self.settings_xml.ids.equilibrium.constraints.isoflux, times_to_reconstruct=times_to_reconstruct, **kwargs)
+        self.isoflux = database_reader.setup_isoflux_sensors(
+            pulseNo=self.pulseNo,
+            settings=self.settings_xml.ids.magnetics,
+            settings_isoflux_sensors=self.settings_xml.ids.equilibrium.constraints.isoflux,
+            times_to_reconstruct=times_to_reconstruct, # TODO: is this a problem or not??
+            **kwargs,
+        )
         toc = time_py.time()
         self.logger.info(msg=f"`isoflux` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, **kwargs)
+        self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(
+            pulseNo=self.pulseNo,
+            settings=self.settings_xml.ids.magnetics,
+            **kwargs,
+        )
         toc = time_py.time()
         self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.pressure_sensors = database_reader.setup_pressure_sensors(pulseNo=self.pulseNo, settings=self.settings_xml.ids.thomson_scattering, settings_pressure_sensors=self.settings_xml.ids.equilibrium.constraints.pressure, **kwargs)
+        self.pressure_sensors = database_reader.setup_pressure_sensors(
+            pulseNo=self.pulseNo,
+            settings=self.settings_xml.ids.thomson_scattering,
+            settings_pressure_sensors=self.settings_xml.ids.equilibrium.constraints.pressure, # TODO: is this a problem or not??
+            **kwargs,
+        )
         toc = time_py.time()
         self.logger.info(msg=f"`pressure_sensors` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        tic = time_py.time()
         # TODO: temporary removal
+        tic = time_py.time()
         from gsfit_rs import StationaryPoint
         self.stationary_point = StationaryPoint()
         # self.stationary_point = database_reader.setup_stationary_point_sensors(
@@ -415,21 +420,11 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         toc = time_py.time()
         self.logger.info(msg=f"`stationary_point` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # Copy IDS data into the equilibrium
-        self.equilibrium.copy_from_wall_ids(self.wall)
-        self.equilibrium.copy_from_tf_ids(self.tf)
-        self.equilibrium.copy_from_pf_active_ids(self.pf_active)
-        self.equilibrium.copy_from_pf_passive_ids(self.pf_passive)
-        # `pulse_schedule` is optional. Only copy it in if it is not None
-        if self.pulse_schedule is not None:
-            # is this ever None?
-            self.equilibrium.copy_from_pulse_schedule_ids(self.pulse_schedule)
-
+        tic = time_py.time()
         self.magnetics = database_reader.setup_magnetics(
             pulseNo=self.pulseNo,
             settings=self.settings_xml.ids.magnetics,
         )
-
         self.equilibrium.copy_from_magnetics_ids(self.magnetics)
-
-        # import pdb; pdb.set_trace()
+        toc = time_py.time()
+        self.logger.info(msg=f"`magnetics` initialised;  {(toc - tic) * 1e3:,.2f}ms")

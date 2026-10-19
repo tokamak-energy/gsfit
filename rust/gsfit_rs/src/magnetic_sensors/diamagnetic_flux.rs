@@ -106,14 +106,7 @@ impl Equilibrium {
         // The diamagnetic flux is only copied if it is in the fit settings, `code/parameters_parsed/constraints/diamagnetic_flux`, whose
         // `include` is required, so is unset only when they are left out. Without them the constraint is left unset. Assigned, so that
         // calling this twice replaces it
-        let settings_include: i32 = self
-            .equilibrium_ids
-            .code
-            .parameters_parsed
-            .constraints
-            .diamagnetic_flux
-            .diamagnetic_flux
-            .include;
+        let settings_include: i32 = self.equilibrium_ids.code.parameters_parsed.constraints.diamagnetic_flux.include;
         if settings_include == EMPTY_INT {
             for i_time in 0..n_time {
                 self.equilibrium_ids.time_slice[i_time].constraints.diamagnetic_flux = EquilibriumConstraints0dB0Like::default();

@@ -320,10 +320,7 @@ def _copy_profiles_2d_branch(
             if values.shape == (n_dim2, n_dim1):
                 values = values.T
             else:
-                raise ValueError(
-                    f"{child_path}: shape {values.shape} matches neither the grid "
-                    f"({n_dim1}, {n_dim2}) nor its transpose"
-                )
+                raise ValueError(f"{child_path}: shape {values.shape} matches neither the grid ({n_dim1}, {n_dim2}) nor its transpose")
 
         _write_leaf(destination, name, values, source_child.data_type)
 
@@ -376,7 +373,6 @@ def map_results_to_database(
     time: npt.NDArray[np.float64] = np.asarray(gsfit_controller.results["TIME"], dtype=np.float64)  # [second]
     n_time: int = len(time)
 
-
     equilibrium = imas.IDSFactory().equilibrium()
 
     # ------------------------------------------------------------------
@@ -384,8 +380,7 @@ def map_results_to_database(
     # ------------------------------------------------------------------
     equilibrium.ids_properties.homogeneous_time = imas.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
     equilibrium.ids_properties.comment = (
-        f"GSFit reconstruction of pulse {gsfit_controller.pulseNo}, run {gsfit_controller.run_name}: "
-        f"{gsfit_controller.run_description}"
+        f"GSFit reconstruction of pulse {gsfit_controller.pulseNo}, run {gsfit_controller.run_name}: {gsfit_controller.run_description}"
     )
     equilibrium.ids_properties.provider = version_storage.__user__
     equilibrium.ids_properties.creation_date = version_storage.__datetime__
@@ -424,9 +419,7 @@ def map_results_to_database(
     dialoop_series = {name: _sensor_series(dialoop, name, "b") for name in dialoop_names}
 
     pressure_series = {name: _sensor_series(pressure_sensors, name, "pressure") for name in pressure_sensor_names}
-    pressure_psi = {
-        name: pressure_sensors.get_array1([name, "pressure", "calculated", "psi"]) for name in pressure_sensor_names
-    }
+    pressure_psi = {name: pressure_sensors.get_array1([name, "pressure", "calculated", "psi"]) for name in pressure_sensor_names}
     pressure_r = {name: pressure_sensors.get_f64([name, "geometry", "r"]) for name in pressure_sensor_names}
     pressure_z = {name: pressure_sensors.get_f64([name, "geometry", "z"]) for name in pressure_sensor_names}
 
@@ -444,9 +437,7 @@ def map_results_to_database(
         # See conventions note 3: the whole Rogowski family goes to `pf_passive_current`
         constraints.pf_passive_current.resize(len(rogowski_coil_names))
         for i_sensor, sensor_name in enumerate(rogowski_coil_names):
-            _write_sensor_constraint(
-                constraints.pf_passive_current[i_sensor], rogowski_coil_series[sensor_name], sensor_name, i_time
-            )
+            _write_sensor_constraint(constraints.pf_passive_current[i_sensor], rogowski_coil_series[sensor_name], sensor_name, i_time)
 
         for sensor_name in dialoop_names:
             # The DD has a single diamagnetic flux constraint, not an array

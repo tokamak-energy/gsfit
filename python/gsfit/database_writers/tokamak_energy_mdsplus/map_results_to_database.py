@@ -158,7 +158,6 @@ def map_results_to_database(
     b0 = np.asarray(plasma.get(ep.vacuum_toroidal_field.b0))
     results["GLOBAL"]["I_ROD"] = 2.0 * np.pi * r0 * b0 / mu_0
 
-
     # Bp probes (note, this is all the sensors, both the ones we fit and the ones we don't)
     bp_names = bp_probes.keys()  # list of strings; len(bp_names) = n_sensors
     bp_names = [bp_name.replace("P", "B_BPPROBE_") for bp_name in bp_names]

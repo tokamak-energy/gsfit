@@ -8,7 +8,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
-#[pyclass(skip_from_py_object)]
+#[pyclass]
 pub struct TensionedCubicBSpline {
     pub n_dof: usize,
     pub regularisations: Array2<f64>,

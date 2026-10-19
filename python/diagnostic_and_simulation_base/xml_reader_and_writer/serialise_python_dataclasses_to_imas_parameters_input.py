@@ -228,6 +228,9 @@ def dataclass_to_element(
         `xsd_element` is then from the XML schema with the linked file's XML schema merged in; see `_merge_linked_xml_schemas`
       * with `write_linked_file`, as the link, e.g. `<grid href="grid.xml"/>`, once `write_linked_file` has written the linked file,
         as `make_settings_from_xml_xsd` writes it. `xsd_element` is then from the XML schema of this XML file alone
+    * a collapsed link, to a file whose root element holds only one element, named as the link, whose field holds that element, e.g.
+      `b_field_pol_probe: KeyedList[BFieldPolProbe]`, is put back into the dataclass of the linked file's root element, which its field names in its
+      `linked_file_root` metadata, e.g. `ConstraintsBFieldPolProbe`, and then written as any other link
     * a 2D numpy array is written as a matrix, one `<row>` per row; see `matrix_row_element`
     * any other value is written as text, by the XML schema type of its element, e.g. `False` -> "false" or `[0.1, 0.2]` -> "0.1 0.2",
       which also checks it against that type, e.g. that a `FinitePositiveDouble` is greater than 0
@@ -249,6 +252,12 @@ def dataclass_to_element(
     element: ElementTree.Element = ElementTree.Element(xsd_element.local_name)
     names_written: list[str] = []
 
+    # The dataclass of the linked file's root element, for each collapsed link, by the name of its field, e.g. "b_field_pol_probe" -> `ConstraintsBFieldPolProbe`
+    linked_file_roots: dict[str, typing.Any] = {}
+    for dataclass_field in dataclasses.fields(settings):
+        if "linked_file_root" in dataclass_field.metadata:
+            linked_file_roots[dataclass_field.name] = dataclass_field.metadata["linked_file_root"]
+
     # The child elements, in the order the XML schema gives
     for particle in xsd_type.content:
         if not isinstance(particle, XsdElement) or particle.local_name is None:
@@ -257,6 +266,11 @@ def dataclass_to_element(
         child_path: str = f"{element_path}/{child_name}"
         value: typing.Any = getattr(settings, child_name)
         names_written.append(child_name)
+
+        # A collapsed link, whose field holds the one element of the linked file's root element, e.g. `b_field_pol_probe: KeyedList[BFieldPolProbe]`,
+        # is put back into the dataclass of that root element, e.g. `ConstraintsBFieldPolProbe`, which is written as any other link, below
+        if child_name in linked_file_roots:
+            value = linked_file_roots[child_name](**{child_name: value})
 
         # `max_occurs` is None for `maxOccurs="unbounded"`
         items: list[typing.Any] = [value]

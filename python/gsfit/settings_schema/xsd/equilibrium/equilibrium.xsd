@@ -41,6 +41,7 @@
         <xs:annotation>
             <xs:documentation>
                 The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
+                That root element holds only the elements named as the link, e.g. one `flux_loop` per flux loop, so the link is collapsed: `constraints.flux_loop` holds the flux loops.
             </xs:documentation>
         </xs:annotation>
         <xs:all>

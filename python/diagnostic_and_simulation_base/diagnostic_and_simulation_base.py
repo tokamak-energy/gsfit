@@ -496,10 +496,7 @@ class DiagnosticAndSimulationBase(typing.Generic[SettingsXmlT]):
         if "seconds" not in result:
             # Killed, or died without managing to say why. Either way the nodes are not trustworthy
             self.logger.error(msg="Creating the MDSplus nodes failed; not writing")
-            raise RuntimeError(
-                f"Creating the MDSplus nodes failed: the process exited with code {process.exitcode} "
-                "without reporting a result"
-            )
+            raise RuntimeError(f"Creating the MDSplus nodes failed: the process exited with code {process.exitcode} without reporting a result")
 
         # Logged so that we can see how much of the node creation was hidden behind the analysis
         self.logger.info(msg=f"MDSplus nodes created;  {result['seconds'] * 1e3:,.2f}ms")

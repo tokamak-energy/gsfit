@@ -88,31 +88,6 @@ mod tests {
     }
 }
 
-/// Scratch buffers for `calculate_psi_and_derivatives`, held on `EquilibriumSolver`.
-///
-/// This type holds no state. It exists only so that the two buffers are allocated **once per
-/// time-slice** rather than on every Picard iteration: they are `(n_z, n_z * n_r)`, which is 8.3
-/// million elements - 66 MB each - at [n_r, n_z] = [81, 321], so allocating them per iteration
-/// costs an `mmap`/`munmap` pair and ~16,000 page faults each time round the loop.
-///
-/// `calculate_psi_and_derivatives` overwrites every element of both before it reads any of them,
-/// so whatever they hold on entry is discarded, and nothing is carried from one iteration to the
-/// next. Deleting this type and allocating inside the function would be correct, only slower.
-///
-/// `EquilibriumSolver::new` fills them with `NaN` rather than zeros, so that an element which the
-/// **first** iteration fails to write propagates a visible `NaN` into `psi` rather than silently
-/// contributing nothing. On later iterations they hold the previous iteration's values, so this
-/// catches a gap in the fill loop only the first time round.
-///
-/// The read-only counterpart is [`PsiAndDerivativesGreens`], which is built once by the caller and
-/// handed in, for the same reason.
-pub struct PsiAndDerivativesTemporaryStorage {
-    /// Current sources gathered for the even kernels; shape = (n_z, n_z * n_r)
-    w_even: Array2<f64>,
-    /// Current sources gathered for the odd kernels; shape = (n_z, n_z * n_r)
-    w_odd: Array2<f64>,
-}
-
 /// Greens tables reorganised for `calculate_psi_and_derivatives`.
 ///
 /// Precomputed **once per time-slice** (the tables do not change between Picard iterations),
@@ -132,8 +107,8 @@ pub struct PsiAndDerivativesTemporaryStorage {
 /// `j_2d[(i_z + i_offset_z, i_cur_r)]`. Kernels which are **even** in `z - z_current_source`
 /// (`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`, `d3_psi_d_r_d_z2`) take the sum of the two
 /// sources; kernels which are **odd** (`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_r2_d_z`,
-/// `d3_psi_d_z3`) take the difference. `w` is filled fresh each iteration (it depends on `j_2d`)
-/// into the buffers of [`PsiAndDerivativesTemporaryStorage`]; the GEMM is done with `faer`.
+/// `d3_psi_d_z3`) take the difference. `w` is filled fresh each iteration (it depends on `j_2d`);
+/// the GEMM is done with `faer`.
 ///
 /// The even kernels and the odd kernels are each concatenated column-wise, so the plasma
 /// contribution to all nine fields costs exactly two GEMMs.
@@ -337,8 +312,6 @@ pub struct EquilibriumSolver<'a> {
     /// Built once by the caller and shared, because the reorganisation depends only on the
     /// geometry - see `PsiAndDerivativesGreens`
     psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,
-    /// Scratch space for `calculate_psi_and_derivatives`; it holds no state, see the type
-    temporary_storage: PsiAndDerivativesTemporaryStorage,
     /// The initial current-density guess, or the reason it could not be built. It is the same for
     /// every time-slice, so the caller builds it once; the `Result` is carried in so that a bad
     /// initial guess still fails every slice in the way it did when each built its own
@@ -389,24 +362,12 @@ impl<'a> EquilibriumSolver<'a> {
             time_slice.profiles_2d = vec![EquilibriumProfiles2d::default()];
         }
 
-        // Scratch space for `calculate_psi_and_derivatives`. Allocated here, once per time-slice,
-        // purely so that it is not reallocated on every iteration - it holds no state; see the
-        // type. Filled with `NaN` rather than zeros so that an element the first iteration fails to
-        // write shows up as `NaN` in `psi` instead of silently contributing nothing
-        let n_r: usize = equilibrium_code.parameters_parsed.grid.n_r as usize;
-        let n_z: usize = equilibrium_code.parameters_parsed.grid.n_z as usize;
-        let temporary_storage: PsiAndDerivativesTemporaryStorage = PsiAndDerivativesTemporaryStorage {
-            w_even: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
-            w_odd: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
-        };
-
         EquilibriumSolver {
             // Object inputs
             time_slice,
             equilibrium_code,
             greens_tables,
             psi_and_derivatives_greens: inputs.psi_and_derivatives_greens,
-            temporary_storage,
             initial_j_2d: inputs.initial_j_2d,
             vacuum_toroidal_field_r0,
             vacuum_toroidal_field_b0,
@@ -1531,13 +1492,9 @@ impl<'a> EquilibriumSolver<'a> {
     ///
     /// The plasma contribution is calculated with two GEMMs; see `PsiAndDerivativesGreens` for the
     /// reorganisation of the convolution over current sources.
-    /// `temporary_storage` is held on the solver only so that its buffers are not reallocated on
-    /// every iteration; it carries nothing between calls. See
-    /// [`PsiAndDerivativesTemporaryStorage`].
     pub fn calculate_psi_and_derivatives(&mut self) {
         // Unpack from self
         let greens_tables: &PsiAndDerivativesGreens = self.psi_and_derivatives_greens;
-        let temporary_storage: &mut PsiAndDerivativesTemporaryStorage = &mut self.temporary_storage;
         let n_r: usize = self.equilibrium_code.parameters_parsed.grid.n_r as usize;
         let n_z: usize = self.equilibrium_code.parameters_parsed.grid.n_z as usize;
         let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area;
@@ -1584,7 +1541,7 @@ impl<'a> EquilibriumSolver<'a> {
         let d3_psi_d_z3_2d_passives: Array2<f64> = contract(&greens_tables.g_d3_psi_d_z3_passives_matrix, passive_dof_values);
 
         // Plasma: two GEMMs over the reorganised tables (see `PsiAndDerivativesGreens`). The two
-        // scratch buffers gather the current sources by (vertical offset, source radius):
+        // matrices gather the current sources by (vertical offset, source radius):
         //     w_even[(i_z, i_offset_z * n_r + i_cur_r)] = d_area * (j_below + j_above)
         //     w_odd[(i_z, i_offset_z * n_r + i_cur_r)]  = d_area * (j_below - j_above)
         // where `j_below = j_2d[(i_z - i_offset_z, i_cur_r)]` (a source below the grid point) and
@@ -1592,9 +1549,11 @@ impl<'a> EquilibriumSolver<'a> {
         // The odd kernels (`d_psi_d_z`, `d2_psi_d_r_d_z`) change sign with the source side:
         // sources with `i_z <= i_cur_z` enter with -1
         //
-        // Each element is assigned rather than accumulated into, so that the scratch buffers never
-        // have to be zeroed. They arrive holding the previous iteration's values, and every element
-        // of both is overwritten here before any of it is read
+        // Every element of both is assigned below, so they are filled with `NaN` rather than zeros:
+        // an element the loop fails to write then propagates a visible `NaN` into `psi` instead of
+        // silently contributing nothing
+        let mut w_even: Array2<f64> = Array2::from_elem((n_z, n_z * n_r), f64::NAN);
+        let mut w_odd: Array2<f64> = Array2::from_elem((n_z, n_z * n_r), f64::NAN);
         for i_z in 0..n_z {
             for i_offset_z in 0..n_z {
                 let i_column_start: usize = i_offset_z * n_r;
@@ -1619,8 +1578,8 @@ impl<'a> EquilibriumSolver<'a> {
                     // `j_phi` holds `-0.0` outside the mask (a negative `p_prime` times a zero
                     // mask). `0.0 + -0.0` is `+0.0`, so dropping it would flip the sign of those
                     // zeros and stop this being a bit-for-bit no-op
-                    temporary_storage.w_even[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below + j_above;
-                    temporary_storage.w_odd[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below - j_above;
+                    w_even[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below + j_above;
+                    w_odd[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below - j_above;
                 }
             }
         }
@@ -1636,7 +1595,7 @@ impl<'a> EquilibriumSolver<'a> {
         matmul(
             plasma_even.as_mut(),
             Accum::Replace,
-            MatRef::from_row_major_slice(temporary_storage.w_even.as_slice().unwrap(), n_z, n_z * n_r),
+            MatRef::from_row_major_slice(w_even.as_slice().unwrap(), n_z, n_z * n_r),
             MatRef::from_row_major_slice(greens_tables.g_even_plasma_by_offset.as_slice().unwrap(), n_z * n_r, 5 * n_r),
             1.0,
             Par::rayon(0),
@@ -1645,7 +1604,7 @@ impl<'a> EquilibriumSolver<'a> {
         matmul(
             plasma_odd.as_mut(),
             Accum::Replace,
-            MatRef::from_row_major_slice(temporary_storage.w_odd.as_slice().unwrap(), n_z, n_z * n_r),
+            MatRef::from_row_major_slice(w_odd.as_slice().unwrap(), n_z, n_z * n_r),
             MatRef::from_row_major_slice(greens_tables.g_odd_plasma_by_offset.as_slice().unwrap(), n_z * n_r, 4 * n_r),
             1.0,
             Par::rayon(0),

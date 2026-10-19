@@ -27,34 +27,34 @@ fn lengths_code_library(equilibrium: &Equilibrium, level: usize, _at: &[usize]) 
     }
 }
 
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_b_field_pol_probe_b_field_pol_probe`.
-fn lengths_code_parameters_parsed_constraints_b_field_pol_probe_b_field_pol_probe(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
+/// Length of each array-of-structures level along `code_parameters_parsed_constraints_b_field_pol_probe`.
+fn lengths_code_parameters_parsed_constraints_b_field_pol_probe(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe.len()),
+        0 => return Some(equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.len()),
         _ => return None,
     }
 }
 
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_flux_loop_flux_loop`.
-fn lengths_code_parameters_parsed_constraints_flux_loop_flux_loop(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
+/// Length of each array-of-structures level along `code_parameters_parsed_constraints_flux_loop`.
+fn lengths_code_parameters_parsed_constraints_flux_loop(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.flux_loop.flux_loop.len()),
+        0 => return Some(equilibrium.code.parameters_parsed.constraints.flux_loop.len()),
         _ => return None,
     }
 }
 
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_isoflux_isoflux`.
-fn lengths_code_parameters_parsed_constraints_isoflux_isoflux(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
+/// Length of each array-of-structures level along `code_parameters_parsed_constraints_isoflux`.
+fn lengths_code_parameters_parsed_constraints_isoflux(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.isoflux.isoflux.len()),
+        0 => return Some(equilibrium.code.parameters_parsed.constraints.isoflux.len()),
         _ => return None,
     }
 }
 
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_rogowski_coil_rogowski_coil`.
-fn lengths_code_parameters_parsed_constraints_rogowski_coil_rogowski_coil(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
+/// Length of each array-of-structures level along `code_parameters_parsed_constraints_rogowski_coil`.
+fn lengths_code_parameters_parsed_constraints_rogowski_coil(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil.len()),
+        0 => return Some(equilibrium.code.parameters_parsed.constraints.rogowski_coil.len()),
         _ => return None,
     }
 }
@@ -13000,7 +13000,7 @@ Optional in the settings: unset when it is left out",
     kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE),
 }];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PROBE: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
     Node {
         name: "name",
         documentation: "Name of the probe, e.g. `P101`.
@@ -13014,11 +13014,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PR
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe_b_field_pol_probe,
+                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[at[0]]
-                            .name
-                            .clone()
+                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].name.clone()
                     },
                 )
             },
@@ -13036,11 +13034,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PR
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe_b_field_pol_probe,
+                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[at[0]]
-                            .comment
-                            .clone()
+                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].comment.clone()
                     },
                 )
             },
@@ -13058,11 +13054,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PR
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe_b_field_pol_probe,
+                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[at[0]]
-                            .expected_value
-                            .clone()
+                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].expected_value.clone()
                     },
                 )
             },
@@ -13080,11 +13074,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PR
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe_b_field_pol_probe,
+                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[at[0]]
-                            .include
-                            .clone()
+                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].include.clone()
                     },
                 )
             },
@@ -13102,11 +13094,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PR
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe_b_field_pol_probe,
+                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[at[0]]
-                            .weight
-                            .clone()
+                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].weight.clone()
                     },
                 )
             },
@@ -13114,15 +13104,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PR
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[Node {
-    name: "b_field_pol_probe",
-    documentation: "Fitting settings for one probe.
-Optional in the settings: unset when it is left out",
-    units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PROBE),
-}];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
     Node {
         name: "name",
         documentation: "Name of the flux loop, e.g. `L001`.
@@ -13136,10 +13118,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_flux_loop_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.flux_loop.flux_loop[at[0]].name.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_flux_loop,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].name.clone() },
                 )
             },
         }),
@@ -13156,9 +13136,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_flux_loop_flux_loop,
+                    lengths_code_parameters_parsed_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.flux_loop.flux_loop[at[0]].expected_value.clone()
+                        equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].expected_value.clone()
                     },
                 )
             },
@@ -13176,10 +13156,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_flux_loop_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.flux_loop.flux_loop[at[0]].weight.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_flux_loop,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].weight.clone() },
                 )
             },
         }),
@@ -13196,10 +13174,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_flux_loop_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
-                        equilibrium.code.parameters_parsed.constraints.flux_loop.flux_loop[at[0]].include.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_flux_loop,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].include.clone() },
                 )
             },
         }),
@@ -13216,25 +13192,15 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_flux_loop_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.flux_loop.flux_loop[at[0]].comment.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_flux_loop,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].comment.clone() },
                 )
             },
         }),
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP: &[Node] = &[Node {
-    name: "flux_loop",
-    documentation: "Fitting settings for one flux loop.
-Optional in the settings: unset when it is left out",
-    units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP),
-}];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
     Node {
         name: "name",
         documentation: "Name of the Rogowski coil, e.g. `INIVC000` or `BVLT`.
@@ -13248,10 +13214,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[at[0]].name.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_rogowski_coil,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].name.clone() },
                 )
             },
         }),
@@ -13268,11 +13232,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil_rogowski_coil,
+                    lengths_code_parameters_parsed_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[at[0]]
-                            .expected_value
-                            .clone()
+                        equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].expected_value.clone()
                     },
                 )
             },
@@ -13290,10 +13252,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[at[0]].weight.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_rogowski_coil,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].weight.clone() },
                 )
             },
         }),
@@ -13310,12 +13270,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
-                        equilibrium.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[at[0]]
-                            .include
-                            .clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_rogowski_coil,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].include.clone() },
                 )
             },
         }),
@@ -13332,27 +13288,15 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[at[0]]
-                            .comment
-                            .clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_rogowski_coil,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].comment.clone() },
                 )
             },
         }),
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[Node {
-    name: "rogowski_coil",
-    documentation: "Fitting settings for one Rogowski coil.
-Optional in the settings: unset when it is left out",
-    units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL),
-}];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLUX: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
     Node {
         name: "expected_value",
         documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
@@ -13362,14 +13306,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .constraints
-                        .diamagnetic_flux
-                        .diamagnetic_flux
-                        .expected_value
-                        .clone()
+                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.expected_value.clone()
                 })
             },
         }),
@@ -13383,7 +13320,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.weight.clone()
+                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.weight.clone()
                 })
             },
         }),
@@ -13397,7 +13334,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.include.clone()
+                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.include.clone()
                 })
             },
         }),
@@ -13411,22 +13348,14 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.comment.clone()
+                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.comment.clone()
                 })
             },
         }),
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[Node {
-    name: "diamagnetic_flux",
-    documentation: "Fitting settings for the diamagnetic flux.
-Optional in the settings: unset when it is left out",
-    units: "",
-    kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLUX),
-}];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX: &[Node] = &[
     Node {
         name: "name",
         documentation: "The constraint's name.",
@@ -13439,8 +13368,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_isoflux_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.isoflux.isoflux[at[0]].name.clone() },
+                    lengths_code_parameters_parsed_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].name.clone() },
                 )
             },
         }),
@@ -13457,9 +13386,9 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_isoflux_isoflux,
+                    lengths_code_parameters_parsed_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.isoflux.isoflux[at[0]].expected_value.clone()
+                        equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].expected_value.clone()
                     },
                 )
             },
@@ -13477,10 +13406,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_isoflux_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.isoflux.isoflux[at[0]].weight.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].weight.clone() },
                 )
             },
         }),
@@ -13497,10 +13424,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_isoflux_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
-                        equilibrium.code.parameters_parsed.constraints.isoflux.isoflux[at[0]].include.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].include.clone() },
                 )
             },
         }),
@@ -13517,25 +13442,15 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_constraints_isoflux_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.isoflux.isoflux[at[0]].comment.clone()
-                    },
+                    lengths_code_parameters_parsed_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].comment.clone() },
                 )
             },
         }),
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX: &[Node] = &[Node {
-    name: "isoflux",
-    documentation: "One isoflux constraint.
-Optional in the settings: unset when it is left out",
-    units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX),
-}];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTERING: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_THOMSON_SCATTERING: &[Node] = &[
     Node {
         name: "pressure_multiplier",
         documentation: "Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature.",
@@ -13549,7 +13464,6 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTE
                         .code
                         .parameters_parsed
                         .constraints
-                        .pressure
                         .pressure
                         .thomson_scattering
                         .pressure_multiplier
@@ -13572,7 +13486,6 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTE
                         .parameters_parsed
                         .constraints
                         .pressure
-                        .pressure
                         .thomson_scattering
                         .minimum_pressure
                         .clone()
@@ -13582,7 +13495,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTE
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_SYNTHETIC: &[Node] = &[
     Node {
         name: "r_start",
         documentation: "Major radius of the first sensor, relative to the magnetic axis.",
@@ -13592,7 +13505,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.pressure.pressure.synthetic.r_start.clone()
+                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.r_start.clone()
                 })
             },
         }),
@@ -13606,7 +13519,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.pressure.pressure.synthetic.r_end.clone()
+                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.r_end.clone()
                 })
             },
         }),
@@ -13620,7 +13533,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.constraints.pressure.pressure.synthetic.n_sensors.clone()
+                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.n_sensors.clone()
                 })
             },
         }),
@@ -13634,22 +13547,14 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .constraints
-                        .pressure
-                        .pressure
-                        .synthetic
-                        .minimum_pressure
-                        .clone()
+                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.minimum_pressure.clone()
                 })
             },
         }),
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE: &[Node] = &[
     Node {
         name: "include",
         documentation: "Whether to fit pressure. When false, nothing else in this file is read.",
@@ -13664,7 +13569,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE: &[Node] = &[
                         0,
                         no_levels,
                     |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.pressure.include.clone()
+                            equilibrium.code.parameters_parsed.constraints.pressure.include.clone()
                         },
                     )
                 },
@@ -13685,7 +13590,7 @@ Optional in the settings: unset when it is left out",
                         0,
                         no_levels,
                     |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.pressure.sensor_name_prefix.clone()
+                            equilibrium.code.parameters_parsed.constraints.pressure.sensor_name_prefix.clone()
                         },
                     )
                 },
@@ -13706,7 +13611,7 @@ Optional in the settings: unset when it is left out",
                         0,
                         no_levels,
                     |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.pressure.expected_value.clone()
+                            equilibrium.code.parameters_parsed.constraints.pressure.expected_value.clone()
                         },
                     )
                 },
@@ -13727,7 +13632,7 @@ Optional in the settings: unset when it is left out",
                         0,
                         no_levels,
                     |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.pressure.weight.clone()
+                            equilibrium.code.parameters_parsed.constraints.pressure.weight.clone()
                         },
                     )
                 },
@@ -13748,7 +13653,7 @@ Optional in the settings: unset when it is left out",
                         0,
                         no_levels,
                     |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.pressure.comment.clone()
+                            equilibrium.code.parameters_parsed.constraints.pressure.comment.clone()
                         },
                     )
                 },
@@ -13759,58 +13664,72 @@ Optional in the settings: unset when it is left out",
         documentation: "Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
 Optional in the settings: unset when it is left out",
         units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTERING),
+        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_THOMSON_SCATTERING),
     },
     Node {
         name: "synthetic",
         documentation: "Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
 Optional in the settings: unset when it is left out",
         units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC),
+        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_SYNTHETIC),
     },
 ];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE: &[Node] = &[Node {
-    name: "pressure",
-    documentation: "Whether pressure is fitted, and how the pressure constraints are made.",
-    units: "",
-    kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE),
-}];
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS: &[Node] = &[
     Node {
         name: "b_field_pol_probe",
-        documentation: "How each poloidal field probe (Mirnov coil) is fitted.",
+        documentation: "How each poloidal field probe (Mirnov coil) is fitted.
+Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
+                A probe read by the `database_reader` which is not listed here is not included in the fit.
+Optional in the settings: unset when it is left out",
         units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE),
+        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE),
     },
     Node {
         name: "flux_loop",
-        documentation: "How each flux loop is fitted.",
+        documentation: "How each flux loop is fitted.
+Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
+                A flux loop read by the `database_reader` which is not listed here is not included in the fit.
+Optional in the settings: unset when it is left out",
         units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP),
+        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP),
     },
     Node {
         name: "rogowski_coil",
-        documentation: "How each Rogowski coil is fitted.",
+        documentation: "How each Rogowski coil is fitted.
+Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
+                A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
+                A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
+                Not read by the freegs reader.
+Optional in the settings: unset when it is left out",
         units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL),
+        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL),
     },
     Node {
         name: "diamagnetic_flux",
-        documentation: "How the diamagnetic loop is fitted.",
+        documentation: "How the diamagnetic loop is fitted.
+Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
+                GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
+                A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
+                Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
+                With one, the magnetics IDS must hold the diamagnetic flux.
+                Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
+Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX),
     },
     Node {
         name: "isoflux",
-        documentation: "The isoflux constraints: pairs of points on the same flux surface.",
+        documentation: "The isoflux constraints: pairs of points on the same flux surface.
+The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
+Optional in the settings: unset when it is left out",
         units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX),
+        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX),
     },
     Node {
         name: "pressure",
-        documentation: "How pressure sensors are fitted.",
+        documentation: "How pressure sensors are fitted.
+Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE),
     },

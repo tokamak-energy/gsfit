@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass(module = "gsfit_rs", skip_from_py_object)]
+#[pyclass(module = "gsfit_rs")]
 pub struct StationaryPoint {
     pub results: DataTree,
 }

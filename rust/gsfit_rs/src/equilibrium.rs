@@ -280,38 +280,38 @@ impl Equilibrium {
         // The magnetic sensors' weights, from their fit settings, `code/parameters_parsed/constraints`: one constraint for each sensor in
         // the settings, with its `name` and `weight`. `copy_from_magnetics_ids` adds each sensor's measurement, found by its name
         let constraints_settings: &EquilibriumCodeParametersParsedEquilibriumConstraints = &parameters_parsed.constraints;
-        let n_b_field_pol_probe: usize = constraints_settings.b_field_pol_probe.b_field_pol_probe.len();
+        let n_b_field_pol_probe: usize = constraints_settings.b_field_pol_probe.len();
         let mut b_field_pol_probe_constraints: Vec<EquilibriumConstraints0dOneLike> = Vec::with_capacity(n_b_field_pol_probe);
         for i_b_field_pol_probe in 0..n_b_field_pol_probe {
             b_field_pol_probe_constraints.push(EquilibriumConstraints0dOneLike {
-                name: constraints_settings.b_field_pol_probe.b_field_pol_probe[i_b_field_pol_probe].name.clone(),
-                weight: constraints_settings.b_field_pol_probe.b_field_pol_probe[i_b_field_pol_probe].weight,
+                name: constraints_settings.b_field_pol_probe[i_b_field_pol_probe].name.clone(),
+                weight: constraints_settings.b_field_pol_probe[i_b_field_pol_probe].weight,
                 ..Default::default()
             });
         }
-        let n_flux_loop: usize = constraints_settings.flux_loop.flux_loop.len();
+        let n_flux_loop: usize = constraints_settings.flux_loop.len();
         let mut flux_loop_constraints: Vec<EquilibriumConstraints0d> = Vec::with_capacity(n_flux_loop);
         for i_flux_loop in 0..n_flux_loop {
             flux_loop_constraints.push(EquilibriumConstraints0d {
-                name: constraints_settings.flux_loop.flux_loop[i_flux_loop].name.clone(),
-                weight: constraints_settings.flux_loop.flux_loop[i_flux_loop].weight,
+                name: constraints_settings.flux_loop[i_flux_loop].name.clone(),
+                weight: constraints_settings.flux_loop[i_flux_loop].weight,
                 ..Default::default()
             });
         }
-        let n_rogowski_coil: usize = constraints_settings.rogowski_coil.rogowski_coil.len();
+        let n_rogowski_coil: usize = constraints_settings.rogowski_coil.len();
         let mut rogowski_coil_constraints: Vec<EquilibriumConstraints0dIpLike> = Vec::with_capacity(n_rogowski_coil);
         for i_rogowski_coil in 0..n_rogowski_coil {
             rogowski_coil_constraints.push(EquilibriumConstraints0dIpLike {
-                name: constraints_settings.rogowski_coil.rogowski_coil[i_rogowski_coil].name.clone(),
-                weight: constraints_settings.rogowski_coil.rogowski_coil[i_rogowski_coil].weight,
+                name: constraints_settings.rogowski_coil[i_rogowski_coil].name.clone(),
+                weight: constraints_settings.rogowski_coil[i_rogowski_coil].weight,
                 ..Default::default()
             });
         }
         // The data dictionary has a single diamagnetic flux constraint, which has no name. Its settings are optional, and their `include` is
         // required, so it is unset only when they are left out
         let mut diamagnetic_flux_constraint: EquilibriumConstraints0dB0Like = EquilibriumConstraints0dB0Like::default();
-        if constraints_settings.diamagnetic_flux.diamagnetic_flux.include != EMPTY_INT {
-            diamagnetic_flux_constraint.weight = constraints_settings.diamagnetic_flux.diamagnetic_flux.weight;
+        if constraints_settings.diamagnetic_flux.include != EMPTY_INT {
+            diamagnetic_flux_constraint.weight = constraints_settings.diamagnetic_flux.weight;
         }
 
         let mut equilibrium_ids: EquilibriumIds = EquilibriumIds {
@@ -1001,17 +1001,17 @@ impl Equilibrium {
         for (sensor, settings_names, magnetics_names) in [
             (
                 "b_field_pol_probe",
-                constraints_settings.b_field_pol_probe.b_field_pol_probe(..).name.to_vec(),
+                constraints_settings.b_field_pol_probe(..).name.to_vec(),
                 magnetics_rs.magnetics_ids.b_field_pol_probe(..).name.to_vec(),
             ),
             (
                 "flux_loop",
-                constraints_settings.flux_loop.flux_loop(..).name.to_vec(),
+                constraints_settings.flux_loop(..).name.to_vec(),
                 magnetics_rs.magnetics_ids.flux_loop(..).name.to_vec(),
             ),
             (
                 "rogowski_coil",
-                constraints_settings.rogowski_coil.rogowski_coil(..).name.to_vec(),
+                constraints_settings.rogowski_coil(..).name.to_vec(),
                 magnetics_rs.magnetics_ids.rogowski_coil(..).name.to_vec(),
             ),
         ] {

@@ -66,7 +66,7 @@ const CRITICAL_TYPE_MAXIMUM: i32 = 2;
 /// boundary. It is **not** the IMAS `psi_norm`, which is 0 at the magnetic axis and 1 on the
 /// boundary.
 #[derive(Clone)]
-#[pyclass(module = "gsfit_rs.analytic_grad_shafranov.guazzotto_freidberg", skip_from_py_object)]
+#[pyclass(module = "gsfit_rs.analytic_grad_shafranov.guazzotto_freidberg")]
 pub struct GuazzottoFreidberg {
     // Inputs
     /// Boundary topology and its shape parameters

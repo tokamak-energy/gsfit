@@ -6,20 +6,30 @@ Any changes will be overwritten.
 
 This module defines the types of `equilibrium/equilibrium.xml`, generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`.
 Its root element, `<equilibrium_settings>`, is `EquilibriumSettings`.
-Each link to another XML file has the type of that file's root element, e.g. `ConstraintsBFieldPolProbe`, from `.constraints_b_field_pol_probe`, as the linked file is read in the link's place.
+Each link to another XML file has the type of that file's root element, e.g. `Grid`, from `.grid`, as the linked file is read in the link's place.
+A link to a file whose root element holds only one element, named as the link, is collapsed: it has the type of that element, e.g. `b_field_pol_probe: KeyedList[BFieldPolProbe]`, and names the class of the file's root element in its `linked_file_root` metadata.
 """
 
 from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
+from dataclasses import field
 
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
+
+from .constraints_b_field_pol_probe import BFieldPolProbe
 from .constraints_b_field_pol_probe import ConstraintsBFieldPolProbe
 from .constraints_diamagnetic_flux import ConstraintsDiamagneticFlux
+from .constraints_diamagnetic_flux import DiamagneticFlux
 from .constraints_flux_loop import ConstraintsFluxLoop
+from .constraints_flux_loop import FluxLoop
 from .constraints_isoflux import ConstraintsIsoflux
+from .constraints_isoflux import Isoflux
 from .constraints_pressure import ConstraintsPressure
+from .constraints_pressure import Pressure
 from .constraints_rogowski_coil import ConstraintsRogowskiCoil
+from .constraints_rogowski_coil import RogowskiCoil
 from .grid import Grid
 from .initial_guess import InitialGuess
 from .numerics import Numerics
@@ -61,18 +71,19 @@ class EquilibriumSettings:
 class EquilibriumConstraints:
     """
     The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
+    That root element holds only the elements named as the link, e.g. one `flux_loop` per flux loop, so the link is collapsed: `constraints.flux_loop` holds the flux loops.
 
-    :param b_field_pol_probe: How each poloidal field probe (Mirnov coil) is fitted.
-    :param flux_loop: How each flux loop is fitted.
-    :param rogowski_coil: How each Rogowski coil is fitted.
-    :param diamagnetic_flux: How the diamagnetic loop is fitted.
-    :param isoflux: The isoflux constraints: pairs of points on the same flux surface.
-    :param pressure: How pressure sensors are fitted.
+    :param b_field_pol_probe: How each poloidal field probe (Mirnov coil) is fitted. Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe. A probe read by the `database_reader` which is not listed here is not included in the fit. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `b_field_pol_probe[name]`
+    :param flux_loop: How each flux loop is fitted. Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop. A flux loop read by the `database_reader` which is not listed here is not included in the fit. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `flux_loop[name]`
+    :param rogowski_coil: How each Rogowski coil is fitted. Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil. A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses. A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit. Not read by the freegs reader. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `rogowski_coil[name]`
+    :param diamagnetic_flux: How the diamagnetic loop is fitted. Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element. GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`. A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it. Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit. With one, the magnetics IDS must hold the diamagnetic flux. Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
+    :param isoflux: The isoflux constraints: pairs of points on the same flux surface. The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux[name]`
+    :param pressure: How pressure sensors are fitted. Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
     """
 
-    b_field_pol_probe: ConstraintsBFieldPolProbe
-    flux_loop: ConstraintsFluxLoop
-    rogowski_coil: ConstraintsRogowskiCoil
-    diamagnetic_flux: ConstraintsDiamagneticFlux
-    isoflux: ConstraintsIsoflux
-    pressure: ConstraintsPressure
+    b_field_pol_probe: KeyedList[BFieldPolProbe] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsBFieldPolProbe})
+    flux_loop: KeyedList[FluxLoop] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsFluxLoop})
+    rogowski_coil: KeyedList[RogowskiCoil] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsRogowskiCoil})
+    diamagnetic_flux: DiamagneticFlux | None = field(default=None, metadata={"linked_file_root": ConstraintsDiamagneticFlux})
+    isoflux: KeyedList[Isoflux] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsIsoflux})
+    pressure: Pressure = field(metadata={"linked_file_root": ConstraintsPressure})

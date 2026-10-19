@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 #
 # `time_slice[:]` gathers over every time-slice, giving the `[n_time, ...]` arrays MDSplus expects.
 _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
+    # Time
+    (("TIME",), ep.time_slice[:].time),
     # Plasma boundary
     (("BOUNDARY", "GEO_AXIS", "R"), ep.time_slice[:].boundary.geometric_axis.r),
     (("BOUNDARY", "GEO_AXIS", "Z"), ep.time_slice[:].boundary.geometric_axis.z),
@@ -325,15 +327,14 @@ def map_results_to_database(
     b0 = np.asarray(equilibrium.get(ep.vacuum_toroidal_field.b0))
     results["GLOBAL"]["I_ROD"] = 2.0 * np.pi * r0 * b0 / mu_0
 
-
     # The magnetic sensors, from `constraints/b_field_pol_probe`, `constraints/flux_loop` and `constraints/rogowski_coil`, which
     # `Equilibrium.copy_from_magnetics_ids` filled on every time-slice with each sensor in the fit settings, in the order of the magnetics IDS:
     # `measured`, the measurement interpolated onto the time-slice's time, `reconstructed`, the reconstruction's value of it, and `weight`,
     # which `Equilibrium` set from the fit settings. MDSplus holds one weight for each sensor, so the first time-slice's is written.
     # Whether each sensor is fitted is its fit settings' `include`, in `code/parameters_parsed/constraints`
     b_field_pol_probe_include: dict[str, np.int32] = {}
-    settings_names: npt.NDArray[np.str_] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[:].name)
-    settings_include: npt.NDArray[np.int32] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[:].include)
+    settings_names: npt.NDArray[np.str_] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe[:].name)
+    settings_include: npt.NDArray[np.int32] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe[:].include)
     n_settings: int = len(settings_names)
     for i_settings in range(n_settings):
         b_field_pol_probe_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
@@ -352,8 +353,8 @@ def map_results_to_database(
         results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["WEIGHT"] = float(b_field_pol_probe_weight[i_b_field_pol_probe])
 
     flux_loop_include: dict[str, np.int32] = {}
-    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop.flux_loop[:].name)
-    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop.flux_loop[:].include)
+    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop[:].name)
+    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop[:].include)
     n_settings = len(settings_names)
     for i_settings in range(n_settings):
         flux_loop_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
@@ -372,8 +373,8 @@ def map_results_to_database(
         results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["WEIGHT"] = float(flux_loop_weight[i_flux_loop])
 
     rogowski_coil_include: dict[str, np.int32] = {}
-    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[:].name)
-    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[:].include)
+    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil[:].name)
+    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil[:].include)
     n_settings = len(settings_names)
     for i_settings in range(n_settings):
         rogowski_coil_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
@@ -396,7 +397,7 @@ def map_results_to_database(
     # settings have a diamagnetic flux, recording where from in `source`
     diamagnetic_flux_source: str = str(equilibrium.get(ep.time_slice[0].constraints.diamagnetic_flux.source))
     if diamagnetic_flux_source != "":
-        diamagnetic_flux_include: int = equilibrium.get(ep.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.include)
+        diamagnetic_flux_include: int = equilibrium.get(ep.code.parameters_parsed.constraints.diamagnetic_flux.include)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(diamagnetic_flux_include == 1)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["MEASURED"] = equilibrium.get(ep.time_slice[:].constraints.diamagnetic_flux.measured)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["RECONSTRUCT"] = equilibrium.get(ep.time_slice[:].constraints.diamagnetic_flux.reconstructed)

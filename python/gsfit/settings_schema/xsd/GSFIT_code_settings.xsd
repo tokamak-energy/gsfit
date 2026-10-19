@@ -33,6 +33,11 @@
       from them, do not share names. The exception is an IDS's file, whose root element is the IDS's
       name followed by `_settings`, e.g. `wall_settings`. So its Python class, `WallSettings`, is not
       mistaken for the IDS, or for GSFit's object holding it, `gsfit_rs.Wall`.
+    * A link to a file whose root element holds only one element, named as the link, is collapsed in the
+      Python classes and in an IDS's code/parameters_parsed: the link's field holds that element. E.g.
+      `constraints.b_field_pol_probe` holds the probes listed in constraints_b_field_pol_probe.xml, rather
+      than `constraints.b_field_pol_probe.b_field_pol_probe`. The files, and code/parameters, keep the
+      linked file's root element, `constraints__b_field_pol_probe`.
     * The constraints are named as in the IMAS Data Dictionary, e.g. `b_field_pol_probe` and
       `diamagnetic_flux` as in the equilibrium IDS's time_slice[:]/constraints, and `rogowski_coil` as in
       the magnetics IDS. `isoflux` is not in the Data Dictionary, so keeps GSFit's name.

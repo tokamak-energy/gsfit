@@ -420,9 +420,7 @@ def sanitize_field_path(path: str) -> str:
     return ".".join(sanitize_rust_identifier(p) for p in parts)
 
 
-def collect_used_types(
-    complex_types: list[ComplexType], root_element: Optional[ComplexType]
-) -> tuple[set[str], set[str]]:
+def collect_used_types(complex_types: list[ComplexType], root_element: Optional[ComplexType]) -> tuple[set[str], set[str]]:
     """
     Collect all types used in the struct definitions.
 
@@ -456,9 +454,7 @@ def collect_used_types(
 # =============================================================================
 
 
-def find_vec_field_types(
-    complex_types: list[ComplexType], root_element: Optional[ComplexType]
-) -> dict[str, ComplexType]:
+def find_vec_field_types(complex_types: list[ComplexType], root_element: Optional[ComplexType]) -> dict[str, ComplexType]:
     """
     Find all types that are used in Vec<T> fields.
     Returns a dict mapping type name (PascalCase) to its ComplexType definition.
@@ -477,9 +473,7 @@ def find_vec_field_types(
     return vec_types
 
 
-def scalar_accumulator_field(
-    f: Field, field_name: str, parent_type_name: str, field_path: str
-) -> tuple[str, str]:
+def scalar_accumulator_field(f: Field, field_name: str, parent_type_name: str, field_path: str) -> tuple[str, str]:
     """Return the (declaration, initialiser) lines for one gathered scalar leaf.
 
     The leaf is a generic `Accumulator` carrying a projection closure, so the DD
@@ -512,9 +506,7 @@ def element_has_name(ct: ComplexType) -> bool:
     return False
 
 
-def nested_slice_method(
-    f: Field, field_name: str, parent_type_name: str, field_path: str, element_is_named: bool
-) -> list[str]:
+def nested_slice_method(f: Field, field_name: str, parent_type_name: str, field_path: str, element_is_named: bool) -> list[str]:
     """Return the method which selects from a nested array of structures from inside a view.
 
     This is what makes `flux_loop(..).greens.pf_active(..)` possible: `greens` is a view over every
@@ -537,9 +529,7 @@ def nested_slice_method(
         "    /// after those of the levels sliced above it and before the leaf's own.",
     ]
     if element_is_named:
-        lines.append(
-            f"    /// A name, `.{field_name}(name)`, takes the one element with that `name` under every element, and adds none."
-        )
+        lines.append(f"    /// A name, `.{field_name}(name)`, takes the one element with that `name` under every element, and adds none.")
     lines += [
         "    ///",
         "    /// # Panics",
@@ -628,9 +618,7 @@ def collect_view_members(
                 nested_code.append(nested_struct_code)
 
         elif f.is_array and f.inner_type in type_map:
-            methods.append(
-                nested_slice_method(f, field_name, parent_type_name, field_path, element_has_name(type_map[f.inner_type]))
-            )
+            methods.append(nested_slice_method(f, field_name, parent_type_name, field_path, element_has_name(type_map[f.inner_type])))
 
     return field_defs, field_inits, methods, nested_code
 
@@ -694,9 +682,7 @@ def generate_view_for_struct(
 
     generated_types.add(view_name)
 
-    field_defs, field_inits, methods, nested_code = collect_view_members(
-        struct_ct, parent_type_name, field_path_prefix, type_map, generated_types, ancestry
-    )
+    field_defs, field_inits, methods, nested_code = collect_view_members(struct_ct, parent_type_name, field_path_prefix, type_map, generated_types, ancestry)
     lines: list[str] = emit_view(
         view_name,
         f"View over `{field_path_prefix}` ({struct_name}) across multiple {parent_type_name}",
@@ -720,9 +706,7 @@ def generate_slice_view(
     Generate the SliceView for a type used in Vec<T>, preceded by the views nested inside it.
     Uses generated_types to avoid creating duplicate type definitions.
     """
-    field_defs, field_inits, methods, nested_code = collect_view_members(
-        ct, type_name, "", type_map, generated_types, (type_name,)
-    )
+    field_defs, field_inits, methods, nested_code = collect_view_members(ct, type_name, "", type_map, generated_types, (type_name,))
 
     common_methods: list[list[str]] = [
         [
@@ -830,9 +814,7 @@ def generate_vec_field_impl(parent_ct: ComplexType, field: Field, element_is_nam
     return "\n".join(lines)
 
 
-def generate_all_views_and_accessors(
-    complex_types: list[ComplexType], root_element: Optional[ComplexType]
-) -> str:
+def generate_all_views_and_accessors(complex_types: list[ComplexType], root_element: Optional[ComplexType]) -> str:
     """Generate all view, accessor, and accumulator code."""
     all_types = complex_types + ([root_element] if root_element else [])
     type_map = {snake_to_pascal_case(ct.name): ct for ct in all_types}
@@ -971,9 +953,7 @@ def generate_rust_struct(ct: ComplexType) -> str:
     return "\n".join(lines)
 
 
-def generate_root_constructors(
-    root_element: Optional[ComplexType], complex_types: list[ComplexType]
-) -> str:
+def generate_root_constructors(root_element: Optional[ComplexType], complex_types: list[ComplexType]) -> str:
     """Generate sizing constructors (`with_size`, `with_time`) for the root IDS.
 
     `with_size(n_time)` pre-populates the `time_slice` array with `n_time` default
@@ -999,9 +979,7 @@ def generate_root_constructors(
     # Determine whether the time-slice struct has a scalar `time` field.
     type_map = {snake_to_pascal_case(ct.name): ct for ct in complex_types}
     inner_ct = type_map.get(inner_type)
-    has_time_field = inner_ct is not None and any(
-        f.name == "time" and f.is_scalar for f in inner_ct.fields
-    )
+    has_time_field = inner_ct is not None and any(f.name == "time" and f.is_scalar for f in inner_ct.fields)
 
     lines = [
         "// " + "=" * 76,
@@ -1076,9 +1054,7 @@ def parse_supporting_schemas(xsd_path: Path) -> dict[str, ComplexType]:
             raise FileNotFoundError(f"{xsd_path.name} includes {schema_location}, which does not exist")
 
         included_root = ET.parse(included_path).getroot()
-        known_types: set[str] = {
-            ct.get("name") for ct in included_root.findall(f"{XS_NS}complexType") if ct.get("name")
-        }
+        known_types: set[str] = {ct.get("name") for ct in included_root.findall(f"{XS_NS}complexType") if ct.get("name")}
         for ct_element in included_root.findall(f"{XS_NS}complexType"):
             complex_type: ComplexType = parse_complex_type(ct_element, known_types)
             if complex_type.name:
@@ -1170,17 +1146,13 @@ def add_custom_keys_to_ids(
     # The root element is included so that custom keys can be added to the IDS itself, e.g. the
     # `code` structure, and not only to the types nested inside it
     all_types: list[ComplexType] = complex_types + ([root_element] if root_element else [])
-    types_by_struct_name: dict[str, ComplexType] = {
-        snake_to_pascal_case(ct.name): ct for ct in all_types
-    }
+    types_by_struct_name: dict[str, ComplexType] = {snake_to_pascal_case(ct.name): ct for ct in all_types}
 
     struct_pattern = re.compile(r"pub\s+struct\s+(\w+)\s*\{(.*?)\n\}", re.DOTALL)
     # `(?:r#)?` so a key whose name is a Rust keyword can be written as the raw identifier it has
     # to be in the generated code; the bare name is captured, and `sanitize_rust_identifier`
     # puts the `r#` back
-    field_pattern = re.compile(
-        r"((?:\s*///.*\n)*)\s*pub\s+(?:r#)?(\w+)\s*:\s*([^,]+?)\s*,", re.MULTILINE
-    )
+    field_pattern = re.compile(r"((?:\s*///.*\n)*)\s*pub\s+(?:r#)?(\w+)\s*:\s*([^,]+?)\s*,", re.MULTILINE)
 
     # A struct name which is not already generated declares a *new* nested type, e.g. the
     # `bounding` sub-structure of `boundary`. It is validated at the end: every new type must be
@@ -1246,11 +1218,7 @@ def add_custom_keys_to_ids(
     # A new struct which nothing refers to is almost certainly a mistyped struct name
     # Recomputed rather than reusing `all_types`, which was snapshotted before the loop: a new
     # struct may be referenced by a field on another new struct, e.g. `code.parameters`
-    referenced_types: set[str] = {
-        f.inner_type
-        for ct in complex_types + ([root_element] if root_element else [])
-        for f in ct.fields
-    }
+    referenced_types: set[str] = {f.inner_type for ct in complex_types + ([root_element] if root_element else []) for f in ct.fields}
     for struct_name in new_struct_names:
         if struct_name not in referenced_types:
             raise ValueError(
@@ -1312,6 +1280,10 @@ class ParametersParsedStruct:
     # Keyed by the field's name, which is the name of the XML element it is read from. A leaf is read by a
     # function in `src/parameters_parsed.rs`; a struct by its own generated function
     readers: dict[str, str] = field(default_factory=dict)
+    # The fields which are collapsed links, see `add_parameters_parsed_struct`, keyed by the field's name, with the field's
+    # path, e.g. "b_field_pol_probe" -> "code/parameters_parsed/constraints/b_field_pol_probe". `code/parameters` holds the
+    # linked file's root element in the link's place, so such a field is read from the elements inside it
+    collapsed_links: dict[str, str] = field(default_factory=dict)
 
 
 def read_settings_schema(xsd_file_path: Path) -> SettingsSchema:
@@ -1393,7 +1365,9 @@ def settings_element_content(element: ET.Element, schema: SettingsSchema) -> ET.
     type_name: str | None = element.get("type")
     if type_name is not None:
         if type_name not in schema.complex_types:
-            raise NotImplementedError(f"{schema.xsd_file_path}: <{element.get('name')}> has the type `{type_name}`, which is not a complex type of this XML schema")
+            raise NotImplementedError(
+                f"{schema.xsd_file_path}: <{element.get('name')}> has the type `{type_name}`, which is not a complex type of this XML schema"
+            )
         return schema.complex_types[type_name]
 
     inline_complex_type: ET.Element | None = element.find(f"{XS_NS}complexType")
@@ -1414,7 +1388,9 @@ def settings_child_elements(complex_type: ET.Element, schema: SettingsSchema, pa
         if component.tag == f"{XS_NS}annotation":
             continue
         if component.tag not in (f"{XS_NS}all", f"{XS_NS}sequence"):
-            raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds an `{component.tag.removeprefix(XS_NS)}`, but only an `xs:all` or `xs:sequence` of elements is handled")
+            raise NotImplementedError(
+                f"{schema.xsd_file_path}: `{path}` holds an `{component.tag.removeprefix(XS_NS)}`, but only an `xs:all` or `xs:sequence` of elements is handled"
+            )
         groups.append(component)
     if len(groups) > 1:
         raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds {len(groups)} groups of elements, rather than one")
@@ -1465,6 +1441,12 @@ def add_parameters_parsed_struct(
     Each element is a field of the same name. A link to another file, an element naming the XML schema of the file it links to in
     `xs:appinfo/schema`, holds the linked file's root element, which is how the settings are written into `code/parameters`.
 
+    A link to a file whose root element holds only one element, named as the link, is collapsed: the field is read from that element,
+    as if the link held it. E.g. `constraints/b_field_pol_probe` links to `constraints_b_field_pol_probe.xml`, whose root element,
+    `<constraints__b_field_pol_probe>`, holds only `<b_field_pol_probe>` elements, one per probe. So the field is
+    `constraints.b_field_pol_probe`, the probes, rather than `constraints.b_field_pol_probe.b_field_pol_probe`. The settings files, and
+    `code/parameters`, still hold the linked file's root element, so the reader reads the field from the elements inside it.
+
     A struct of a named XML schema type is named after the type, e.g. `EquilibriumCodeParametersParsedEfitPolynomial` for
     `EfitPolynomial`, and is one struct wherever the type is used, e.g. for both p' and ff', so that the code reading it is written
     once. A type used by several XML schemas is repeated in each, so they must agree on it, as they must for the settings to be
@@ -1506,37 +1488,63 @@ def add_parameters_parsed_struct(
         if element_name is None:
             raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds an element with no `name`, e.g. an `xs:element ref`")
         element_path: str = f"{path}/{element_name}"
-        if element.get("nillable") == "true":
-            raise NotImplementedError(f"{schema.xsd_file_path}: `{element_path}` is nillable, but a nil element is not handled")
-        max_occurs: str = element.get("maxOccurs", "1")
-        if max_occurs not in ("1", "unbounded"):
-            raise NotImplementedError(f'{schema.xsd_file_path}: `{element_path}` has maxOccurs="{max_occurs}", but only "1" and "unbounded" are handled')
-        is_array: bool = max_occurs == "unbounded"
-        is_optional: bool = element.get("minOccurs", "1") == "0"
-        field_documentation: str = extract_documentation(element)
-        child_struct_name: str = f"{struct_name}{snake_to_pascal_case(element_name)}"
+        # The element's documentation, for the struct of its type, and the field's documentation, which differ for a collapsed link
+        element_documentation: str = extract_documentation(element)
+        field_documentation: str = element_documentation
 
-        # A link names the XML schema of the file it links to, relative to this XML schema
-        linked_xsd_relative_path: str | None = None
+        # A link names the XML schema of the file it links to, relative to this XML schema, and holds that file's root element
+        linked_schema: SettingsSchema | None = None
+        linked_root_element: ET.Element | None = None
         appinfo: ET.Element | None = element.find(f"{XS_NS}annotation/{XS_NS}appinfo")
         if appinfo is not None:
             linked_schema_element: ET.Element | None = appinfo.find("schema")
             if linked_schema_element is not None and linked_schema_element.text:
-                linked_xsd_relative_path = linked_schema_element.text.strip()
+                linked_schema = read_settings_schema((schema.xsd_file_path.parent / linked_schema_element.text.strip()).resolve())
+                linked_root_elements: list[ET.Element] = linked_schema.root.findall(f"{XS_NS}element")
+                if len(linked_root_elements) != 1:
+                    raise NotImplementedError(f"{linked_schema.xsd_file_path}: {len(linked_root_elements)} root elements, rather than one")
+                linked_root_element = linked_root_elements[0]
+
+        # A link to a file whose root element holds only one element, named as the link, is collapsed: the field is read from that element,
+        # which is declared in the linked file's XML schema, as if the link held it; see the docstring. Its documentation is the link's, and
+        # that of the linked file's root element, which both describe the whole file
+        element_schema: SettingsSchema = schema
+        if linked_schema is not None and linked_root_element is not None:
+            linked_root_child_elements: list[ET.Element] = settings_child_elements(
+                settings_element_content(linked_root_element, linked_schema), linked_schema, element_path
+            )
+            if len(linked_root_child_elements) == 1 and linked_root_child_elements[0].get("name") == element_name:
+                if element.get("maxOccurs", "1") != "1" or element.get("minOccurs", "1") != "1":
+                    raise NotImplementedError(f"{schema.xsd_file_path}: `{element_path}` is a link which is repeated or optional, so cannot be collapsed")
+                if linked_root_child_elements[0].find(f"{XS_NS}annotation/{XS_NS}appinfo/schema") is not None:
+                    raise NotImplementedError(f"{linked_schema.xsd_file_path}: `{element_path}` is a collapsed link holding another link, which is not handled")
+                field_documentation = f"{element_documentation}\n{extract_documentation(linked_root_element)}".strip()
+                element = linked_root_child_elements[0]
+                element_schema = linked_schema
+                element_documentation = extract_documentation(element)
+                linked_schema = None
+                linked_root_element = None
+                parameters_parsed_struct.collapsed_links[element_name] = element_path
+
+        if element.get("nillable") == "true":
+            raise NotImplementedError(f"{element_schema.xsd_file_path}: `{element_path}` is nillable, but a nil element is not handled")
+        max_occurs: str = element.get("maxOccurs", "1")
+        if max_occurs not in ("1", "unbounded"):
+            raise NotImplementedError(
+                f'{element_schema.xsd_file_path}: `{element_path}` has maxOccurs="{max_occurs}", but only "1" and "unbounded" are handled'
+            )
+        is_array: bool = max_occurs == "unbounded"
+        is_optional: bool = element.get("minOccurs", "1") == "0"
+        child_struct_name: str = f"{struct_name}{snake_to_pascal_case(element_name)}"
 
         type_name: str | None = element.get("type")
         rust_type: str
         reader: str
-        if linked_xsd_relative_path is not None:
+        if linked_schema is not None and linked_root_element is not None:
             # The link holds the linked file's root element, so the struct is read from that root element's type
-            linked_schema: SettingsSchema = read_settings_schema((schema.xsd_file_path.parent / linked_xsd_relative_path).resolve())
-            linked_root_elements: list[ET.Element] = linked_schema.root.findall(f"{XS_NS}element")
-            if len(linked_root_elements) != 1:
-                raise NotImplementedError(f"{linked_schema.xsd_file_path}: {len(linked_root_elements)} root elements, rather than one")
-            linked_root_element: ET.Element = linked_root_elements[0]
             struct_documentation: str = extract_documentation(linked_root_element)
             if struct_documentation == "":
-                struct_documentation = field_documentation
+                struct_documentation = element_documentation
             add_parameters_parsed_struct(
                 complex_type=settings_element_content(linked_root_element, linked_schema),
                 schema=linked_schema,
@@ -1549,18 +1557,20 @@ def add_parameters_parsed_struct(
             )
             rust_type = child_struct_name
             reader = parameters_parsed_reader_name(child_struct_name)
-        elif type_name is not None and type_name not in schema.complex_types:
-            rust_type, reader, enumeration_values = resolve_settings_leaf_type(type_name, schema)
+        elif type_name is not None and type_name not in element_schema.complex_types:
+            rust_type, reader, enumeration_values = resolve_settings_leaf_type(type_name, element_schema)
             if len(enumeration_values) > 0:
                 quoted_enumeration_values: list[str] = []
                 for enumeration_value in enumeration_values:
                     quoted_enumeration_values.append(f'"{enumeration_value}"')
                 field_documentation += "\nOne of: " + ", ".join(quoted_enumeration_values)
             if is_array:
-                raise NotImplementedError(f"{schema.xsd_file_path}: `{element_path}` is a repeated leaf, but only a repeated `row` of a matrix, or a repeated element holding others, is handled")
+                raise NotImplementedError(
+                    f"{element_schema.xsd_file_path}: `{element_path}` is a repeated leaf, but only a repeated `row` of a matrix, or a repeated element holding others, is handled"
+                )
         else:
-            element_content: ET.Element = settings_element_content(element, schema)
-            if is_settings_matrix(element_content, schema):
+            element_content: ET.Element = settings_element_content(element, element_schema)
+            if is_settings_matrix(element_content, element_schema):
                 rust_type = "FLT_2D"
                 reader = "read_matrix"
                 field_documentation += "\nShape [n_rows, n_columns], one row per `row` element"
@@ -1574,24 +1584,24 @@ def add_parameters_parsed_struct(
                         first_xsd_file_path, first_canonical_type = named_types[child_struct_name]
                         if canonical_type != first_canonical_type:
                             raise ValueError(
-                                f"{first_xsd_file_path} and {schema.xsd_file_path} both have a type named `{type_name}`, which are not the same. "
+                                f"{first_xsd_file_path} and {element_schema.xsd_file_path} both have a type named `{type_name}`, which are not the same. "
                                 "A type used by several XML schemas must be the same in each"
                             )
                         is_new_struct = False
                     else:
-                        named_types[child_struct_name] = (schema.xsd_file_path, canonical_type)
+                        named_types[child_struct_name] = (element_schema.xsd_file_path, canonical_type)
                     # The type's own documentation, as the element's is about where it is used
                     struct_documentation = extract_documentation(element_content)
                     if struct_documentation == "":
-                        struct_documentation = field_documentation
+                        struct_documentation = element_documentation
                 else:
-                    struct_documentation = field_documentation
+                    struct_documentation = element_documentation
                     if struct_documentation == "":
                         struct_documentation = extract_documentation(element_content)
                 if is_new_struct:
                     add_parameters_parsed_struct(
                         complex_type=element_content,
-                        schema=schema,
+                        schema=element_schema,
                         struct_name=child_struct_name,
                         path=f"{element_path}(i1)" if is_array else element_path,
                         documentation=struct_documentation,
@@ -1731,13 +1741,31 @@ def generate_parameters_parsed_reader(
             # A leaf is read by a function from `src/parameters_parsed.rs`, which has to be imported
             if f.is_base_type:
                 leaf_readers.add(reader)
-            if f.is_array:
+            # A collapsed link: `code/parameters` holds the linked file's root element in the link's place, and the field is read from the
+            # elements inside it, which are named as the link
+            is_collapsed_link: bool = f.name in parameters_parsed_struct.collapsed_links
+            indent: str = "            "
+            node: str = "child"
+            if is_collapsed_link:
                 lines.append(f'            "{f.name}" => {{')
-                lines.append(f'                let child_path: String = format!("{{path}}/{f.name}({{}})", parsed.{field_name}.len());')
-                lines.append(f"                parsed.{field_name}.push({reader}(child, &child_path)?);")
-                lines.append("            }")
+                lines.append("                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it")
+                lines.append('                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {')
+                lines.append("                    let grandchild_name: &str = grandchild.tag_name().name();")
+                lines.append("                    match grandchild_name {")
+                indent = "                        "
+                node = "grandchild"
+            if f.is_array:
+                lines.append(f'{indent}"{f.name}" => {{')
+                lines.append(f'{indent}    let child_path: String = format!("{{path}}/{f.name}({{}})", parsed.{field_name}.len());')
+                lines.append(f"{indent}    parsed.{field_name}.push({reader}({node}, &child_path)?);")
+                lines.append(f"{indent}}}")
             else:
-                lines.append(f'            "{f.name}" => parsed.{field_name} = {reader}(child, &format!("{{path}}/{f.name}"))?,')
+                lines.append(f'{indent}"{f.name}" => parsed.{field_name} = {reader}({node}, &format!("{{path}}/{f.name}"))?,')
+            if is_collapsed_link:
+                lines.append('                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),')
+                lines.append("                    }")
+                lines.append("                }")
+                lines.append("            }")
         lines.append('            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),')
         lines.append("        }")
         lines.append("    }")
@@ -1745,6 +1773,19 @@ def generate_parameters_parsed_reader(
         lines.append("    Ok(parsed)")
         lines.append("}")
         functions.append("\n".join(lines))
+
+    # The path of the first collapsed link, as an example for the documentation
+    collapsed_link_path: str = ""
+    for parameters_parsed_struct in parameters_parsed_structs:
+        for field_path in parameters_parsed_struct.collapsed_links.values():
+            if collapsed_link_path == "":
+                collapsed_link_path = field_path
+    collapsed_link_documentation: list[str] = []
+    if collapsed_link_path != "":
+        collapsed_link_documentation = [
+            "    /// A link to a file whose root element holds only one element, named as the link, is collapsed, e.g.",
+            f"    /// `{collapsed_link_path}`: the field is read from that element, inside the linked file's root element.",
+        ]
 
     header: list[str] = [
         f"//! Reading `{ids_name}/code/parameters`, the XML of the settings the IDS was built with, into `{ids_name}/code/parameters_parsed`",
@@ -1765,6 +1806,7 @@ def generate_parameters_parsed_reader(
         "    /// `serialise_python_dataclass_to_imas_parameters_input` writes it, e.g. `<grid><n_r>81</n_r>...</grid>`. Each",
         "    /// element is read into the field of the same name. One which is left out is left unset, and the XML is not",
         "    /// checked against its XML schema here: that was done when it was written.",
+        *collapsed_link_documentation,
         "    ///",
         "    /// # Errors",
         f"    /// The XML is not well-formed, its root element is not `<{settings_root_element_name}>`, it holds an element which is",
@@ -1827,10 +1869,41 @@ PYTHON_LEAF_TYPES: dict[str, tuple[str, str]] = {
 # Names that cannot be written as an attribute in a `.pyi`, which would produce a
 # stub that does not parse.
 PYTHON_KEYWORDS: set[str] = {
-    "False", "None", "True", "and", "as", "assert", "async", "await", "break",
-    "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
-    "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or",
-    "pass", "raise", "return", "try", "while", "with", "yield",
+    "False",
+    "None",
+    "True",
+    "and",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "nonlocal",
+    "not",
+    "or",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
 }
 
 
@@ -1893,10 +1966,7 @@ def build_path_tree(
 
     for f in ct.fields:
         if f.name in PYTHON_KEYWORDS:
-            raise ValueError(
-                f"data dictionary field `{dd_path}/{f.name}` is a Python keyword and "
-                "cannot be written as an attribute in the type stub"
-            )
+            raise ValueError(f"data dictionary field `{dd_path}/{f.name}` is a Python keyword and cannot be written as an attribute in the type stub")
 
         child_dd_path = f"{dd_path}/{f.name}" if dd_path else f.name
         rust_name = sanitize_rust_identifier(f.name)
@@ -2022,18 +2092,14 @@ def register_lengths_function(
     return name
 
 
-def generate_lengths_functions(
-    lengths_registry: dict[tuple[str, ...], str], root_variable: str, ids_pascal: str
-) -> list[str]:
+def generate_lengths_functions(lengths_registry: dict[tuple[str, ...], str], root_variable: str, ids_pascal: str) -> list[str]:
     """Emit one function per array-of-structures chain."""
     lines: list[str] = []
     for vec_expressions, name in sorted(lengths_registry.items(), key=lambda item: item[1]):
         # `at` is only read when there is more than one level.
         at_parameter = "at" if len(vec_expressions) > 1 else "_at"
-        lines.append(f"/// Length of each array-of-structures level along `{name[len('lengths_'):]}`.")
-        lines.append(
-            f"fn {name}({root_variable}: &{ids_pascal}, level: usize, {at_parameter}: &[usize]) -> Option<usize> {{"
-        )
+        lines.append(f"/// Length of each array-of-structures level along `{name[len('lengths_') :]}`.")
+        lines.append(f"fn {name}({root_variable}: &{ids_pascal}, level: usize, {at_parameter}: &[usize]) -> Option<usize> {{")
         lines.append("    match level {")
         for i_level, expression in enumerate(vec_expressions):
             lines.append(f"        {i_level} => return Some({expression}.len()),")
@@ -2044,9 +2110,7 @@ def generate_lengths_functions(
     return lines
 
 
-def collect_types_from_path_tree(
-    nodes: list[PathNode], collected: dict[str, list[PathNode]], seen_paths: dict[str, str]
-) -> None:
+def collect_types_from_path_tree(nodes: list[PathNode], collected: dict[str, list[PathNode]], seen_paths: dict[str, str]) -> None:
     """
     Gather the children of every structure type reached by the path tree.
 
@@ -2359,9 +2423,7 @@ def generate_python_stub_section(
     return "\n".join(lines)
 
 
-def generate_rust_file(
-    complex_types: list[ComplexType], root_element: Optional[ComplexType], ids_name: str
-) -> str:
+def generate_rust_file(complex_types: list[ComplexType], root_element: Optional[ComplexType], ids_name: str) -> str:
     """Generate complete Rust file content."""
     lines = []
 
@@ -2371,9 +2433,7 @@ def generate_rust_file(
     lines.append("//! **WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.")
     lines.append("//! Any changes will be overwritten.")
     lines.append("//!")
-    lines.append(
-        f"//! This module defines the {ids_name} Interface Data Structure (IDS), generated from the"
-    )
+    lines.append(f"//! This module defines the {ids_name} Interface Data Structure (IDS), generated from the")
     lines.append("//! IMAS Data Dictionary XSD schema.")
     lines.append("")
     lines.append("#![allow(dead_code)]")
@@ -2489,9 +2549,7 @@ def build_ids(
 
     xsd_files = list(schema_dir.glob(f"dd_{ids_name}.xsd"))
     if not xsd_files:
-        raise FileNotFoundError(
-            f"No XSD file found matching dd_{ids_name}.xsd in {schema_dir}"
-        )
+        raise FileNotFoundError(f"No XSD file found matching dd_{ids_name}.xsd in {schema_dir}")
 
     xsd_path = xsd_files[0]
     print(f"Parsing: {xsd_path}")
@@ -2607,9 +2665,7 @@ def build_ids(
     if path_to_rust_paths_file is not None:
         paths_path = Path(path_to_rust_paths_file)
         paths_path.parent.mkdir(parents=True, exist_ok=True)
-        paths_path.write_text(
-            generate_python_paths_rust(root_nodes, lengths_registry, root_element, ids_name)
-        )
+        paths_path.write_text(generate_python_paths_rust(root_nodes, lengths_registry, root_element, ids_name))
         print(f"Generated: {paths_path}")
         subprocess.run(
             [
@@ -2718,10 +2774,7 @@ def get_imas_dd_version() -> str:
 
 if __name__ == "__main__":
     if not DATA_DICTIONARY_DIR.is_dir():
-        raise FileNotFoundError(
-            f"IMAS Data Dictionary not found at {DATA_DICTIONARY_DIR}\n"
-            "See rust/imas_rs/imas_updater/README.md for how to clone it."
-        )
+        raise FileNotFoundError(f"IMAS Data Dictionary not found at {DATA_DICTIONARY_DIR}\nSee rust/imas_rs/imas_updater/README.md for how to clone it.")
 
     # Read before generating anything, so a clone that `git` cannot describe fails immediately
     imas_dd_version: str = get_imas_dd_version()

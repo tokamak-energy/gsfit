@@ -5,7 +5,7 @@ import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Pressure
 
-from ...settings_schema.python.equilibrium.constraints_pressure import ConstraintsPressure as ConstraintsPressureSettings
+from ...settings_schema.python.equilibrium.constraints_pressure import Pressure as PressureSettings
 from ...settings_schema.python.thomson_scattering.thomson_scattering import ThomsonScatteringSettings
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ def make_pressure_sensors(
     ppts_run_name: str,
     ts_pulseNo: int,
     ts_run_name: str,
-    settings_pressure_sensors: ConstraintsPressureSettings,
+    settings_pressure_sensors: PressureSettings,
 ) -> Pressure:
     """
     Make the Rust `Pressure` class using ST40's Thomson scattering (TS) data, when the pressure sensors are included.
@@ -80,7 +80,7 @@ def make_pressure_sensors(
     :param ppts_run_name: The PPTS run to read the good time-slices from, e.g. "BEST"
     :param ts_pulseNo: Pulse number to read the TS tree from
     :param ts_run_name: The TS run to read the geometry and electron pressure from, e.g. "BEST"
-    :param settings_pressure_sensors: `ConstraintsPressure` object, read from `equilibrium/constraints_pressure.xml`, which holds the pressure sensors'
+    :param settings_pressure_sensors: `Pressure` settings object, read from `equilibrium/constraints_pressure.xml`, which holds the pressure sensors'
         fitting settings
 
     The measured pressure is the electron pressure from the TS `PROFILES` node, scaled by
@@ -96,19 +96,17 @@ def make_pressure_sensors(
     # Initialise the Pressure Rust class
     pressure = Pressure()
 
-    pressure_settings = settings_pressure_sensors.pressure
-
     # `constraints_pressure.xml` must give these when the pressure sensors are included
-    sensor_name_prefix = pressure_settings.sensor_name_prefix
-    fit_settings_expected_value = pressure_settings.expected_value
-    fit_settings_weight = pressure_settings.weight
-    thomson_scattering_settings = pressure_settings.thomson_scattering
+    sensor_name_prefix = settings_pressure_sensors.sensor_name_prefix
+    fit_settings_expected_value = settings_pressure_sensors.expected_value
+    fit_settings_weight = settings_pressure_sensors.weight
+    thomson_scattering_settings = settings_pressure_sensors.thomson_scattering
     if sensor_name_prefix is None or fit_settings_expected_value is None or fit_settings_weight is None or thomson_scattering_settings is None:
         raise ValueError(
             "`constraints_pressure.xml` includes the pressure sensors, so needs `sensor_name_prefix`, `expected_value`, `weight` and `thomson_scattering`"
         )
     # The comment is free text, which the fit does not use
-    fit_settings_comment = pressure_settings.comment if pressure_settings.comment is not None else ""
+    fit_settings_comment = settings_pressure_sensors.comment if settings_pressure_sensors.comment is not None else ""
 
     # Find the "good" time-slices using the `BAD_MA` flag in the PPTS tree
     good_indices, good_times = _read_good_time_slices(ppts_pulseNo, ppts_run_name)
@@ -154,7 +152,7 @@ def setup_pressure_sensors(
     self: "DatabaseReader",
     pulseNo: int,
     settings: ThomsonScatteringSettings | None,
-    settings_pressure_sensors: ConstraintsPressureSettings,
+    settings_pressure_sensors: PressureSettings,
 ) -> Pressure:
     """
     This method initialises the Rust `Pressure` class using ST40's Thomson scattering (TS) data; see `make_pressure_sensors`.
@@ -162,7 +160,7 @@ def setup_pressure_sensors(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: `ThomsonScatteringSettings` object, read from `thomson_scattering/thomson_scattering.xml`, whose `workflow` says which PPTS and TS
         runs to read; None when `GSFIT_code_settings.xml` does not link one. Only needed when the pressure sensors are included
-    :param settings_pressure_sensors: `ConstraintsPressure` object, read from `equilibrium/constraints_pressure.xml`, which says whether the pressure
+    :param settings_pressure_sensors: `Pressure` settings object, read from `equilibrium/constraints_pressure.xml`, which says whether the pressure
         sensors are included, and holds their fitting settings
 
     **This method is specific to ST40's experimental MDSplus database.**
@@ -171,7 +169,7 @@ def setup_pressure_sensors(
     """
 
     # Pressure sensors are opt-in, so the Thomson scattering is only read, and its runs only needed, when they are included
-    if not settings_pressure_sensors.pressure.include:
+    if not settings_pressure_sensors.include:
         return Pressure()
 
     # The PPTS and TS runs to read, from the `workflow.xml` which `thomson_scattering.xml` links to

@@ -6,7 +6,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
-#[pyclass(skip_from_py_object)]
+#[pyclass]
 pub struct EfitPolynomial {
     /// The number of polynomial terms. These are all fixed when `exact` is `true`, so then
     /// `source_function_n_dof`, the number of fitted terms, is 0
