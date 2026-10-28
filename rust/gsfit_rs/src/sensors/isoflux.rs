@@ -650,6 +650,52 @@ impl Isoflux {
 
         // Sensor names
         let sensor_names_all: Vec<String> = self.results.keys();
+        let n_sensors_all: usize = sensor_names_all.len();
+
+        // Without any sensors there is nothing to read
+        if n_sensors_all == 0 {
+            for _ in 0..n_time {
+                results_static.push(Arc::clone(&results_static_empty));
+                results_dynamic.push(results_dynamic_empty.clone());
+            }
+            return (results_static, results_dynamic);
+        }
+
+        // Read the large time-dependent arrays once, rather than once per time-slice
+        let fit_settings_weight_all: Array1<f64> = self.results.get("*").get("fit_settings").get("weight").unwrap_array1();
+        let fit_settings_expected_value_all: Array1<f64> = self.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
+        let greens_with_pf_all: Array3<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array3(); // shape = [n_time, n_pf, n_sensors_all]
+        let greens_with_grid_all: Array3<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors_all]
+        let greens_d_sensor_dz_all: Array3<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors_all]
+
+        // With passives; every sensor has the same passives and degrees of freedom
+        let passive_names: Vec<String> = self.results.get(&sensor_names_all[0]).get("greens").get("passives").keys();
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get(&sensor_names_all[0]).get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+        let mut greens_with_passives_all: Array3<f64> = Array3::zeros((n_time, n_dof_total, n_sensors_all)) * f64::NAN;
+        for i_sensor in 0..n_sensors_all {
+            let mut i_dof_total: usize = 0;
+            for passive_name in &passive_names {
+                let dof_names: Vec<String> = self.results.get(&sensor_names_all[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+                for dof_name in &dof_names {
+                    let greens_with_passives_tmp: Array1<f64> = self
+                        .results
+                        .get(&sensor_names_all[i_sensor])
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .unwrap_array1(); // shape = [n_time]
+                    greens_with_passives_all.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
+
+                    // Keep count
+                    i_dof_total += 1;
+                }
+            }
+        }
 
         'time_loop: for i_time in 0..n_time {
             let mut include: Vec<bool> = Vec::new();
@@ -680,70 +726,23 @@ impl Isoflux {
 
             // Now do the static data
             // Fit settings
-            // Weight
-            let fit_settings_weight: Array1<f64> = self.results.get("*").get("fit_settings").get("weight").unwrap_array1();
-            let fit_settings_weight: Array1<f64> = fit_settings_weight.select(Axis(0), &include_indices);
+            let fit_settings_weight: Array1<f64> = fit_settings_weight_all.select(Axis(0), &include_indices);
+            let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value_all.select(Axis(0), &include_indices);
 
-            // Expected value
-            let fit_settings_expected_value: Array1<f64> = self.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
-            let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
-
-            // Greens
-            // With PF coils (TIMING: accessing greens_with_pf with unwrap_array3() takes ~50microseconds)
-            let greens_with_pf: Array3<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array3(); // shape = [n_time, n_pf, n_sensors]
-            let greens_with_pf: Array3<f64> = greens_with_pf.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_pf, n_sensors]
-
-            // With plasma
-            let greens_with_grid: Array3<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
-            let greens_with_grid: Array3<f64> = greens_with_grid.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
-
-            // With d_sensor_dz (for vertical stability)
-            let greens_d_sensor_dz: Array3<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
-            let greens_d_sensor_dz: Array3<f64> = greens_d_sensor_dz.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
-
-            // With passives
-            let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
-            let n_passives: usize = passive_names.len();
-
-            // Count the number of degrees of freedom
-            let mut n_dof_total: usize = 0;
-            for passive_name in &passive_names {
-                let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys();
-                n_dof_total += dof_names.len();
-            }
-
-            // With passives
-            let mut greens_with_passives: Array3<f64> = Array3::zeros((n_time, n_dof_total, n_sensors)) * f64::NAN;
-            for i_sensor in 0..n_sensors {
-                let mut i_dof_total: usize = 0;
-                for i_passive in 0..n_passives {
-                    let passive_name: &str = &passive_names[i_passive];
-                    let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                    for dof_name in &dof_names {
-                        let greens_with_passives_tmp: Array1<f64> = self
-                            .results
-                            .get(&sensor_names[i_sensor])
-                            .get("greens")
-                            .get("passives")
-                            .get(passive_name)
-                            .get(dof_name)
-                            .unwrap_array1(); // shape = [n_time]
-                        greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
-
-                        // Keep count
-                        i_dof_total += 1;
-                    }
-                }
-            }
+            // Greens: take the time-slice first (a view, no copy), then down select to only the sensors needed
+            let greens_with_pf: Array2<f64> = greens_with_pf_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_pf, n_sensors]
+            let greens_with_grid: Array2<f64> = greens_with_grid_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_z * n_r, n_sensors]
+            let greens_d_sensor_dz: Array2<f64> = greens_d_sensor_dz_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_z * n_r, n_sensors]
+            let greens_with_passives: Array2<f64> = greens_with_passives_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_dof_total, n_sensors]
 
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
-                greens_with_grid: greens_with_grid.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                greens_with_pf: greens_with_pf.slice(s![i_time, .., ..]).to_owned(),     // shape = [n_pf, n_sensors]
-                greens_with_passives: greens_with_passives.slice(s![i_time, .., ..]).to_owned(), // shape = [n_dof_total, n_sensors]
-                greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                fit_settings_weight: fit_settings_weight.clone(),
-                fit_settings_expected_value: fit_settings_expected_value.clone(),
+                greens_with_grid,
+                greens_with_pf,
+                greens_with_passives,
+                greens_d_sensor_dz,
+                fit_settings_weight,
+                fit_settings_expected_value,
                 geometry_r: Array1::zeros(n_sensors), // not used for Isoflux
                 geometry_z: Array1::zeros(n_sensors), // not used for Isoflux
             };
