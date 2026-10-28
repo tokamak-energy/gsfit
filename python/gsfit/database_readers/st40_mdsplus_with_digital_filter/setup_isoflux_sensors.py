@@ -118,10 +118,12 @@ def build_isoflux_pairs(
     limits_r = thomson_scattering_settings["limits_r"]
 
     # The TS `run_name` is read from the active method's workflow (e.g. "BEST")
-    ts_run_name: str = _get_workflow_settings(settings)["ts"]["run_name"]
+    ts_workflow: dict[str, typing.Any] = _get_workflow_settings(settings)["ts"]
+    ts_run_name: str = ts_workflow["run_name"]
+    ts_pulse_no: int | None = ts_workflow.get("pulseNo")
 
     with mdsthin.Connection("smaug") as conn:
-        conn.openTree("TS", pulseNo)
+        conn.openTree("TS", pulseNo if ts_pulse_no is None else ts_pulse_no)
         sensors_geometry_r = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:R").data(), dtype=np.float64)
         sensors_geometry_z = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:Z").data(), dtype=np.float64)
         time_thomson_scattering = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:TIME").data(), dtype=np.float64)
