@@ -5,12 +5,14 @@ import pytest
 from gsfit import Gsfit
 from gsfit import Gsfit_Ts_1
 from gsfit import Gsfit_Ts_2
+from gsfit import Gsfit_Ts_3
 
 
 def make_controller_settings() -> dict[str, Any]:
     return {
         "GSFIT_code_settings.json": {"timeslices": {"method": "all"}},
         "sensor_weights_pressure.json": {"include": False},
+        "sensor_weights_isoflux.json": {"include": False},
         "source_function_p_prime.json": {
             "method": "tensioned_cubic_b_spline",
             "pressure_edge": {"free": False, "regularisation_weight": 1.0e-4},
@@ -29,12 +31,19 @@ def test_gsfit_ts_classes_configure_efit_and_edge_pressure(monkeypatch: pytest.M
 
     fixed_edge = Gsfit_Ts_1(pulseNo=12345, run_name="RUN01")
     free_edge = Gsfit_Ts_2(pulseNo=12345, run_name="RUN02")
+    isoflux = Gsfit_Ts_3(pulseNo=12345, run_name="RUN03")
 
-    assert [kwargs["analysis_name"] for kwargs in init_kwargs] == ["GSFIT_TS", "GSFIT_TS"]
-    for controller in (fixed_edge, free_edge):
+    assert [kwargs["analysis_name"] for kwargs in init_kwargs] == ["GSFIT_TS", "GSFIT_TS", "GSFIT_TS"]
+    for controller in (fixed_edge, free_edge, isoflux):
         assert controller.settings["GSFIT_code_settings.json"]["timeslices"]["method"] == "good_pressure_sensors"
-        assert controller.settings["sensor_weights_pressure.json"]["include"] is True
         assert controller.settings["source_function_p_prime.json"]["method"] == "efit_polynomial"
+
+    for controller in (fixed_edge, free_edge):
+        assert controller.settings["sensor_weights_pressure.json"]["include"] is True
+        assert controller.settings["sensor_weights_isoflux.json"]["include"] is False
 
     assert fixed_edge.settings["source_function_p_prime.json"]["pressure_edge"]["free"] is False
     assert free_edge.settings["source_function_p_prime.json"]["pressure_edge"]["free"] is True
+    assert isoflux.settings["sensor_weights_pressure.json"]["include"] is False
+    assert isoflux.settings["sensor_weights_isoflux.json"]["include"] is True
+    assert isoflux.settings["source_function_p_prime.json"]["pressure_edge"]["free"] is False
