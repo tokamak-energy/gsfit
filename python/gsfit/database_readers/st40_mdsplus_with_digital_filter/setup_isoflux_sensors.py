@@ -202,6 +202,15 @@ def setup_isoflux_sensors(
     if not isoflux_settings.get("include", False):
         return isoflux
 
+    # Settings bundles other than "default" may ship an empty `sensor_weights_isoflux.json`
+    required_keys = ("sensor_name_prefix", "fit_settings", "thomson_scattering")
+    missing_keys = [key for key in required_keys if key not in isoflux_settings]
+    if missing_keys:
+        raise KeyError(
+            f"sensor_weights_isoflux.json has include=True but is missing {missing_keys}. "
+            "Copy these sections from python/gsfit/settings/default/sensor_weights_isoflux.json"
+        )
+
     times_to_reconstruct = np.asarray(times_to_reconstruct, dtype=np.float64)
     pairs = build_isoflux_pairs(pulseNo, settings, times_to_reconstruct)
 
