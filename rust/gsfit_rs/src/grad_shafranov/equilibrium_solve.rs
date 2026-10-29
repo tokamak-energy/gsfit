@@ -1042,10 +1042,10 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // Vertical stability (using previous iteration)
-                // TODO: check vertical stability for isoflux!!!!
+                // `greens_d_isoflux_dz` is the difference between the two points' d_psi_d_z, matching the isoflux flux difference
                 if i_iter > n_iter_no_vertical_feedback {
                     fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-                        0.0 * d_area * (&greens_d_isoflux_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+                        d_area * (&greens_d_isoflux_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
                 }
 
                 // PF coil component
