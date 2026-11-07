@@ -26,6 +26,7 @@ pub use find_stationary_points_using_winding_number::find_stationary_points_usin
 pub use find_viable_xpt::find_viable_xpt;
 pub use flood_fill_mask::flood_fill_mask;
 pub use flood_fill_mask::flood_fill_mask_at_psi;
+pub use flood_fill_mask::vessel_mask;
 pub use hessian::hessian;
 
 // Define the possible **external** failures this module can produce

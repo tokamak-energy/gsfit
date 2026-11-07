@@ -6,6 +6,7 @@ use crate::coils::Coils;
 use crate::equilibrium_post_processor::equilibrium_post_processor;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
+use crate::plasma_geometry::vessel_mask;
 use crate::pulse_schedule::{PulseSchedule, fill_equilibrium_gaps};
 use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
@@ -168,6 +169,17 @@ pub fn solve_grad_shafranov(
     // it used to be rebuilt inside each of the 480 parallel solves
     let psi_and_derivatives_greens: PsiAndDerivativesGreens = PsiAndDerivativesGreens::new(equilibrium_greens_tables);
 
+    // Grid points inside the vacuum vessel, where the flood fill which finds the plasma mask is
+    // allowed to go. Depends only on the grid and the vessel outline, so it is built once here
+    // rather than for every time-slice, Picard iteration and candidate limit point
+    let mask_vessel_2d: Array2<bool> = {
+        let grid_r: &Array1<f64> = &equilibrium_ids.time_slice[0].profiles_2d[0].grid.dim1;
+        let grid_z: &Array1<f64> = &equilibrium_ids.time_slice[0].profiles_2d[0].grid.dim2;
+        let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) =
+            vacuum_vessel_outline(&wall_ids).expect("solve_grad_shafranov: cannot read the vacuum vessel outline from the `wall` IDS");
+        vessel_mask(grid_r, grid_z, &vessel_r, &vessel_z)
+    };
+
     // The initial current-density guess. Every input to it is shared between time-slices - the
     // grid, the wall, and `code/initial_guess` - so it is built once here. It used to be rebuilt
     // inside each of the parallel solves, which put 7% of the whole run inside `geo`, testing a
@@ -229,6 +241,7 @@ pub fn solve_grad_shafranov(
             // and deliberately does not know what time-slice it is solving
             let grad_shafranov_inputs: GradShafranovInputs = GradShafranovInputs {
                 psi_and_derivatives_greens: &psi_and_derivatives_greens,
+                mask_vessel_2d: &mask_vessel_2d,
                 initial_j_2d: &initial_j_2d,
                 coils_dynamic: &coils_dynamic[i_time],
                 bp_probes_static: &bp_probes_static[i_time],

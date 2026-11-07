@@ -250,6 +250,9 @@ pub struct EquilibriumSolver<'a> {
     /// Built once by the caller and shared, because the reorganisation depends only on the
     /// geometry - see `PsiAndDerivativesGreens`
     psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,
+    /// `true` for grid points inside the vacuum vessel; built once per reconstruction, see
+    /// `plasma_geometry::vessel_mask`
+    mask_vessel_2d: &'a Array2<bool>,
     /// The initial current-density guess, or the reason it could not be built. It is the same for
     /// every time-slice, so the caller builds it once; the `Result` is carried in so that a bad
     /// initial guess still fails every slice in the way it did when each built its own
@@ -311,6 +314,7 @@ impl<'a> EquilibriumSolver<'a> {
             equilibrium_code,
             greens_tables,
             psi_and_derivatives_greens: inputs.psi_and_derivatives_greens,
+            mask_vessel_2d: inputs.mask_vessel_2d,
             initial_j_2d: inputs.initial_j_2d,
             vacuum_toroidal_field_r0,
             vacuum_toroidal_field_b0,
@@ -622,6 +626,7 @@ impl<'a> EquilibriumSolver<'a> {
                 &limit_pts_z,
                 &vessel_r,
                 &vessel_z,
+                self.mask_vessel_2d,
                 mag_r,
                 mag_z,
             );
@@ -1738,6 +1743,9 @@ pub struct GradShafranovInputs<'a> {
     /// The Greens tables reorganised for `calculate_psi_and_derivatives`. Built once, before the
     /// parallel loop over time-slices, because it depends only on the geometry
     pub psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,
+    /// `true` for grid points inside the vacuum vessel, shape = (n_z, n_r). Built once, before the
+    /// parallel loop over time-slices, because it depends only on the grid and the vessel outline
+    pub mask_vessel_2d: &'a Array2<bool>,
     /// The initial current-density guess, built once before the loop over time-slices, or the
     /// reason it could not be built
     pub initial_j_2d: &'a Result<Array2<f64>, String>,
