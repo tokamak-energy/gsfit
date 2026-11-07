@@ -446,9 +446,10 @@ impl<'a> EquilibriumSolver<'a> {
         let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(self.wall).unwrap();
         let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(self.wall).unwrap();
 
-        // Degrees of freedom
-        let passives_shape: &[usize] = bp_probes_static.greens_with_passives.shape();
-        let n_passive_dof: usize = passives_shape[0];
+        // Degrees of freedom. The passive count comes from the passive regularisation matrix,
+        // shape = (n_passive_regularisation, n_passive_dof), which exists whichever sensors are
+        // included in the fit (a sensor type with no included sensors has an empty Greens table)
+        let n_passive_dof: usize = self.passive_regularisations.ncols();
         let n_p_prime_dof: usize = p_prime_source_function.source_function_n_dof();
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
         // The pressure at the plasma boundary. The Grad-Shafranov equation only involves `p'`, so
