@@ -3,6 +3,7 @@ mod chi_sq_mag;
 mod equilibrium_solve;
 mod grad_shafranov_solver;
 mod initial_current_seed;
+mod plasma_greens_spectra;
 
 // Expose functions to public
 pub use equilibrium_solve::output_flag;

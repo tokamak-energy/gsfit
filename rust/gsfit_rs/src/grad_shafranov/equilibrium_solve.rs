@@ -4,6 +4,7 @@
 //! Equilibrium structure during iterations.
 
 use super::Error;
+use super::plasma_greens_spectra::PlasmaGreensSpectra;
 use crate::plasma_geometry;
 use crate::plasma_geometry::BoundaryContour;
 use crate::plasma_geometry::MagneticAxis;
@@ -15,18 +16,14 @@ use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
 use crate::wall::{limiter_points, vacuum_vessel_outline};
-use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
-use faer::mat::MatRef;
-use faer::{Accum, Par};
 use imas_rs::EMPTY_INT;
 use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{
     Code, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
     EquilibriumProfiles2dGrid, EquilibriumTimeSlice,
 };
-use ndarray::Axis;
-use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, concatenate, s};
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 use std::sync::Arc;
@@ -86,64 +83,31 @@ mod tests {
     }
 }
 
-/// Scratch buffers for `calculate_psi_and_derivatives`.
-///
-/// This type holds no state. It exists only so that the two buffers are allocated **once per
-/// time-slice** rather than on every Picard iteration: they are `(n_z, n_z * n_r)`, which is 8.3
-/// million elements - 66 MB each - at [n_r, n_z] = [81, 321], so allocating them per iteration
-/// costs an `mmap`/`munmap` pair and ~16,000 page faults each time round the loop.
-///
-/// `calculate_psi_and_derivatives` overwrites every element of both before it reads any of them,
-/// so whatever they hold on entry is discarded, and nothing is carried from one iteration to the
-/// next. Deleting this type and allocating inside the function would be correct, only slower.
-///
-/// The caller fills them with `NaN` rather than zeros, so that an element which the **first**
-/// iteration fails to write propagates a visible `NaN` into `psi` rather than silently
-/// contributing nothing. On later iterations they hold the previous iteration's values, so this
-/// catches a gap in the fill loop only the first time round.
-///
-/// The read-only counterpart is [`PsiAndDerivativesGreens`]: both are built by the caller and
-/// handed in, for the same reason.
-pub struct PsiAndDerivativesTemporaryStorage {
-    /// Current sources gathered for the even kernels; shape = (n_z, n_z * n_r)
-    w_even: Array2<f64>,
-    /// Current sources gathered for the odd kernels; shape = (n_z, n_z * n_r)
-    w_odd: Array2<f64>,
-}
-
 /// Greens tables reorganised for `calculate_psi_and_derivatives`.
 ///
-/// Precomputed **once per time-slice** (the tables do not change between Picard iterations),
-/// while `calculate_psi_and_derivatives` is called **every** iteration.
+/// Precomputed **once per reconstruction** by the caller (the tables depend only on the grid,
+/// coils and passives) and shared by every time-slice, while `calculate_psi_and_derivatives` is
+/// called **every** Picard iteration.
 ///
 /// The expensive part of `calculate_psi_and_derivatives` is the plasma grid-to-grid convolution:
 /// ```text
 ///     field[(i_z, i_r)] = sum_{i_cur_z, i_cur_r} g[(|i_z - i_cur_z|, i_r, i_cur_r)] * j_2d[(i_cur_z, i_cur_r)] * d_area
 /// ```
-/// Because the Greens table only depends on the **vertical offset** `i_offset_z = |i_z - i_cur_z|`,
-/// the convolution can be reorganised into a single matrix multiplication:
-/// ```text
-///     field = w @ g_plasma_by_offset
-/// ```
-/// where row `i_z` of `w` gathers, for each `(i_offset_z, i_cur_r)`, the (at most two) current
-/// sources which see grid point `i_z` at that offset: `j_2d[(i_z - i_offset_z, i_cur_r)]` and
-/// `j_2d[(i_z + i_offset_z, i_cur_r)]`. Kernels which are **even** in `z - z_current_source`
-/// (`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`, `d3_psi_d_r_d_z2`) take the sum of the two
-/// sources; kernels which are **odd** (`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_r2_d_z`,
-/// `d3_psi_d_z3`) take the difference. `w` is filled fresh each iteration (it depends on `j_2d`)
-/// into the buffers of [`PsiAndDerivativesTemporaryStorage`]; the GEMM is done with `faer`.
-///
-/// The even kernels and the odd kernels are each concatenated column-wise, so the plasma
-/// contribution to all nine fields costs exactly two GEMMs.
+/// Because the grid is uniform in `z`, the Greens table only depends on the **vertical offset**
+/// `|i_z - i_cur_z|`, so for every pair of radial indices `(i_r, i_cur_r)` this is a
+/// one-dimensional convolution along `z`. It is evaluated with real FFTs in
+/// [`PlasmaGreensSpectra`]: the kernel spectra are computed here, once, and each iteration only
+/// transforms the current columns, multiplies, and transforms back, at
+/// `O(n_r^2 * n_z * log(n_z))` instead of the `O(n_r^2 * n_z^2)` of a dense matrix product.
+/// Kernels which are **even** in `z - z_current_source` (`psi`, `d_psi_d_r`, `d2_psi_d_r2`,
+/// `d2_psi_d_z2`, `d3_psi_d_r_d_z2`) and **odd** ones (`d_psi_d_z`, `d2_psi_d_r_d_z`,
+/// `d3_psi_d_r2_d_z`, `d3_psi_d_z3`) are returned as two column-concatenated blocks.
 pub struct PsiAndDerivativesGreens {
-    /// Plasma grid-to-grid, even kernels, concatenated column-wise in the order
-    /// [`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`, `d3_psi_d_r_d_z2`];
-    /// rows = (i_offset_z * n_r + i_cur_r); shape = (n_z * n_r, 5 * n_r)
-    g_even_plasma_by_offset: Array2<f64>,
-    /// Plasma grid-to-grid, odd kernels, concatenated column-wise in the order
-    /// [`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_r2_d_z`, `d3_psi_d_z3`];
-    /// rows = (i_offset_z * n_r + i_cur_r); shape = (n_z * n_r, 4 * n_r)
-    g_odd_plasma_by_offset: Array2<f64>,
+    /// Spectra of the plasma grid-to-grid tables; `convolve` returns the even kernels
+    /// concatenated column-wise in the order [`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`,
+    /// `d3_psi_d_r_d_z2`], shape = (n_z, 5 * n_r), and the odd kernels in the order
+    /// [`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_r2_d_z`, `d3_psi_d_z3`], shape = (n_z, 4 * n_r)
+    plasma_spectra: PlasmaGreensSpectra,
     /// PF coils; each shape = (n_z * n_r, n_pf)
     g_d_psi_d_r_coils_matrix: Array2<f64>,
     g_d_psi_d_z_coils_matrix: Array2<f64>,
@@ -166,8 +130,9 @@ pub struct PsiAndDerivativesGreens {
 }
 
 impl PsiAndDerivativesGreens {
-    /// Reorganise the Greens tables held on the equilibrium IDS into the matrix shapes the
-    /// per-iteration GEMMs want.
+    /// Reorganise the Greens tables held on the equilibrium IDS into the shapes the per-iteration
+    /// calculation wants: the spectra of the plasma tables, and one matrix per field for the PF
+    /// coils and the passives.
     ///
     /// `n_r` and `n_z` are recovered from the grid-to-grid table's own shape rather than read from
     /// anywhere else, so this cannot be handed a table which disagrees with the grid it was
@@ -180,59 +145,8 @@ impl PsiAndDerivativesGreens {
         }
         let n_z: usize = n_offset_z_times_n_r / n_r;
 
-        // Plasma grid-to-grid tables; stored shape = (n_z * n_r, n_r), which unflattens to
-        // (i_offset_z, i_r, i_cur_r). Permute to (i_offset_z, i_cur_r, i_r) and re-flatten so
-        // that rows = (i_offset_z, i_cur_r) match the columns of `w`, and columns = i_r
-        let permute_to_by_offset = |g_flat: &Array2<f64>| -> Array2<f64> {
-            let g_3d: Array3<f64> = g_flat.to_shape((n_z, n_r, n_r)).unwrap().to_owned();
-            let g_3d_permuted: Array3<f64> = g_3d.permuted_axes([0, 2, 1]);
-            let g_by_offset: Array2<f64> = g_3d_permuted.as_standard_layout().to_shape((n_z * n_r, n_r)).unwrap().to_owned();
-            g_by_offset
-        };
-
-        let grid_grid = |table: &Array2<f64>, key: &str| -> Array2<f64> {
-            if table.is_empty() {
-                panic!("PsiAndDerivativesGreens: `greens/grid_grid/{key}` unset");
-            }
-            permute_to_by_offset(table)
-        };
-        let g_psi_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.psi, "psi");
-        let g_d_psi_d_r_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d_psi_d_r, "d_psi_d_r");
-        let g_d_psi_d_z_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d_psi_d_z, "d_psi_d_z");
-        let g_d2_psi_d_r2_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d2_psi_d_r2, "d2_psi_d_r2");
-        let g_d2_psi_d_r_d_z_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d2_psi_d_r_d_z, "d2_psi_d_r_d_z");
-        let g_d2_psi_d_z2_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d2_psi_d_z2, "d2_psi_d_z2");
-        let g_d3_psi_d_r2_d_z_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d3_psi_d_r2_d_z, "d3_psi_d_r2_d_z");
-        let g_d3_psi_d_r_d_z2_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d3_psi_d_r_d_z2, "d3_psi_d_r_d_z2");
-        let g_d3_psi_d_z3_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d3_psi_d_z3, "d3_psi_d_z3");
-
-        // Concatenate per parity, so each parity is a single GEMM
-        // (`as_standard_layout` because `concatenate` does not guarantee a C-contiguous result)
-        let g_even_plasma_by_offset: Array2<f64> = concatenate(
-            Axis(1),
-            &[
-                g_psi_plasma_by_offset.view(),
-                g_d_psi_d_r_plasma_by_offset.view(),
-                g_d2_psi_d_r2_plasma_by_offset.view(),
-                g_d2_psi_d_z2_plasma_by_offset.view(),
-                g_d3_psi_d_r_d_z2_plasma_by_offset.view(),
-            ],
-        )
-        .unwrap()
-        .as_standard_layout()
-        .to_owned();
-        let g_odd_plasma_by_offset: Array2<f64> = concatenate(
-            Axis(1),
-            &[
-                g_d_psi_d_z_plasma_by_offset.view(),
-                g_d2_psi_d_r_d_z_plasma_by_offset.view(),
-                g_d3_psi_d_r2_d_z_plasma_by_offset.view(),
-                g_d3_psi_d_z3_plasma_by_offset.view(),
-            ],
-        )
-        .unwrap()
-        .as_standard_layout()
-        .to_owned();
+        // Plasma grid-to-grid tables: their FFT spectra along z
+        let plasma_spectra: PlasmaGreensSpectra = PlasmaGreensSpectra::new(greens);
 
         // PF coils: each table is (n_z, n_r), gathered into one column per coil. The coils keep the
         // order they sit in on the IDS, which is the order the measured currents are in
@@ -298,8 +212,7 @@ impl PsiAndDerivativesGreens {
         let g_d3_psi_d_z3_passives_matrix: Array2<f64> = passives_matrix(|dof| &dof.d3_psi_d_z3, "d3_psi_d_z3");
 
         Self {
-            g_even_plasma_by_offset,
-            g_odd_plasma_by_offset,
+            plasma_spectra,
             g_d_psi_d_r_coils_matrix,
             g_d_psi_d_z_coils_matrix,
             g_d2_psi_d_r2_coils_matrix,
@@ -611,24 +524,13 @@ impl<'a> EquilibriumSolver<'a> {
         // the geometry, so they are built once by the caller and shared by every time-slice
         let psi_and_derivatives_greens: &PsiAndDerivativesGreens = self.psi_and_derivatives_greens;
 
-        // Scratch space for `calculate_psi_and_derivatives`. Allocated out here purely so that it
-        // is not reallocated on every iteration - it holds no state; see the type. Filled with
-        // `NaN` rather than zeros so that an element the first iteration fails to write shows up as
-        // `NaN` in `psi` instead of silently contributing nothing
-        let n_r: usize = self.equilibrium_code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_code.grid.n_z as usize;
-        let mut temporary_storage: PsiAndDerivativesTemporaryStorage = PsiAndDerivativesTemporaryStorage {
-            w_even: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
-            w_odd: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
-        };
-
         // Iteration loop
         'iteration_loop: for i_iter in 0..n_iter_max {
             // println!("");
             // println!("Iteration {i_iter}");
             // Updates `psi` and all of its derivatives (including the `delta_z` vertical stability correction);
             // timing: 350ms, with [n_r, n_z]=[81, 321]
-            self.calculate_psi_and_derivatives(psi_and_derivatives_greens, &mut temporary_storage);
+            self.calculate_psi_and_derivatives(psi_and_derivatives_greens);
 
             // Construct pointers to the grid, to psi and to psi's derivatives, for convenience.
             // These borrow out of the IDS rather than copying out of it, so nothing is cloned each
@@ -1470,12 +1372,9 @@ impl<'a> EquilibriumSolver<'a> {
     ///
     /// Only `psi` and its derivatives are used; `br` and `bz` do not appear.
     ///
-    /// The plasma contribution is calculated with two GEMMs; see `PsiAndDerivativesGreens` for the
-    /// reorganisation of the convolution over current sources.
-    /// `temporary_storage` is owned by the caller only so that its buffers are not reallocated on
-    /// every iteration; it carries nothing between calls. See
-    /// [`PsiAndDerivativesTemporaryStorage`].
-    pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens, temporary_storage: &mut PsiAndDerivativesTemporaryStorage) {
+    /// The plasma contribution is a convolution along `z`, evaluated with FFTs; see
+    /// `PsiAndDerivativesGreens` and `PlasmaGreensSpectra`.
+    pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens) {
         // Unpack from self
         let n_r: usize = self.equilibrium_code.grid.n_r as usize;
         let n_z: usize = self.equilibrium_code.grid.n_z as usize;
@@ -1520,73 +1419,10 @@ impl<'a> EquilibriumSolver<'a> {
         let d3_psi_d_r_d_z2_2d_passives: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r_d_z2_passives_matrix, passive_dof_values);
         let d3_psi_d_z3_2d_passives: Array2<f64> = contract(&greens_tables.g_d3_psi_d_z3_passives_matrix, passive_dof_values);
 
-        // Plasma: two GEMMs over the reorganised tables (see `PsiAndDerivativesGreens`). The two
-        // scratch buffers gather the current sources by (vertical offset, source radius):
-        //     w_even[(i_z, i_offset_z * n_r + i_cur_r)] = d_area * (j_below + j_above)
-        //     w_odd[(i_z, i_offset_z * n_r + i_cur_r)]  = d_area * (j_below - j_above)
-        // where `j_below = j_2d[(i_z - i_offset_z, i_cur_r)]` (a source below the grid point) and
-        // `j_above = j_2d[(i_z + i_offset_z, i_cur_r)]` (a source at or above the grid point).
-        // The odd kernels (`d_psi_d_z`, `d2_psi_d_r_d_z`) change sign with the source side:
-        // sources with `i_z <= i_cur_z` enter with -1
-        //
-        // Each element is assigned rather than accumulated into, so that the scratch buffers never
-        // have to be zeroed. They arrive holding the previous iteration's values, and every element
-        // of both is overwritten here before any of it is read
-        for i_z in 0..n_z {
-            for i_offset_z in 0..n_z {
-                let i_column_start: usize = i_offset_z * n_r;
-
-                // Source below the grid point: i_cur_z = i_z - i_offset_z (excluding i_offset_z = 0)
-                let i_cur_z_below: Option<usize> = if i_offset_z > 0 && i_z >= i_offset_z { Some(i_z - i_offset_z) } else { None };
-
-                // Source at or above the grid point: i_cur_z = i_z + i_offset_z (including i_offset_z = 0)
-                let i_cur_z_above: Option<usize> = if i_z + i_offset_z < n_z { Some(i_z + i_offset_z) } else { None };
-
-                for i_cur_r in 0..n_r {
-                    let j_below: f64 = match i_cur_z_below {
-                        Some(i_cur_z) => d_area * j_2d[(i_cur_z, i_cur_r)],
-                        None => 0.0,
-                    };
-                    let j_above: f64 = match i_cur_z_above {
-                        Some(i_cur_z) => d_area * j_2d[(i_cur_z, i_cur_r)],
-                        None => 0.0,
-                    };
-                    // The leading `0.0 +` is not redundant. It reproduces the zero-initialised
-                    // accumulator these two lines used to start from, which matters because
-                    // `j_phi` holds `-0.0` outside the mask (a negative `p_prime` times a zero
-                    // mask). `0.0 + -0.0` is `+0.0`, so dropping it would flip the sign of those
-                    // zeros and stop this being a bit-for-bit no-op
-                    temporary_storage.w_even[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below + j_above;
-                    temporary_storage.w_odd[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below - j_above;
-                }
-            }
-        }
-
-        // GEMMs, using `faer`. `Par::rayon(0)` - the whole pool - unconditionally. This runs
-        // inside the caller's parallel loop over time-slices, so it looks like nested parallelism
-        // worth avoiding, but it is not: measured with `Par::Seq` at 8, 16 and 32 threads it is
-        // slightly *slower* at every count (e.g. 8 threads 120.3 s vs 124.8 s over the solve),
-        // because with the pool already saturated by the outer loop faer runs the GEMM inline. At
-        // a single time-slice the outer loop provides no parallelism and this is the only thing
-        // keeping the cores busy. Unconditional is right for both regimes.
-        let mut plasma_even: faer::Mat<f64> = faer::Mat::zeros(n_z, 5 * n_r);
-        matmul(
-            plasma_even.as_mut(),
-            Accum::Replace,
-            MatRef::from_row_major_slice(temporary_storage.w_even.as_slice().unwrap(), n_z, n_z * n_r),
-            MatRef::from_row_major_slice(greens_tables.g_even_plasma_by_offset.as_slice().unwrap(), n_z * n_r, 5 * n_r),
-            1.0,
-            Par::rayon(0),
-        );
-        let mut plasma_odd: faer::Mat<f64> = faer::Mat::zeros(n_z, 4 * n_r);
-        matmul(
-            plasma_odd.as_mut(),
-            Accum::Replace,
-            MatRef::from_row_major_slice(temporary_storage.w_odd.as_slice().unwrap(), n_z, n_z * n_r),
-            MatRef::from_row_major_slice(greens_tables.g_odd_plasma_by_offset.as_slice().unwrap(), n_z * n_r, 4 * n_r),
-            1.0,
-            Par::rayon(0),
-        );
+        // Plasma: the convolution of the current density with the grid-to-grid Greens tables,
+        // evaluated with FFTs along z (see `PsiAndDerivativesGreens`). Column block `k` of
+        // `plasma_even` / `plasma_odd` holds kernel `k`, in the order documented there
+        let (plasma_even, plasma_odd): (Array2<f64>, Array2<f64>) = greens_tables.plasma_spectra.convolve(j_2d, d_area);
 
         // Assemble the unshifted fields (coils + passives + plasma).
         // The `plasma_even` / `plasma_odd` column blocks follow the concatenation order
