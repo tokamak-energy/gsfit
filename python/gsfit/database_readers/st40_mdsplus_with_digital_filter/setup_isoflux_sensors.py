@@ -228,19 +228,19 @@ def setup_isoflux_sensors(
         if not np.any(np.isfinite(location_1_r) & np.isfinite(location_2_r)):
             continue
 
-        # `time` is `times_to_reconstruct` itself, so `Isoflux.add_sensor` interpolates onto points it already
-        # has exactly. That matters: it keeps a NaN confined to its own time-slice instead of letting it
-        # spread into the neighbouring ones.
+        # The interpolator needs an increasing, unique source timebase, but returns values
+        # in the original reconstruction order.
+        sample_time, time_indices = np.unique(pairs["time"], return_index=True)
         isoflux.add_sensor(
             name=f"{sensor_name_prefix}{i_level + 1:02d}",
             fit_settings_comment=f"{fit_settings_comment}; TS {quantity} = {pairs['level_fractions'][i_level]:.2f} x peak",
             fit_settings_include=True,
             fit_settings_weight=fit_settings_weight,
-            time=pairs["time"],
-            location_1_r=location_1_r,
-            location_1_z=pairs["location_1_z"][:, i_level],
-            location_2_r=location_2_r,
-            location_2_z=pairs["location_2_z"][:, i_level],
+            time=sample_time,
+            location_1_r=location_1_r[time_indices],
+            location_1_z=pairs["location_1_z"][time_indices, i_level],
+            location_2_r=location_2_r[time_indices],
+            location_2_z=pairs["location_2_z"][time_indices, i_level],
             times_to_reconstruct=times_to_reconstruct,
         )
 
