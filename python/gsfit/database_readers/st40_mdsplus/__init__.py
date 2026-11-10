@@ -58,7 +58,7 @@ class DatabaseReader(DatabaseReaderProtocol):
         return setup_isoflux_boundary_sensors(self, *args, **kwargs)
 
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
-        return setup_isoflux_sensors(self, *args, **kwargs)
+        return setup_isoflux_sensors(typing.cast("DigitalFilterDatabaseReader", self), *args, **kwargs)
 
     def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
         return setup_stationary_point_sensors(self, *args, **kwargs)

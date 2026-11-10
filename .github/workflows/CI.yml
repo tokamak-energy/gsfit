@@ -337,7 +337,10 @@ jobs:
       - name: Clone FreeGSNKE repository
         run: |
           mkdir -p ~/github
-          git clone --depth 1 --single-branch https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
+          git init ~/github/freegsnke
+          git -C ~/github/freegsnke remote add origin https://github.com/FusionComputingLab/freegsnke.git
+          git -C ~/github/freegsnke fetch --depth 1 origin 06d1361a692b8c18b288f80c50273d14fcc896c9
+          git -C ~/github/freegsnke checkout --detach FETCH_HEAD
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           python -m pip install --upgrade pip
@@ -384,13 +387,53 @@ jobs:
           with dst.open("w", encoding="utf-8") as f:
               write(nb, f)
           PY
+      - name: Run Example 16 isoflux regression notebook
+        timeout-minutes: 20
+        env:
+          MKL_THREADING_LAYER: SEQUENTIAL
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          import nbformat
+          from jupyter_client import AsyncKernelManager
+          from jupyter_core.utils import run_sync
+          from nbclient import NotebookClient
+
+          folder = Path("examples/example_16__mastu__freegsnke_isoflux").resolve()
+          notebook = nbformat.read(folder / "example_16.ipynb", as_version=4)
+          for cell in notebook.cells:
+              if cell.cell_type == "code":
+                  cell.outputs = []
+                  cell.execution_count = None
+          output = Path("examples/artifacts/example_16-executed.ipynb")
+          output.parent.mkdir(parents=True, exist_ok=True)
+          manager = AsyncKernelManager(kernel_name="python3")
+          manager.kernel_spec.argv = [
+              sys.executable, "-m", "ipykernel_launcher", "-f", "{connection_file}",
+          ]
+          try:
+              NotebookClient(
+                  notebook, km=manager, timeout=600,
+                  resources={"metadata": {"path": str(folder)}},
+              ).execute()
+          finally:
+              nbformat.write(notebook, output)
+              if manager.has_kernel:
+                  run_sync(manager.shutdown_kernel)(now=True)
+          PY
       - name: Run Python tests
         run: python -m pytest --capture=no tests/
       - name: Upload executed notebook artifact
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: linux_jupyter_notebooks
-          path: examples/artifacts/
+          path: |
+            examples/artifacts/
+            examples/example_16__mastu__freegsnke_isoflux/plots/*.png
+            examples/example_16__mastu__freegsnke_isoflux/plots/metrics.json
       - name: Run mypy Python tests
         run: mypy python/
       - name: Run ty Python tests

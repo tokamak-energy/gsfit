@@ -29,6 +29,22 @@ impl Default for Isoflux {
     }
 }
 
+/// Test whether the isoflux pair has finite coordinates and positive radii on this time-slice.
+///
+/// A pair which could not be found is stored as NaN, and the Green's functions must not be evaluated there:
+/// `Greens::sensor_to_conductor` asserts `sensor_r > 0`, so non-finite or nonpositive radii would panic the
+/// whole run. The Green's are left as zero for such a time-slice instead. Nothing reads those zeros, because
+/// `add_sensor` disables the sensor on time-slices with unusable coordinates, removing them from the fit in
+/// `split_into_static_and_dynamic`.
+fn pair_is_usable(location_1_r: &Array1<f64>, location_1_z: &Array1<f64>, location_2_r: &Array1<f64>, location_2_z: &Array1<f64>, i_time: usize) -> bool {
+    location_1_r[i_time].is_finite()
+        && location_1_r[i_time] > 0.0
+        && location_1_z[i_time].is_finite()
+        && location_2_r[i_time].is_finite()
+        && location_2_r[i_time] > 0.0
+        && location_2_z[i_time].is_finite()
+}
+
 /// Python accessible methods
 #[pymethods]
 impl Isoflux {
@@ -148,7 +164,7 @@ impl Isoflux {
             .get_or_insert("isoflux_geometry")
             .get_or_insert("location_1")
             .get_or_insert("z")
-            .insert("measured", location_1_z_measured);
+            .insert("measured", location_1_z_measured.clone());
         // location_2_r
         let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_ndarray.clone(), location_2_r_ndarray.clone())
             .expect("Isoflux.greens_with_coils: Can't make interpolator for location_2_r");
@@ -172,7 +188,7 @@ impl Isoflux {
             .get_or_insert("isoflux_geometry")
             .get_or_insert("location_2")
             .get_or_insert("z")
-            .insert("measured", location_2_z_measured);
+            .insert("measured", location_2_z_measured.clone());
 
         // Add time
         self.results
@@ -183,10 +199,17 @@ impl Isoflux {
         // Add a time-dependent "include"
         let mut include_dynamic: Vec<bool> = vec![fit_settings_include; n_time];
         for i_time in 0..n_time {
-            if location_1_r_measured[i_time].is_nan() || location_2_r_measured[i_time].is_nan() {
+            if !pair_is_usable(
+                &location_1_r_measured,
+                &location_1_z_measured,
+                &location_2_r_measured,
+                &location_2_z_measured,
+                i_time,
+            ) {
                 include_dynamic[i_time] = false;
             }
         }
+
         self.results
             .get_or_insert(name)
             .get_or_insert("fit_settings")
@@ -243,6 +266,11 @@ impl Isoflux {
 
                 let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                 for i_time in 0..n_time {
+                    // Leave the Green's as zero where no isoflux pair was found on this time-slice
+                    if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                        continue;
+                    }
+
                     // Calculate the Green's at location 1
                     let greens_calculator: Greens = Greens::sensor_to_conductor(
                         array![location_1_r[i_time]],
@@ -336,6 +364,11 @@ impl Isoflux {
                 for dof_name in dof_names {
                     let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                     for i_time in 0..n_time {
+                        // Leave the Green's as zero where no isoflux pair was found on this time-slice
+                        if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                            continue;
+                        }
+
                         // Location 1
                         let greens_calculator: Greens = Greens::sensor_to_conductor(
                             array![location_1_r[i_time]],
@@ -461,6 +494,11 @@ impl Isoflux {
             let mut g_with_plasma: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             for i_time in 0..n_time {
+                // Leave the Green's as zero where no isoflux pair was found on this time-slice
+                if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                    continue;
+                }
+
                 // Location 1
                 let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![location_1_r[i_time]],
@@ -612,6 +650,52 @@ impl Isoflux {
 
         // Sensor names
         let sensor_names_all: Vec<String> = self.results.keys();
+        let n_sensors_all: usize = sensor_names_all.len();
+
+        // Without any sensors there is nothing to read
+        if n_sensors_all == 0 {
+            for _ in 0..n_time {
+                results_static.push(Arc::clone(&results_static_empty));
+                results_dynamic.push(results_dynamic_empty.clone());
+            }
+            return (results_static, results_dynamic);
+        }
+
+        // Read the large time-dependent arrays once, rather than once per time-slice
+        let fit_settings_weight_all: Array1<f64> = self.results.get("*").get("fit_settings").get("weight").unwrap_array1();
+        let fit_settings_expected_value_all: Array1<f64> = self.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
+        let greens_with_pf_all: Array3<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array3(); // shape = [n_time, n_pf, n_sensors_all]
+        let greens_with_grid_all: Array3<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors_all]
+        let greens_d_sensor_dz_all: Array3<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors_all]
+
+        // With passives; every sensor has the same passives and degrees of freedom
+        let passive_names: Vec<String> = self.results.get(&sensor_names_all[0]).get("greens").get("passives").keys();
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get(&sensor_names_all[0]).get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+        let mut greens_with_passives_all: Array3<f64> = Array3::zeros((n_time, n_dof_total, n_sensors_all)) * f64::NAN;
+        for i_sensor in 0..n_sensors_all {
+            let mut i_dof_total: usize = 0;
+            for passive_name in &passive_names {
+                let dof_names: Vec<String> = self.results.get(&sensor_names_all[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+                for dof_name in &dof_names {
+                    let greens_with_passives_tmp: Array1<f64> = self
+                        .results
+                        .get(&sensor_names_all[i_sensor])
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .unwrap_array1(); // shape = [n_time]
+                    greens_with_passives_all.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
+
+                    // Keep count
+                    i_dof_total += 1;
+                }
+            }
+        }
 
         'time_loop: for i_time in 0..n_time {
             let mut include: Vec<bool> = Vec::new();
@@ -642,70 +726,23 @@ impl Isoflux {
 
             // Now do the static data
             // Fit settings
-            // Weight
-            let fit_settings_weight: Array1<f64> = self.results.get("*").get("fit_settings").get("weight").unwrap_array1();
-            let fit_settings_weight: Array1<f64> = fit_settings_weight.select(Axis(0), &include_indices);
+            let fit_settings_weight: Array1<f64> = fit_settings_weight_all.select(Axis(0), &include_indices);
+            let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value_all.select(Axis(0), &include_indices);
 
-            // Expected value
-            let fit_settings_expected_value: Array1<f64> = self.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
-            let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
-
-            // Greens
-            // With PF coils (TIMING: accessing greens_with_pf with unwrap_array3() takes ~50microseconds)
-            let greens_with_pf: Array3<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array3(); // shape = [n_time, n_pf, n_sensors]
-            let greens_with_pf: Array3<f64> = greens_with_pf.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_pf, n_sensors]
-
-            // With plasma
-            let greens_with_grid: Array3<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
-            let greens_with_grid: Array3<f64> = greens_with_grid.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
-
-            // With d_sensor_dz (for vertical stability)
-            let greens_d_sensor_dz: Array3<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
-            let greens_d_sensor_dz: Array3<f64> = greens_d_sensor_dz.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
-
-            // With passives
-            let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
-            let n_passives: usize = passive_names.len();
-
-            // Count the number of degrees of freedom
-            let mut n_dof_total: usize = 0;
-            for passive_name in &passive_names {
-                let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys();
-                n_dof_total += dof_names.len();
-            }
-
-            // With passives
-            let mut greens_with_passives: Array3<f64> = Array3::zeros((n_time, n_dof_total, n_sensors)) * f64::NAN;
-            for i_sensor in 0..n_sensors {
-                let mut i_dof_total: usize = 0;
-                for i_passive in 0..n_passives {
-                    let passive_name: &str = &passive_names[i_passive];
-                    let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                    for dof_name in &dof_names {
-                        let greens_with_passives_tmp: Array1<f64> = self
-                            .results
-                            .get(&sensor_names[i_sensor])
-                            .get("greens")
-                            .get("passives")
-                            .get(passive_name)
-                            .get(dof_name)
-                            .unwrap_array1(); // shape = [n_time]
-                        greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
-
-                        // Keep count
-                        i_dof_total += 1;
-                    }
-                }
-            }
+            // Greens: take the time-slice first (a view, no copy), then down select to only the sensors needed
+            let greens_with_pf: Array2<f64> = greens_with_pf_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_pf, n_sensors]
+            let greens_with_grid: Array2<f64> = greens_with_grid_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_z * n_r, n_sensors]
+            let greens_d_sensor_dz: Array2<f64> = greens_d_sensor_dz_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_z * n_r, n_sensors]
+            let greens_with_passives: Array2<f64> = greens_with_passives_all.slice(s![i_time, .., ..]).select(Axis(1), &include_indices); // shape = [n_dof_total, n_sensors]
 
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
-                greens_with_grid: greens_with_grid.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                greens_with_pf: greens_with_pf.slice(s![i_time, .., ..]).to_owned(),     // shape = [n_pf, n_sensors]
-                greens_with_passives: greens_with_passives.slice(s![i_time, .., ..]).to_owned(), // shape = [n_dof_total, n_sensors]
-                greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                fit_settings_weight: fit_settings_weight.clone(),
-                fit_settings_expected_value: fit_settings_expected_value.clone(),
+                greens_with_grid,
+                greens_with_pf,
+                greens_with_passives,
+                greens_d_sensor_dz,
+                fit_settings_weight,
+                fit_settings_expected_value,
                 geometry_r: Array1::zeros(n_sensors), // not used for Isoflux
                 geometry_z: Array1::zeros(n_sensors), // not used for Isoflux
             };
@@ -727,5 +764,27 @@ impl Isoflux {
         for sensor_name in self.results.keys() {
             println!("sensor_name = {}", sensor_name);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pair_is_usable;
+    use ndarray::array;
+
+    #[test]
+    fn pair_is_usable_requires_finite_coordinates_and_positive_radii() {
+        let location_1_r = array![1.0, 0.0, -1.0, 1.0, 1.0, 1.0, 1.0];
+        let location_1_z = array![0.0, 0.0, 0.0, 0.0, 0.0, f64::NAN, 0.0];
+        let location_2_r = array![1.0, 1.0, 1.0, 0.0, -1.0, 1.0, 1.0];
+        let location_2_z = array![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, f64::INFINITY];
+
+        assert!(pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 0));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 1));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 2));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 3));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 4));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 5));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 6));
     }
 }
