@@ -128,9 +128,9 @@ def reconstruct(
     # The existing **kwargs annotation incorrectly requires dict values rather than reader-specific arrays/lists.
     controller.setup_objects(time=time, freegsnke_eqs=[reference, reference])  # type: ignore[arg-type]
     if use_isoflux:
-        for i, (r1, z1, r2, z2) in enumerate(pairs):
+        for i_pair, (r1, z1, r2, z2) in enumerate(pairs):
             controller.isoflux.add_sensor(
-                name=f"ISOFLUX{i + 1:02d}",
+                name=f"ISOFLUX{i_pair + 1:02d}",
                 fit_settings_comment="Known FreeGSNKE flux-surface pair",
                 fit_settings_include=True,
                 fit_settings_weight=10.0,
