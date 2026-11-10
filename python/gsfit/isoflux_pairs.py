@@ -47,6 +47,7 @@ def _radius_at_level(
         lower_r, upper_r = branch_r[i_match], branch_r[i_match_end - 1]
         value_lower = value_upper = value_target
     else:
+        # The target level lies between two measured values; use the bracketing interval for interpolation.
         i_upper = int(np.clip(i_match, 1, branch_value.size - 1))
         value_lower, value_upper = branch_value[i_upper - 1], branch_value[i_upper]
         lower_r, upper_r = branch_r[i_upper - 1], branch_r[i_upper]
