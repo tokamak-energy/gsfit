@@ -1,31 +1,19 @@
 import typing
 
-from gsfit_rs import BpProbes
-from gsfit_rs import Coils
-from gsfit_rs import Dialoop
-from gsfit_rs import FluxLoops
-from gsfit_rs import Isoflux
-from gsfit_rs import IsofluxBoundary
-from gsfit_rs import Passives
-from gsfit_rs import Plasma
-from gsfit_rs import Pressure
-from gsfit_rs import RogowskiCoils
-from gsfit_rs import StationaryPoint
+from gsfit_rs import CoreProfiles
+from gsfit_rs import Equilibrium
+from gsfit_rs import Magnetics
+from gsfit_rs import PfActive
+from gsfit_rs import PfPassive
 from gsfit_rs import Tf
 from gsfit_rs import Wall
 
 from ..interface import DatabaseReaderProtocol
-from .setup_bp_probes import setup_bp_probes
-from .setup_dialoop import setup_dialoop
-from .setup_flux_loops import setup_flux_loops
-from .setup_isoflux_boundary_sensors import setup_isoflux_boundary_sensors
-from .setup_isoflux_sensors import setup_isoflux_sensors
+from .setup_core_profiles import setup_core_profiles
+from .setup_equilibrium import setup_equilibrium
+from .setup_magnetics import setup_magnetics
 from .setup_pf_active import setup_pf_active
 from .setup_pf_passive import setup_pf_passive
-from .setup_plasma import setup_plasma
-from .setup_pressure_sensors import setup_pressure_sensors
-from .setup_rogowski_coils import setup_rogowski_coils
-from .setup_stationary_point_sensors import setup_stationary_point_sensors
 from .setup_tf import setup_tf
 from .setup_wall import setup_wall
 
@@ -36,44 +24,32 @@ class DatabaseReader(DatabaseReaderProtocol):
     The methods in this class are used to initialise the Rust implementations.
     Here we are binding the methods to the class.
 
+    **This reader is for ST40 with synthetic measurements from an ASTRA run with a free boundary (SOPHIA)**, stored in the MDSplus tree `ASTRA`.
+    Which run to read is the ASTRA `tree` of the `workflow.xml` which each IDS's settings link to: its `run_name`, e.g. "RUN12", and its `pulseNo`,
+    nil for the pulse being reconstructed, e.g. 13013349. An ASTRA run with a fixed boundary has no synthetic measurements to read.
+    The pressure constraints are ASTRA's total pressure at the Thomson scattering channels of the pulse ASTRA's run models, whose positions are
+    read from the TS `tree`: set its `pulseNo`, e.g. 13349.
+
     See `python/gsfit/database_readers/interface.py` for the interface definitions.
     """
 
-    def setup_bp_probes(self, *args: typing.Any, **kwargs: typing.Any) -> BpProbes:
-        return setup_bp_probes(self, *args, **kwargs)
+    def setup_core_profiles(self, *args: typing.Any, **kwargs: typing.Any) -> CoreProfiles:
+        return setup_core_profiles(self, *args, **kwargs)
 
-    def setup_pf_active(self, *args: typing.Any, **kwargs: typing.Any) -> Coils:
+    def setup_equilibrium(self, *args: typing.Any, **kwargs: typing.Any) -> Equilibrium:
+        return setup_equilibrium(self, *args, **kwargs)
+
+    def setup_magnetics(self, *args: typing.Any, **kwargs: typing.Any) -> Magnetics:
+        return setup_magnetics(self, *args, **kwargs)
+
+    def setup_pf_active(self, *args: typing.Any, **kwargs: typing.Any) -> PfActive:
         return setup_pf_active(self, *args, **kwargs)
 
-    def setup_dialoop(self, *args: typing.Any, **kwargs: typing.Any) -> Dialoop:
-        return setup_dialoop(self, *args, **kwargs)
-
-    def setup_flux_loops(self, *args: typing.Any, **kwargs: typing.Any) -> FluxLoops:
-        return setup_flux_loops(self, *args, **kwargs)
-
-    def setup_isoflux_boundary_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> IsofluxBoundary:
-        return setup_isoflux_boundary_sensors(self, *args, **kwargs)
-
-    def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
-        return setup_isoflux_sensors(self, *args, **kwargs)
-
-    def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
-        return setup_stationary_point_sensors(self, *args, **kwargs)
+    def setup_pf_passive(self, *args: typing.Any, **kwargs: typing.Any) -> PfPassive:
+        return setup_pf_passive(self, *args, **kwargs)
 
     def setup_tf(self, *args: typing.Any, **kwargs: typing.Any) -> Tf:
         return setup_tf(self, *args, **kwargs)
 
     def setup_wall(self, *args: typing.Any, **kwargs: typing.Any) -> Wall:
         return setup_wall(self, *args, **kwargs)
-
-    def setup_pf_passive(self, *args: typing.Any, **kwargs: typing.Any) -> Passives:
-        return setup_pf_passive(self, *args, **kwargs)
-
-    def setup_plasma(self, *args: typing.Any, **kwargs: typing.Any) -> Plasma:
-        return setup_plasma(self, *args, **kwargs)
-
-    def setup_pressure_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Pressure:
-        return setup_pressure_sensors(self, *args, **kwargs)
-
-    def setup_rogowski_coils(self, *args: typing.Any, **kwargs: typing.Any) -> RogowskiCoils:
-        return setup_rogowski_coils(self, *args, **kwargs)

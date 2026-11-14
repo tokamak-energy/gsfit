@@ -51,6 +51,7 @@
 
 use crate::grad_shafranov::Error;
 use crate::grad_shafranov::equilibrium_solve::EquilibriumSolver;
+use crate::grad_shafranov::nonlinear_solvers::NonlinearSolverTraits;
 use ndarray::{Array1, Array2, s};
 
 /// The number of times a Newton step is halved before it is given up on, and a Picard step taken
@@ -75,237 +76,222 @@ struct PicardUpdate {
     magnetic_axis: (f64, f64),
 }
 
-/// The settings of the Newton iterations, from `code/parameters_parsed/numerics/nonlinear_solver/newton_krylov`
-struct NewtonKrylovSettings {
-    picard_handover: f64,
-    n_krylov_max: usize,
-    krylov_tolerance: f64,
-    finite_difference_step: f64,
-    verbose: bool,
+/// The Jacobian-free Newton-Krylov method; see the module documentation.
+///
+/// The settings are those of the same name in `equilibrium_settings/numerics` and
+/// `equilibrium_settings/numerics/nonlinear_solver/newton_krylov`, which their XML schema has checked.
+/// `n_iter_no_vertical_feedback` is only used by the Picard iterations before the hand over to Newton.
+pub struct NewtonKrylov {
+    pub n_iter_max: usize,
+    pub n_iter_min: usize,
+    /// [dimensionless]
+    pub grad_shafranov_deviation_tolerance: f64,
+    pub n_iter_no_vertical_feedback: usize,
+    /// [dimensionless]
+    pub picard_handover: f64,
+    pub n_krylov_max: usize,
+    /// [dimensionless]
+    pub krylov_tolerance: f64,
+    /// [dimensionless]
+    pub finite_difference_step: f64,
+    pub verbose: bool,
 }
 
-/// Solve with the Jacobian-free Newton-Krylov method; see the module documentation.
-pub(crate) fn solve(solver: &mut EquilibriumSolver) {
-    // Solver settings, supplied through `equilibrium.code`
-    let n_iter_max: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_max as usize;
-    let n_iter_min: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_min as usize;
-    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.parameters_parsed.numerics.grad_shafranov_deviation_tolerance;
-    let n_iter_no_vertical_feedback: usize = solver
-        .equilibrium_code
-        .parameters_parsed
-        .numerics
-        .nonlinear_solver
-        .picard
-        .n_iter_no_vertical_feedback as usize;
-    let settings: NewtonKrylovSettings = NewtonKrylovSettings {
-        picard_handover: solver
-            .equilibrium_code
-            .parameters_parsed
-            .numerics
-            .nonlinear_solver
-            .newton_krylov
-            .picard_handover,
-        n_krylov_max: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_krylov.n_krylov_max as usize,
-        krylov_tolerance: solver
-            .equilibrium_code
-            .parameters_parsed
-            .numerics
-            .nonlinear_solver
-            .newton_krylov
-            .krylov_tolerance,
-        finite_difference_step: solver
-            .equilibrium_code
-            .parameters_parsed
-            .numerics
-            .nonlinear_solver
-            .newton_krylov
-            .finite_difference_step,
-        verbose: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_krylov.verbose != 0,
-    };
-
-    // The passive currents and the initial current density
-    if let Err(error) = solver.initialise() {
-        solver.set_to_failed_time_slice(error);
-        return;
-    }
-
-    // The number of times the flux has been calculated, which is where nearly all the time goes.
-    // A Picard iteration calculates it once
-    let mut n_flux_evaluations: usize = 0;
-
-    // ==================================================================================
-    // 1. Picard iterations, until the deviation is small enough to hand over to Newton
-    // ==================================================================================
-    let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
-    let mut i_iter_handover: usize = n_iter_max;
-    for i_iter in 0..n_iter_max {
-        // The flux from the current density, and from it the magnetic axis and the boundary
-        n_flux_evaluations += 1;
-        if let Err(error) = solver.update_psi_and_geometry() {
+impl NonlinearSolverTraits for NewtonKrylov {
+    fn solve(&self, solver: &mut EquilibriumSolver) {
+        // The passive currents and the initial current density
+        if let Err(error) = solver.initialise() {
             solver.set_to_failed_time_slice(error);
             return;
         }
-        let psi_a: f64 = solver.time_slice.global_quantities.psi_magnetic_axis;
-        let psi_b: f64 = solver.time_slice.boundary.psi;
 
-        // Calculate the Grad-Shafranov deviation
-        let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_previous);
-        solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
-        psi_a_previous = psi_a;
+        // The number of times the flux has been calculated, which is where nearly all the time goes.
+        // A Picard iteration calculates it once
+        let mut n_flux_evaluations: usize = 0;
 
-        // Check for convergence
-        if grad_shafranov_deviation_value < grad_shafranov_deviation_tolerance && i_iter > n_iter_min {
-            report(&settings, "converged during the Picard iterations", i_iter, n_flux_evaluations);
-            solver.set_to_converged_time_slice(i_iter);
-            return;
+        // ==================================================================================
+        // 1. Picard iterations, until the deviation is small enough to hand over to Newton
+        // ==================================================================================
+        let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
+        let mut i_iter_handover: usize = self.n_iter_max;
+        for i_iter in 0..self.n_iter_max {
+            // The flux from the current density, and from it the magnetic axis and the boundary
+            n_flux_evaluations += 1;
+            if let Err(error) = solver.update_psi_and_geometry() {
+                solver.set_to_failed_time_slice(error);
+                return;
+            }
+            let psi_a: f64 = solver.time_slice.global_quantities.psi_magnetic_axis;
+            let psi_b: f64 = solver.time_slice.boundary.psi;
+
+            // Calculate the Grad-Shafranov deviation
+            let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_previous);
+            solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
+            psi_a_previous = psi_a;
+
+            // Check for convergence
+            if grad_shafranov_deviation_value < self.grad_shafranov_deviation_tolerance && i_iter > self.n_iter_min {
+                self.report("converged during the Picard iterations", i_iter, n_flux_evaluations);
+                solver.set_to_converged_time_slice(i_iter);
+                return;
+            }
+
+            // Check if we have reached the maximum number of iterations
+            if i_iter == self.n_iter_max - 1 {
+                self.report("reached the maximum number of iterations", i_iter, n_flux_evaluations);
+                solver.set_to_failed_time_slice(Error::MaxIterReached);
+                return;
+            }
+
+            // Hand over to Newton
+            if grad_shafranov_deviation_value < self.picard_handover {
+                i_iter_handover = i_iter;
+                if self.verbose {
+                    println!(
+                        "newton_krylov: handing over from Picard to Newton at iteration {i_iter}; grad_shafranov_deviation = {grad_shafranov_deviation_value:.3e}"
+                    );
+                }
+                break;
+            }
+
+            // Fit the constraints, and calculate the new current density from the fitted source functions
+            solver.fit_and_update_current(i_iter > self.n_iter_no_vertical_feedback);
         }
 
-        // Check if we have reached the maximum number of iterations
-        if i_iter == n_iter_max - 1 {
-            report(&settings, "reached the maximum number of iterations", i_iter, n_flux_evaluations);
-            solver.set_to_failed_time_slice(Error::MaxIterReached);
-            return;
-        }
+        // ==================================================================================
+        // 2. Newton iterations
+        // ==================================================================================
+        // `G` at the starting point. The Picard iterations calculated the flux there with their
+        // `delta_z` shift, so it is calculated again, without
+        let x_unscaled: Array1<f64> = get_state(solver);
+        let scale: Array1<f64> = scale_for_state(solver, &x_unscaled);
+        let mut x: Array1<f64> = &x_unscaled / &scale;
+        let magnetic_axis_picard: (f64, f64) = (
+            solver.time_slice.global_quantities.magnetic_axis.r,
+            solver.time_slice.global_quantities.magnetic_axis.z,
+        );
+        n_flux_evaluations += 1;
+        let update: PicardUpdate = match picard_update(solver, &x, &scale, magnetic_axis_picard) {
+            Ok(update) => update,
+            Err(error) => {
+                solver.set_to_failed_time_slice(error);
+                return;
+            }
+        };
+        let mut g_x: Array1<f64> = update.x_new;
+        let mut f_x: Array1<f64> = &g_x - &x;
+        let mut psi_a_x: f64 = update.psi_a;
+        let mut magnetic_axis_x: (f64, f64) = update.magnetic_axis;
 
-        // Hand over to Newton
-        if grad_shafranov_deviation_value < settings.picard_handover {
-            i_iter_handover = i_iter;
-            if settings.verbose {
+        for i_iter in i_iter_handover..self.n_iter_max {
+            // Convergence: the deviation that one more Picard iteration would see, which needs the flux
+            // calculated from `G(x)`. This leaves the time-slice exactly as Picard leaves it
+            set_state(solver, &(&g_x * &scale), magnetic_axis_x);
+            n_flux_evaluations += 1;
+            if let Err(error) = solver.update_psi_and_geometry() {
+                solver.set_to_failed_time_slice(error);
+                return;
+            }
+            let psi_a: f64 = solver.time_slice.global_quantities.psi_magnetic_axis;
+            let psi_b: f64 = solver.time_slice.boundary.psi;
+            let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_x);
+            solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
+
+            // Check for convergence
+            if grad_shafranov_deviation_value < self.grad_shafranov_deviation_tolerance && i_iter > self.n_iter_min {
+                self.report("converged", i_iter, n_flux_evaluations);
+                solver.set_to_converged_time_slice(i_iter);
+                return;
+            }
+
+            // Check if we have reached the maximum number of iterations
+            if i_iter == self.n_iter_max - 1 {
+                self.report("reached the maximum number of iterations", i_iter, n_flux_evaluations);
+                solver.set_to_failed_time_slice(Error::MaxIterReached);
+                return;
+            }
+
+            // The Newton step, from GMRES. `J v` is a finite difference of `G`:
+            //     J v = (G(x + h v) - G(x)) / h - v
+            // with the step `h` halved if `G` cannot be evaluated at the perturbed point, for example
+            // because the perturbation has removed the magnetic axis
+            let f_x_norm: f64 = norm(&f_x);
+            let finite_difference_step: f64 = (self.finite_difference_step * f_x_norm).max(FINITE_DIFFERENCE_STEP_MIN);
+            let jacobian_vector_product = |v: &Array1<f64>| -> Option<Array1<f64>> {
+                let mut step: f64 = finite_difference_step;
+                for _i_halving in 0..=N_FINITE_DIFFERENCE_HALVINGS_MAX {
+                    n_flux_evaluations += 1;
+                    if let Ok(update) = picard_update(solver, &(&x + &(step * v)), &scale, magnetic_axis_x) {
+                        return Some((&update.x_new - &g_x) / step - v);
+                    }
+                    step *= 0.5;
+                }
+                None
+            };
+            let (dx, n_krylov, krylov_relative_residual): (Array1<f64>, usize, f64) =
+                gmres(jacobian_vector_product, &f_x, self.n_krylov_max, self.krylov_tolerance);
+
+            // Halve the step until it reduces the residual
+            let mut step_length: f64 = 1.0;
+            let mut accepted: Option<(Array1<f64>, PicardUpdate)> = None;
+            if n_krylov > 0 {
+                for _i_halving in 0..=N_STEP_HALVINGS_MAX {
+                    let x_trial: Array1<f64> = &x + &(step_length * &dx);
+                    n_flux_evaluations += 1;
+                    if let Ok(update) = picard_update(solver, &x_trial, &scale, magnetic_axis_x) {
+                        let f_trial_norm: f64 = norm(&(&update.x_new - &x_trial));
+                        if f_trial_norm < f_x_norm {
+                            accepted = Some((x_trial, update));
+                            break;
+                        }
+                    }
+                    step_length *= 0.5;
+                }
+            }
+
+            // Otherwise a Picard step, `x -> G(x)`
+            let step_description: String;
+            let (x_new, update): (Array1<f64>, PicardUpdate) = match accepted {
+                Some(accepted) => {
+                    step_description = format!("Newton step x {step_length}");
+                    accepted
+                }
+                None => {
+                    step_description = "Picard step".to_string();
+                    n_flux_evaluations += 1;
+                    match picard_update(solver, &g_x, &scale, magnetic_axis_x) {
+                        Ok(update) => (g_x.clone(), update),
+                        Err(error) => {
+                            solver.set_to_failed_time_slice(error);
+                            return;
+                        }
+                    }
+                }
+            };
+
+            if self.verbose {
                 println!(
-                    "newton_krylov: handing over from Picard to Newton at iteration {i_iter}; grad_shafranov_deviation = {grad_shafranov_deviation_value:.3e}"
+                    "newton_krylov: iteration {i_iter}; grad_shafranov_deviation = {grad_shafranov_deviation_value:.3e}; |F| = {f_x_norm:.3e}; \
+                     {n_krylov} Krylov directions leave {krylov_relative_residual:.2e} of |F|; {step_description}; {n_flux_evaluations} flux evaluations"
                 );
             }
-            break;
-        }
 
-        // Fit the constraints, and calculate the new current density from the fitted source functions
-        solver.fit_and_update_current(i_iter > n_iter_no_vertical_feedback);
+            // Move to the new point
+            x = x_new;
+            g_x = update.x_new;
+            f_x = &g_x - &x;
+            psi_a_x = update.psi_a;
+            magnetic_axis_x = update.magnetic_axis;
+        }
     }
+}
 
-    // ==================================================================================
-    // 2. Newton iterations
-    // ==================================================================================
-    // `G` at the starting point. The Picard iterations calculated the flux there with their
-    // `delta_z` shift, so it is calculated again, without
-    let x_unscaled: Array1<f64> = get_state(solver);
-    let scale: Array1<f64> = scale_for_state(solver, &x_unscaled);
-    let mut x: Array1<f64> = &x_unscaled / &scale;
-    let magnetic_axis_picard: (f64, f64) = (
-        solver.time_slice.global_quantities.magnetic_axis.r,
-        solver.time_slice.global_quantities.magnetic_axis.z,
-    );
-    n_flux_evaluations += 1;
-    let update: PicardUpdate = match picard_update(solver, &x, &scale, magnetic_axis_picard) {
-        Ok(update) => update,
-        Err(error) => {
-            solver.set_to_failed_time_slice(error);
-            return;
+impl NewtonKrylov {
+    /// Print how the solve finished, when `verbose` is on
+    fn report(&self, outcome: &str, i_iter: usize, n_flux_evaluations: usize) {
+        if self.verbose {
+            println!("newton_krylov: {outcome} at iteration {i_iter}, after {n_flux_evaluations} flux evaluations");
         }
-    };
-    let mut g_x: Array1<f64> = update.x_new;
-    let mut f_x: Array1<f64> = &g_x - &x;
-    let mut psi_a_x: f64 = update.psi_a;
-    let mut magnetic_axis_x: (f64, f64) = update.magnetic_axis;
-
-    for i_iter in i_iter_handover..n_iter_max {
-        // Convergence: the deviation that one more Picard iteration would see, which needs the flux
-        // calculated from `G(x)`. This leaves the time-slice exactly as Picard leaves it
-        set_state(solver, &(&g_x * &scale), magnetic_axis_x);
-        n_flux_evaluations += 1;
-        if let Err(error) = solver.update_psi_and_geometry() {
-            solver.set_to_failed_time_slice(error);
-            return;
-        }
-        let psi_a: f64 = solver.time_slice.global_quantities.psi_magnetic_axis;
-        let psi_b: f64 = solver.time_slice.boundary.psi;
-        let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_x);
-        solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
-
-        // Check for convergence
-        if grad_shafranov_deviation_value < grad_shafranov_deviation_tolerance && i_iter > n_iter_min {
-            report(&settings, "converged", i_iter, n_flux_evaluations);
-            solver.set_to_converged_time_slice(i_iter);
-            return;
-        }
-
-        // Check if we have reached the maximum number of iterations
-        if i_iter == n_iter_max - 1 {
-            report(&settings, "reached the maximum number of iterations", i_iter, n_flux_evaluations);
-            solver.set_to_failed_time_slice(Error::MaxIterReached);
-            return;
-        }
-
-        // The Newton step, from GMRES. `J v` is a finite difference of `G`:
-        //     J v = (G(x + h v) - G(x)) / h - v
-        // with the step `h` halved if `G` cannot be evaluated at the perturbed point, for example
-        // because the perturbation has removed the magnetic axis
-        let f_x_norm: f64 = norm(&f_x);
-        let finite_difference_step: f64 = (settings.finite_difference_step * f_x_norm).max(FINITE_DIFFERENCE_STEP_MIN);
-        let jacobian_vector_product = |v: &Array1<f64>| -> Option<Array1<f64>> {
-            let mut step: f64 = finite_difference_step;
-            for _i_halving in 0..=N_FINITE_DIFFERENCE_HALVINGS_MAX {
-                n_flux_evaluations += 1;
-                if let Ok(update) = picard_update(solver, &(&x + &(step * v)), &scale, magnetic_axis_x) {
-                    return Some((&update.x_new - &g_x) / step - v);
-                }
-                step *= 0.5;
-            }
-            None
-        };
-        let (dx, n_krylov, krylov_relative_residual): (Array1<f64>, usize, f64) =
-            gmres(jacobian_vector_product, &f_x, settings.n_krylov_max, settings.krylov_tolerance);
-
-        // Halve the step until it reduces the residual
-        let mut step_length: f64 = 1.0;
-        let mut accepted: Option<(Array1<f64>, PicardUpdate)> = None;
-        if n_krylov > 0 {
-            for _i_halving in 0..=N_STEP_HALVINGS_MAX {
-                let x_trial: Array1<f64> = &x + &(step_length * &dx);
-                n_flux_evaluations += 1;
-                if let Ok(update) = picard_update(solver, &x_trial, &scale, magnetic_axis_x) {
-                    let f_trial_norm: f64 = norm(&(&update.x_new - &x_trial));
-                    if f_trial_norm < f_x_norm {
-                        accepted = Some((x_trial, update));
-                        break;
-                    }
-                }
-                step_length *= 0.5;
-            }
-        }
-
-        // Otherwise a Picard step, `x -> G(x)`
-        let step_description: String;
-        let (x_new, update): (Array1<f64>, PicardUpdate) = match accepted {
-            Some(accepted) => {
-                step_description = format!("Newton step x {step_length}");
-                accepted
-            }
-            None => {
-                step_description = "Picard step".to_string();
-                n_flux_evaluations += 1;
-                match picard_update(solver, &g_x, &scale, magnetic_axis_x) {
-                    Ok(update) => (g_x.clone(), update),
-                    Err(error) => {
-                        solver.set_to_failed_time_slice(error);
-                        return;
-                    }
-                }
-            }
-        };
-
-        if settings.verbose {
-            println!(
-                "newton_krylov: iteration {i_iter}; grad_shafranov_deviation = {grad_shafranov_deviation_value:.3e}; |F| = {f_x_norm:.3e}; \
-                 {n_krylov} Krylov directions leave {krylov_relative_residual:.2e} of |F|; {step_description}; {n_flux_evaluations} flux evaluations"
-            );
-        }
-
-        // Move to the new point
-        x = x_new;
-        g_x = update.x_new;
-        f_x = &g_x - &x;
-        psi_a_x = update.psi_a;
-        magnetic_axis_x = update.magnetic_axis;
     }
 }
 
@@ -439,8 +425,8 @@ fn get_state(solver: &EquilibriumSolver) -> Array1<f64> {
 /// Put the unscaled state `x` back into the time-slice, with no vertical shift, and with the
 /// magnetic axis search to start from `magnetic_axis_start`; the reverse of `get_state`
 fn set_state(solver: &mut EquilibriumSolver, x: &Array1<f64>, magnetic_axis_start: (f64, f64)) {
-    let n_r: usize = solver.equilibrium_code.parameters_parsed.grid.n_r as usize;
-    let n_z: usize = solver.equilibrium_code.parameters_parsed.grid.n_z as usize;
+    let n_r: usize = solver.settings_equilibrium.grid.n_r;
+    let n_z: usize = solver.settings_equilibrium.grid.n_z;
     let n_grid: usize = n_z * n_r;
     let n_passive_dof: usize = solver.passive_dof_values.len();
 
@@ -475,13 +461,6 @@ fn scale_for_state(solver: &EquilibriumSolver, x: &Array1<f64>) -> Array1<f64> {
 /// The Euclidean norm
 fn norm(v: &Array1<f64>) -> f64 {
     v.dot(v).sqrt()
-}
-
-/// Print how the solve finished, when `verbose` is on
-fn report(settings: &NewtonKrylovSettings, outcome: &str, i_iter: usize, n_flux_evaluations: usize) {
-    if settings.verbose {
-        println!("newton_krylov: {outcome} at iteration {i_iter}, after {n_flux_evaluations} flux evaluations");
-    }
 }
 
 #[cfg(test)]

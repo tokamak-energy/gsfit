@@ -8,9 +8,10 @@
     with `__` for `/`, and each `flux_loop` element has the type `FluxLoop`. Neither these names nor the
     Python classes generated from them then clash with those of the other constraints files.
 
-    constraints_flux_loop.xsd, constraints_rogowski_coil.xsd, constraints_diamagnetic_flux.xsd and
-    constraints_isoflux.xsd are the same apart from their names, documentation, units and number of
-    elements, and the diamagnetic flux having no `name`, so change them all together.
+    constraints_flux_loop.xsd, constraints_rogowski_coil.xsd, constraints_diamagnetic_flux.xsd,
+    constraints_isoflux.xsd, constraints_isoflux_boundary.xsd and constraints_stationary_point.xsd are the
+    same apart from their names, documentation, units and number of elements, and the diamagnetic flux
+    having no `name`, so change them all together.
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
@@ -62,11 +63,13 @@
     <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
         </xs:restriction>
     </xs:simpleType>
 

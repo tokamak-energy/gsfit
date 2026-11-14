@@ -24,11 +24,10 @@ def setup_equilibrium(
 
     **This method is specific to ST40's experimental MDSplus database, with a digital filter.**
 
-    The equilibrium is built from its settings alone:
-    1. `equilibrium/code/parameters`, the settings as XML: `equilibrium.xml`, with each file it links to written in its link's place
-    2. `equilibrium/code/parameters_parsed`, the same settings read into structs, e.g. `equilibrium/code/parameters_parsed/grid/n_r`,
-       which `Equilibrium` makes everything else from: the time-slices, the grid, the magnetic sensors' weights, the Greens tables between
-       the grid points, and the p' and ff' source functions
+    The equilibrium is built from its settings alone. They are recorded in `equilibrium/code/parameters`, as XML: `equilibrium.xml`, with each
+    file it links to written in its link's place. `Equilibrium` validates them against their XML schema, reads them into structs, and makes
+    everything else from them: the time-slices, the grid, the magnetic sensors' weights, the Greens tables between the grid points, and the
+    p' and ff' source functions
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
@@ -39,7 +38,7 @@ def setup_equilibrium(
         xsd_directory_path=XSD_DIRECTORY_PATH,
     )
 
-    # Initialise the Equilibrium Rust class, which reads the settings into `equilibrium/code/parameters_parsed`
+    # Initialise the Equilibrium Rust class, which validates the settings and reads them into structs
     equilibrium: Equilibrium = Equilibrium(parameters_input)
 
     return equilibrium

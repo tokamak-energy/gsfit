@@ -2,14 +2,15 @@
 
 use crate::equilibrium::Equilibrium;
 use crate::greens::Greens;
-use crate::magnetics::Magnetics;
+use crate::greens_storage::GreensRogowskiCoil;
+use crate::magnetics::{Magnetics, RogowskiCoilGap};
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
+use crate::settings::settings_equilibrium::SettingsEquilibriumRogowskiCoil;
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use imas_rs::ids::magnetics::{MagneticsRogowski, MagneticsRogowskiGaps, Rphiz0dStatic, SignalFlt1dValidity};
+use imas_rs::ids::magnetics::{MagneticsRogowski, Rphiz0dStatic, SignalFlt1dValidity};
 use imas_rs::ids::pf_active::PfCoils;
-use imas_rs::ids::pf_passive::PfPassiveLoops;
-use imas_rs::{EquilibriumConstraints0dIpLike, EquilibriumGreensRogowskiCoil};
+use imas_rs::{EquilibriumConstraints0d, EquilibriumConstraints0dIpLike};
 use ndarray::{Array1, Array2, Axis, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -38,7 +39,7 @@ impl Magnetics {
     /// * `gaps_z_start` - (optional) height of the start of each gap (1d array), [metre]
     /// * `gaps_z_end` - (optional) height of the end of each gap (1d array), [metre]
     ///
-    /// Each gap is the straight line from its start to its end; the documentation of `rogowski_coil(i1)/gaps(i2)/r_start` says
+    /// Each gap is the straight line from its start to its end; the documentation of `RogowskiCoilGap::r_start` says
     /// which way it runs. A coil with no gaps leaves the gap arguments out.
     #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (name, r, z, time, current, gaps_name=Vec::new(), gaps_r_start=None, gaps_r_end=None, gaps_z_start=None, gaps_z_end=None))]
@@ -201,7 +202,7 @@ impl Magnetics {
             ));
         }
 
-        let mut gaps: Vec<MagneticsRogowskiGaps> = Vec::with_capacity(n_gap);
+        let mut gaps: Vec<RogowskiCoilGap> = Vec::with_capacity(n_gap);
         for i_gap in 0..n_gap {
             let gap_name: &str = &gaps_name[i_gap];
             if gap_name.is_empty() {
@@ -234,7 +235,7 @@ impl Magnetics {
                 ));
             }
 
-            gaps.push(MagneticsRogowskiGaps {
+            gaps.push(RogowskiCoilGap {
                 name: gap_name.to_string(),
                 r_start: gap_r_start,
                 r_end: gap_r_end,
@@ -251,9 +252,9 @@ impl Magnetics {
                 time: current_time,
                 ..Default::default()
             },
-            gaps,
             ..Default::default()
         });
+        self.rogowski_coil_gaps.push(gaps);
 
         Ok(())
     }
@@ -269,17 +270,24 @@ impl Equilibrium {
     /// * `magnetics` - the magnetic sensors, holding the Rogowski coils in `magnetics/rogowski_coil`
     ///
     /// # Errors
-    /// A Rogowski coil in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, is not in the magnetics IDS, or a Rogowski coil's
+    /// A Rogowski coil in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, is not in the magnetics IDS, or a Rogowski coil's
     /// measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_rogowski_coil(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let rogowski_coils: &Vec<MagneticsRogowski> = &magnetics.magnetics_ids.rogowski_coil;
         let n_rogowski_coil: usize = rogowski_coils.len();
 
-        // Only the Rogowski coils in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, are copied, and each of them has to
+        // Only the Rogowski coils in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, are copied, and each of them has to
         // be in the magnetics IDS. Checked before anything is copied
-        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.rogowski_coil(..).name.to_vec();
-        let settings_weights: Array1<f64> = self.equilibrium_ids.code.parameters_parsed.constraints.rogowski_coil(..).weight.to_array();
-        let n_settings: usize = settings_names.len();
+        let settings_sensors: &Vec<SettingsEquilibriumRogowskiCoil> = &self.settings_equilibrium.constraints.rogowski_coil;
+        let n_settings: usize = settings_sensors.len();
+        let mut settings_names: Vec<String> = Vec::with_capacity(n_settings);
+        let mut settings_weights: Array1<f64> = Array1::from_elem(n_settings, f64::NAN);
+        let mut settings_expected_values: Array1<f64> = Array1::from_elem(n_settings, f64::NAN);
+        for i_settings in 0..n_settings {
+            settings_names.push(settings_sensors[i_settings].name.clone());
+            settings_weights[i_settings] = settings_sensors[i_settings].weight;
+            settings_expected_values[i_settings] = settings_sensors[i_settings].expected_value;
+        }
         for i_settings in 0..n_settings {
             let settings_name: &str = &settings_names[i_settings];
             if !rogowski_coils
@@ -287,7 +295,7 @@ impl Equilibrium {
                 .any(|magnetics_sensor: &MagneticsRogowski| magnetics_sensor.name == settings_name)
             {
                 return Err(format!(
-                    "`{settings_name}` is in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, but not in the magnetics IDS, `magnetics/rogowski_coil`"
+                    "`{settings_name}` is in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, but not in the magnetics IDS, `magnetics/rogowski_coil`"
                 ));
             }
         }
@@ -318,8 +326,8 @@ impl Equilibrium {
         }
 
         // Rebuilt from the Rogowski coils in the fit settings, in the order of the magnetics IDS, so that calling this twice replaces them
-        // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight`, found by
-        // its name
+        // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight` and
+        // `expected_value`, found by its name
         for i_time in 0..n_time {
             let mut settings_constraints: Vec<EquilibriumConstraints0dIpLike> =
                 std::mem::take(&mut self.equilibrium_ids.time_slice[i_time].constraints.rogowski_coil);
@@ -340,6 +348,7 @@ impl Equilibrium {
                     None => EquilibriumConstraints0dIpLike {
                         name: rogowski_coil_name.to_string(),
                         weight: settings_weights[i_settings],
+                        expected_value: settings_expected_values[i_settings],
                         ..Default::default()
                     },
                 };
@@ -357,8 +366,8 @@ impl Equilibrium {
 
 /// Rust only methods, calculating the Rogowski coils' Greens tables
 impl Equilibrium {
-    /// Calculate the Rogowski coils' Greens tables, `equilibrium/greens/rogowski_coil(i1)`, one for each coil in the fit settings,
-    /// `code/parameters_parsed/constraints/rogowski_coil`, in the order of `magnetics/rogowski_coil`. This does part of the work of the
+    /// Calculate the Rogowski coils' Greens tables, `greens_tables/rogowski_coil(i1)`, one for each coil in the fit settings,
+    /// `equilibrium_settings/constraints/rogowski_coil`, in the order of `magnetics/rogowski_coil`. This does part of the work of the
     /// Python method `greens_with_magnetics`; see it for what is stored, and for the checks on `pf_active`, `pf_passive` and the fit
     /// settings.
     ///
@@ -368,21 +377,24 @@ impl Equilibrium {
     ///
     /// # Arguments
     /// * `magnetics` - the magnetic sensors, holding the Rogowski coils in `magnetics/rogowski_coil`
-    /// * `pf_active` - the PF coils, in the order of `greens/grid/pf_active`
-    /// * `pf_passive` - the passive conductors, in the order of `greens/grid/pf_passive`
+    /// * `pf_active` - the PF coils, in the order of `greens_tables/grid/pf_active`
+    /// * `pf_passive` - the passive conductors, holding the filaments of those the equilibrium fits
     pub fn greens_with_magnetics_rogowski_coil(&mut self, magnetics: &Magnetics, pf_active: &PfActive, pf_passive: &PfPassive) {
         let rogowski_coils: &Vec<MagneticsRogowski> = &magnetics.magnetics_ids.rogowski_coil;
         let n_rogowski_coil: usize = rogowski_coils.len();
 
-        // Only the Rogowski coils in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, which `copy_from_magnetics_ids` copies,
+        // Only the Rogowski coils in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, which `copy_from_magnetics_ids` copies,
         // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
-        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.rogowski_coil(..).name.to_vec();
+        let mut settings_names: Vec<String> = Vec::new();
+        for settings_sensor in &self.settings_equilibrium.constraints.rogowski_coil {
+            settings_names.push(settings_sensor.name.clone());
+        }
 
         // The grid. `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)` because GSFit solves
         // on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives
         // the flattened grid
-        let n_r: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
+        let n_r: usize = self.settings_equilibrium.grid.n_r;
+        let n_z: usize = self.settings_equilibrium.grid.n_z;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let grid_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
@@ -399,14 +411,19 @@ impl Equilibrium {
             coil_filaments_z.push(pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array());
         }
 
-        // The passive conductors' filaments, which are the same for every Rogowski coil
-        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
-        let n_loop: usize = pf_passive_loops.len();
+        // The passive conductors the equilibrium fits, with their degrees of freedom, `constraints/pf_passive_current`, in the order of
+        // `greens_tables/grid/pf_passive`, and their filaments, which are the same for every Rogowski coil. `time_slice(0)` because the degrees of
+        // freedom are the same on every time-slice. `greens_with_magnetics` checked that each passive conductor is in `pf_passive`
+        let pf_passive_currents: &Vec<EquilibriumConstraints0d> = &self.equilibrium_ids.time_slice[0].constraints.pf_passive_current;
+        let n_loop: usize = pf_passive_currents.len();
         let mut loop_filaments: Vec<PassiveFilaments> = Vec::with_capacity(n_loop);
         let mut n_dof_total: usize = 0;
         for i_loop in 0..n_loop {
-            loop_filaments.push(passive_filaments(&pf_passive_loops[i_loop].element));
-            n_dof_total += pf_passive_loops[i_loop].dof.len();
+            let i_pf_passive_loop: usize = pf_passive
+                .i_loop_named(&pf_passive_currents[i_loop].name)
+                .expect("`greens_with_magnetics` checked that each passive conductor the equilibrium fits is in `pf_passive`");
+            loop_filaments.push(passive_filaments(&pf_passive.pf_passive_ids.r#loop[i_pf_passive_loop].element));
+            n_dof_total += pf_passive_currents[i_loop].dof.len();
         }
 
         // The trapezium rule's weight for each point along a gap: half at the gap's two ends
@@ -414,7 +431,7 @@ impl Equilibrium {
         gap_point_weights[0] = 0.5;
         gap_point_weights[N_GAP_POINTS - 1] = 0.5;
 
-        let mut greens_rogowski_coils: Vec<EquilibriumGreensRogowskiCoil> = Vec::with_capacity(n_rogowski_coil);
+        let mut greens_rogowski_coils: Vec<GreensRogowskiCoil> = Vec::with_capacity(n_rogowski_coil);
         for i_rogowski_coil in 0..n_rogowski_coil {
             if !settings_names
                 .iter()
@@ -438,7 +455,7 @@ impl Equilibrium {
             );
 
             // The points along each gap, from its start to its end, and the step between them
-            let gaps: &Vec<MagneticsRogowskiGaps> = &rogowski_coils[i_rogowski_coil].gaps;
+            let gaps: &Vec<RogowskiCoilGap> = &magnetics.rogowski_coil_gaps[i_rogowski_coil];
             let n_gap: usize = gaps.len();
             let mut gaps_r: Vec<Array1<f64>> = Vec::with_capacity(n_gap);
             let mut gaps_z: Vec<Array1<f64>> = Vec::with_capacity(n_gap);
@@ -548,9 +565,9 @@ impl Equilibrium {
                     gaps_g_bz_filaments.push(greens_calculator.b_z()); // shape = [N_GAP_POINTS, n_filament]
                 }
 
-                let n_dof: usize = pf_passive_loops[i_loop].dof.len();
+                let n_dof: usize = pf_passive_currents[i_loop].dof.len();
                 for i_dof in 0..n_dof {
-                    let current_distribution: &Array1<f64> = &pf_passive_loops[i_loop].dof[i_dof].current_distribution;
+                    let current_distribution: &Array1<f64> = &pf_passive_currents[i_loop].dof[i_dof].current_distribution;
                     let g_inside: f64 = (&filaments_inside * current_distribution).sum();
 
                     let mut g_gaps: f64 = 0.0;
@@ -568,7 +585,7 @@ impl Equilibrium {
                 }
             }
 
-            greens_rogowski_coils.push(EquilibriumGreensRogowskiCoil {
+            greens_rogowski_coils.push(GreensRogowskiCoil {
                 name: rogowski_coils[i_rogowski_coil].name.clone(),
                 plasma: g_plasma
                     .into_shape_with_order((n_z, n_r))
@@ -582,6 +599,6 @@ impl Equilibrium {
         }
 
         // Assigned rather than appended, so that calling this twice replaces the Rogowski coils' tables instead of repeating them
-        self.equilibrium_ids.greens.rogowski_coil = greens_rogowski_coils;
+        self.greens_tables.rogowski_coil = greens_rogowski_coils;
     }
 }

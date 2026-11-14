@@ -54,6 +54,7 @@
 
 use crate::grad_shafranov::Error;
 use crate::grad_shafranov::equilibrium_solve::EquilibriumSolver;
+use crate::grad_shafranov::nonlinear_solvers::NonlinearSolverTraits;
 use faer::linalg::solvers::Solve;
 use ndarray::{Array1, Array2, s};
 
@@ -85,12 +86,21 @@ struct PicardUpdate {
     magnetic_axis: (f64, f64),
 }
 
-/// The settings of the Newton-Picard iterations, from `code/parameters_parsed/numerics/nonlinear_solver/newton_picard`
-struct NewtonPicardSettings {
-    n_basis_max: usize,
-    contraction_threshold: f64,
-    finite_difference_step: f64,
-    verbose: bool,
+/// Newton-Picard iterations, the recursive projection method; see the module documentation.
+///
+/// The settings are those of the same name in `equilibrium_settings/numerics` and
+/// `equilibrium_settings/numerics/nonlinear_solver/newton_picard`, which their XML schema has checked.
+pub struct NewtonPicard {
+    pub n_iter_max: usize,
+    pub n_iter_min: usize,
+    /// [dimensionless]
+    pub grad_shafranov_deviation_tolerance: f64,
+    pub n_basis_max: usize,
+    /// [dimensionless]
+    pub contraction_threshold: f64,
+    /// [dimensionless]
+    pub finite_difference_step: f64,
+    pub verbose: bool,
 }
 
 /// The subspace `P` of slow or unstable directions, where Newton's method is used
@@ -143,223 +153,210 @@ impl Subspace {
     }
 }
 
-/// Solve with Newton-Picard iterations; see the module documentation.
-pub(crate) fn solve(solver: &mut EquilibriumSolver) {
-    // Solver settings, supplied through `equilibrium.code`
-    let n_iter_max: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_max as usize;
-    let n_iter_min: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_min as usize;
-    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.parameters_parsed.numerics.grad_shafranov_deviation_tolerance;
-    let settings: NewtonPicardSettings = NewtonPicardSettings {
-        n_basis_max: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_picard.n_basis_max as usize,
-        contraction_threshold: solver
-            .equilibrium_code
-            .parameters_parsed
-            .numerics
-            .nonlinear_solver
-            .newton_picard
-            .contraction_threshold,
-        finite_difference_step: solver
-            .equilibrium_code
-            .parameters_parsed
-            .numerics
-            .nonlinear_solver
-            .newton_picard
-            .finite_difference_step,
-        verbose: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_picard.verbose != 0,
-    };
-
-    // The passive currents and the initial current density
-    if let Err(error) = solver.initialise() {
-        solver.set_to_failed_time_slice(error);
-        return;
-    }
-
-    // The number of times the flux has been calculated, which is where nearly all the time goes.
-    // A Picard iteration calculates it once
-    let mut n_flux_evaluations: usize = 0;
-
-    // The state, scaled, and `G` at it. The first magnetic axis search starts from the centre of
-    // the initial guess, which `initialise` has put in the IDS
-    let x_unscaled: Array1<f64> = get_state(solver);
-    let scale: Array1<f64> = scale_for_state(solver, &x_unscaled);
-    let mut x: Array1<f64> = &x_unscaled / &scale;
-    let magnetic_axis_initial_guess: (f64, f64) = (
-        solver.time_slice.global_quantities.magnetic_axis.r,
-        solver.time_slice.global_quantities.magnetic_axis.z,
-    );
-    n_flux_evaluations += 1;
-    let update: PicardUpdate = match picard_update(solver, &x, &scale, magnetic_axis_initial_guess) {
-        Ok(update) => update,
-        Err(error) => {
+impl NonlinearSolverTraits for NewtonPicard {
+    fn solve(&self, solver: &mut EquilibriumSolver) {
+        // The passive currents and the initial current density
+        if let Err(error) = solver.initialise() {
             solver.set_to_failed_time_slice(error);
             return;
         }
-    };
-    let mut g_x: Array1<f64> = update.x_new;
-    let mut psi_a_x: f64 = update.psi_a;
-    let mut psi_b_x: f64 = update.psi_b;
-    let mut magnetic_axis_x: (f64, f64) = update.magnetic_axis;
 
-    let mut subspace: Subspace = Subspace::new();
-    let mut f_complement_norm_previous: Option<f64> = None; // needed to test how fast the Picard iteration in `Q` converges
-    let mut f_subspace_norm_previous: Option<f64> = None; // needed to test whether `H` is out of date
-    let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
+        // The number of times the flux has been calculated, which is where nearly all the time goes.
+        // A Picard iteration calculates it once
+        let mut n_flux_evaluations: usize = 0;
 
-    for i_iter in 0..n_iter_max {
-        let f_x: Array1<f64> = &g_x - &x;
-
-        // Calculate the Grad-Shafranov deviation
-        let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a_x, psi_b_x, psi_a_previous);
-        solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
-        psi_a_previous = psi_a_x;
-
-        // Check for convergence. The time-slice is left as Picard leaves it: the current density
-        // from the last fit, `G(x)`, and the flux calculated from it
-        if grad_shafranov_deviation_value < grad_shafranov_deviation_tolerance && i_iter > n_iter_min {
-            set_state(solver, &(&g_x * &scale), magnetic_axis_x);
-            n_flux_evaluations += 1;
-            if let Err(error) = solver.update_psi_and_geometry() {
+        // The state, scaled, and `G` at it. The first magnetic axis search starts from the centre of
+        // the initial guess, which `initialise` has put in the IDS
+        let x_unscaled: Array1<f64> = get_state(solver);
+        let scale: Array1<f64> = scale_for_state(solver, &x_unscaled);
+        let mut x: Array1<f64> = &x_unscaled / &scale;
+        let magnetic_axis_initial_guess: (f64, f64) = (
+            solver.time_slice.global_quantities.magnetic_axis.r,
+            solver.time_slice.global_quantities.magnetic_axis.z,
+        );
+        n_flux_evaluations += 1;
+        let update: PicardUpdate = match picard_update(solver, &x, &scale, magnetic_axis_initial_guess) {
+            Ok(update) => update,
+            Err(error) => {
                 solver.set_to_failed_time_slice(error);
                 return;
             }
-            report(&settings, "converged", i_iter, n_flux_evaluations);
-            solver.set_to_converged_time_slice(i_iter);
-            return;
-        }
+        };
+        let mut g_x: Array1<f64> = update.x_new;
+        let mut psi_a_x: f64 = update.psi_a;
+        let mut psi_b_x: f64 = update.psi_b;
+        let mut magnetic_axis_x: (f64, f64) = update.magnetic_axis;
 
-        // Check if we have reached the maximum number of iterations
-        if i_iter == n_iter_max - 1 {
-            report(&settings, "reached the maximum number of iterations", i_iter, n_flux_evaluations);
-            solver.set_to_failed_time_slice(Error::MaxIterReached);
-            return;
-        }
+        let mut subspace: Subspace = Subspace::new();
+        let mut f_complement_norm_previous: Option<f64> = None; // needed to test how fast the Picard iteration in `Q` converges
+        let mut f_subspace_norm_previous: Option<f64> = None; // needed to test whether `H` is out of date
+        let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
 
-        // The finite-difference step for `M z`, which shrinks as the solution is approached
-        let finite_difference_step: f64 = (settings.finite_difference_step * norm(&f_x)).max(FINITE_DIFFERENCE_STEP_MIN);
+        for i_iter in 0..self.n_iter_max {
+            let f_x: Array1<f64> = &g_x - &x;
 
-        // Split `F` into its coordinates in the basis, and its part in `Q`
-        let (mut f_subspace, mut f_complement): (Array1<f64>, Array1<f64>) = subspace.project(&f_x);
-        let f_complement_norm: f64 = norm(&f_complement);
+            // Calculate the Grad-Shafranov deviation
+            let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a_x, psi_b_x, psi_a_previous);
+            solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
+            psi_a_previous = psi_a_x;
 
-        // Grow the basis, when Picard is converging too slowly in `Q`: the part of `F` in `Q` is
-        // compared with the previous iteration's, before that iteration grew the basis. A direction
-        // added then has left `Q`, so if it was the slow one, the part in `Q` now shrinks quickly
-        let mut complement_contraction: f64 = f64::NAN;
-        let mut basis_grown: bool = false;
-        if let Some(f_complement_norm_previous) = f_complement_norm_previous {
-            complement_contraction = f_complement_norm / f_complement_norm_previous;
-            if complement_contraction > settings.contraction_threshold
-                && subspace.dimension() < settings.n_basis_max
-                && let Some(direction) = subspace.orthonormalise(&f_complement)
-                && let Some(image) = jacobian_vector_product(
-                    solver,
-                    &x,
-                    &g_x,
-                    &direction,
-                    &scale,
-                    magnetic_axis_x,
-                    finite_difference_step,
-                    &mut n_flux_evaluations,
-                )
+            // Check for convergence. The time-slice is left as Picard leaves it: the current density
+            // from the last fit, `G(x)`, and the flux calculated from it
+            if grad_shafranov_deviation_value < self.grad_shafranov_deviation_tolerance && i_iter > self.n_iter_min {
+                set_state(solver, &(&g_x * &scale), magnetic_axis_x);
+                n_flux_evaluations += 1;
+                if let Err(error) = solver.update_psi_and_geometry() {
+                    solver.set_to_failed_time_slice(error);
+                    return;
+                }
+                self.report("converged", i_iter, n_flux_evaluations);
+                solver.set_to_converged_time_slice(i_iter);
+                return;
+            }
+
+            // Check if we have reached the maximum number of iterations
+            if i_iter == self.n_iter_max - 1 {
+                self.report("reached the maximum number of iterations", i_iter, n_flux_evaluations);
+                solver.set_to_failed_time_slice(Error::MaxIterReached);
+                return;
+            }
+
+            // The finite-difference step for `M z`, which shrinks as the solution is approached
+            let finite_difference_step: f64 = (self.finite_difference_step * norm(&f_x)).max(FINITE_DIFFERENCE_STEP_MIN);
+
+            // Split `F` into its coordinates in the basis, and its part in `Q`
+            let (mut f_subspace, mut f_complement): (Array1<f64>, Array1<f64>) = subspace.project(&f_x);
+            let f_complement_norm: f64 = norm(&f_complement);
+
+            // Grow the basis, when Picard is converging too slowly in `Q`: the part of `F` in `Q` is
+            // compared with the previous iteration's, before that iteration grew the basis. A direction
+            // added then has left `Q`, so if it was the slow one, the part in `Q` now shrinks quickly
+            let mut complement_contraction: f64 = f64::NAN;
+            let mut basis_grown: bool = false;
+            if let Some(f_complement_norm_previous) = f_complement_norm_previous {
+                complement_contraction = f_complement_norm / f_complement_norm_previous;
+                if complement_contraction > self.contraction_threshold
+                    && subspace.dimension() < self.n_basis_max
+                    && let Some(direction) = subspace.orthonormalise(&f_complement)
+                    && let Some(image) = jacobian_vector_product(
+                        solver,
+                        &x,
+                        &g_x,
+                        &direction,
+                        &scale,
+                        magnetic_axis_x,
+                        finite_difference_step,
+                        &mut n_flux_evaluations,
+                    )
+                {
+                    subspace.basis.push(direction);
+                    subspace.basis_images.push(image);
+                    basis_grown = true;
+                    (f_subspace, f_complement) = subspace.project(&f_x);
+                }
+            }
+
+            // Recalculate `M z` for the whole basis when the Newton iteration in `P` has stopped
+            // converging, the sign that `H` is out of date. A basis vector whose `M z` cannot be
+            // evaluated is dropped
+            let mut basis_images_recalculated: bool = false;
+            if !basis_grown
+                && subspace.dimension() > 0
+                && let Some(f_subspace_norm_previous) = f_subspace_norm_previous
+                && norm(&f_subspace) > f_subspace_norm_previous
             {
-                subspace.basis.push(direction);
-                subspace.basis_images.push(image);
-                basis_grown = true;
+                let mut subspace_recalculated: Subspace = Subspace::new();
+                for direction in subspace.basis {
+                    if let Some(image) = jacobian_vector_product(
+                        solver,
+                        &x,
+                        &g_x,
+                        &direction,
+                        &scale,
+                        magnetic_axis_x,
+                        finite_difference_step,
+                        &mut n_flux_evaluations,
+                    ) {
+                        subspace_recalculated.basis.push(direction);
+                        subspace_recalculated.basis_images.push(image);
+                    }
+                }
+                subspace = subspace_recalculated;
+                basis_images_recalculated = true;
                 (f_subspace, f_complement) = subspace.project(&f_x);
             }
-        }
+            let f_subspace_norm: f64 = norm(&f_subspace);
 
-        // Recalculate `M z` for the whole basis when the Newton iteration in `P` has stopped
-        // converging, the sign that `H` is out of date. A basis vector whose `M z` cannot be
-        // evaluated is dropped
-        let mut basis_images_recalculated: bool = false;
-        if !basis_grown
-            && subspace.dimension() > 0
-            && let Some(f_subspace_norm_previous) = f_subspace_norm_previous
-            && norm(&f_subspace) > f_subspace_norm_previous
-        {
-            let mut subspace_recalculated: Subspace = Subspace::new();
-            for direction in subspace.basis {
-                if let Some(image) = jacobian_vector_product(
-                    solver,
-                    &x,
-                    &g_x,
-                    &direction,
-                    &scale,
-                    magnetic_axis_x,
-                    finite_difference_step,
-                    &mut n_flux_evaluations,
-                ) {
-                    subspace_recalculated.basis.push(direction);
-                    subspace_recalculated.basis_images.push(image);
-                }
+            // The step: Newton in `P`, Picard in `Q`
+            let reduced_jacobian: Array2<f64> = subspace.reduced_jacobian();
+            let d_z: Array1<f64> = newton_step_in_subspace(&reduced_jacobian, &f_subspace);
+            let mut d_x: Array1<f64> = f_complement;
+            for i_basis in 0..subspace.dimension() {
+                d_x.scaled_add(d_z[i_basis], &subspace.basis[i_basis]);
             }
-            subspace = subspace_recalculated;
-            basis_images_recalculated = true;
-            (f_subspace, f_complement) = subspace.project(&f_x);
-        }
-        let f_subspace_norm: f64 = norm(&f_subspace);
 
-        // The step: Newton in `P`, Picard in `Q`
-        let reduced_jacobian: Array2<f64> = subspace.reduced_jacobian();
-        let d_z: Array1<f64> = newton_step_in_subspace(&reduced_jacobian, &f_subspace);
-        let mut d_x: Array1<f64> = f_complement;
-        for i_basis in 0..subspace.dimension() {
-            d_x.scaled_add(d_z[i_basis], &subspace.basis[i_basis]);
-        }
-
-        // Take the step, halving it until `G` can be evaluated at the new point
-        let mut step_length: f64 = 1.0;
-        let mut accepted: Option<(Array1<f64>, PicardUpdate)> = None;
-        let mut step_error: Option<Error> = None;
-        for _i_halving in 0..=N_STEP_HALVINGS_MAX {
-            let x_trial: Array1<f64> = &x + &(step_length * &d_x);
-            n_flux_evaluations += 1;
-            match picard_update(solver, &x_trial, &scale, magnetic_axis_x) {
-                Ok(update) => {
-                    accepted = Some((x_trial, update));
-                    break;
+            // Take the step, halving it until `G` can be evaluated at the new point
+            let mut step_length: f64 = 1.0;
+            let mut accepted: Option<(Array1<f64>, PicardUpdate)> = None;
+            let mut step_error: Option<Error> = None;
+            for _i_halving in 0..=N_STEP_HALVINGS_MAX {
+                let x_trial: Array1<f64> = &x + &(step_length * &d_x);
+                n_flux_evaluations += 1;
+                match picard_update(solver, &x_trial, &scale, magnetic_axis_x) {
+                    Ok(update) => {
+                        accepted = Some((x_trial, update));
+                        break;
+                    }
+                    Err(error) => step_error = Some(error),
                 }
-                Err(error) => step_error = Some(error),
+                step_length *= 0.5;
             }
-            step_length *= 0.5;
-        }
-        let Some((x_new, update)) = accepted else {
-            report(&settings, "could not take a step", i_iter, n_flux_evaluations);
-            solver.set_to_failed_time_slice(step_error.unwrap()); // the loop runs at least once, so there is an error
-            return;
-        };
-
-        if settings.verbose {
-            let basis_description: &str = if basis_grown {
-                " (grown)"
-            } else if basis_images_recalculated {
-                " (M Z recalculated)"
-            } else {
-                ""
+            let Some((x_new, update)) = accepted else {
+                self.report("could not take a step", i_iter, n_flux_evaluations);
+                solver.set_to_failed_time_slice(step_error.unwrap()); // the loop runs at least once, so there is an error
+                return;
             };
-            let eigenvalue_moduli: Vec<String> = eigenvalue_moduli(&reduced_jacobian)
-                .iter()
-                .map(|modulus: &f64| format!("{modulus:.3}"))
-                .collect();
-            println!(
-                "newton_picard: iteration {i_iter}; grad_shafranov_deviation = {grad_shafranov_deviation_value:.3e}; |F| = {:.3e}; \
-                 Q contraction = {complement_contraction:.3}; basis of {}{basis_description}, |eigenvalues of H| = [{}]; \
-                 step x {step_length}; {n_flux_evaluations} flux evaluations",
-                norm(&f_x),
-                subspace.dimension(),
-                eigenvalue_moduli.join(", "),
-            );
-        }
 
-        // Move to the new point
-        x = x_new;
-        g_x = update.x_new;
-        psi_a_x = update.psi_a;
-        psi_b_x = update.psi_b;
-        magnetic_axis_x = update.magnetic_axis;
-        f_complement_norm_previous = Some(f_complement_norm);
-        f_subspace_norm_previous = Some(f_subspace_norm);
+            if self.verbose {
+                let basis_description: &str = if basis_grown {
+                    " (grown)"
+                } else if basis_images_recalculated {
+                    " (M Z recalculated)"
+                } else {
+                    ""
+                };
+                let eigenvalue_moduli: Vec<String> = eigenvalue_moduli(&reduced_jacobian)
+                    .iter()
+                    .map(|modulus: &f64| format!("{modulus:.3}"))
+                    .collect();
+                println!(
+                    "newton_picard: iteration {i_iter}; grad_shafranov_deviation = {grad_shafranov_deviation_value:.3e}; |F| = {:.3e}; \
+                     Q contraction = {complement_contraction:.3}; basis of {}{basis_description}, |eigenvalues of H| = [{}]; \
+                     step x {step_length}; {n_flux_evaluations} flux evaluations",
+                    norm(&f_x),
+                    subspace.dimension(),
+                    eigenvalue_moduli.join(", "),
+                );
+            }
+
+            // Move to the new point
+            x = x_new;
+            g_x = update.x_new;
+            psi_a_x = update.psi_a;
+            psi_b_x = update.psi_b;
+            magnetic_axis_x = update.magnetic_axis;
+            f_complement_norm_previous = Some(f_complement_norm);
+            f_subspace_norm_previous = Some(f_subspace_norm);
+        }
+    }
+}
+
+impl NewtonPicard {
+    /// Print how the solve finished, when `verbose` is on
+    fn report(&self, outcome: &str, i_iter: usize, n_flux_evaluations: usize) {
+        if self.verbose {
+            println!("newton_picard: {outcome} at iteration {i_iter}, after {n_flux_evaluations} flux evaluations");
+        }
     }
 }
 
@@ -474,8 +471,8 @@ fn get_state(solver: &EquilibriumSolver) -> Array1<f64> {
 /// Put the unscaled state `x` back into the time-slice, with no vertical shift, and with the
 /// magnetic axis search to start from `magnetic_axis_start`; the reverse of `get_state`
 fn set_state(solver: &mut EquilibriumSolver, x: &Array1<f64>, magnetic_axis_start: (f64, f64)) {
-    let n_r: usize = solver.equilibrium_code.parameters_parsed.grid.n_r as usize;
-    let n_z: usize = solver.equilibrium_code.parameters_parsed.grid.n_z as usize;
+    let n_r: usize = solver.settings_equilibrium.grid.n_r;
+    let n_z: usize = solver.settings_equilibrium.grid.n_z;
     let n_grid: usize = n_z * n_r;
     let n_passive_dof: usize = solver.passive_dof_values.len();
 
@@ -510,13 +507,6 @@ fn scale_for_state(solver: &EquilibriumSolver, x: &Array1<f64>) -> Array1<f64> {
 /// The Euclidean norm
 fn norm(v: &Array1<f64>) -> f64 {
     v.dot(v).sqrt()
-}
-
-/// Print how the solve finished, when `verbose` is on
-fn report(settings: &NewtonPicardSettings, outcome: &str, i_iter: usize, n_flux_evaluations: usize) {
-    if settings.verbose {
-        println!("newton_picard: {outcome} at iteration {i_iter}, after {n_flux_evaluations} flux evaluations");
-    }
 }
 
 #[cfg(test)]

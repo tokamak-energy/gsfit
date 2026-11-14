@@ -27,95 +27,6 @@ fn lengths_code_library(equilibrium: &Equilibrium, level: usize, _at: &[usize]) 
     }
 }
 
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_b_field_pol_probe`.
-fn lengths_code_parameters_parsed_constraints_b_field_pol_probe(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.b_field_pol_probe.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_flux_loop`.
-fn lengths_code_parameters_parsed_constraints_flux_loop(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.flux_loop.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_isoflux`.
-fn lengths_code_parameters_parsed_constraints_isoflux(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.isoflux.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `code_parameters_parsed_constraints_rogowski_coil`.
-fn lengths_code_parameters_parsed_constraints_rogowski_coil(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.code.parameters_parsed.constraints.rogowski_coil.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `code_parameters_parsed_pf_passive_dof_passive`.
-fn lengths_code_parameters_parsed_pf_passive_dof_passive(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.code.parameters_parsed.pf_passive_dof.passive.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `greens_b_field_pol_probe`.
-fn lengths_greens_b_field_pol_probe(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.greens.b_field_pol_probe.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `greens_flux_loop`.
-fn lengths_greens_flux_loop(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.greens.flux_loop.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `greens_grid_pf_active`.
-fn lengths_greens_grid_pf_active(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.greens.grid.pf_active.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `greens_grid_pf_passive`.
-fn lengths_greens_grid_pf_passive(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.greens.grid.pf_passive.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `greens_grid_pf_passive_dof`.
-fn lengths_greens_grid_pf_passive_dof(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.greens.grid.pf_passive.len()),
-        1 => return Some(equilibrium.greens.grid.pf_passive[at[0]].dof.len()),
-        _ => return None,
-    }
-}
-
-/// Length of each array-of-structures level along `greens_rogowski_coil`.
-fn lengths_greens_rogowski_coil(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(equilibrium.greens.rogowski_coil.len()),
-        _ => return None,
-    }
-}
-
 /// Length of each array-of-structures level along `grids_ggd`.
 fn lengths_grids_ggd(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
@@ -339,6 +250,24 @@ fn lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof(equilibr
     }
 }
 
+/// Length of each array-of-structures level along `time_slice_constraints_isoflux`.
+fn lengths_time_slice_constraints_isoflux(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(equilibrium.time_slice.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.isoflux.len()),
+        _ => return None,
+    }
+}
+
+/// Length of each array-of-structures level along `time_slice_constraints_isoflux_boundary`.
+fn lengths_time_slice_constraints_isoflux_boundary(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(equilibrium.time_slice.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.isoflux_boundary.len()),
+        _ => return None,
+    }
+}
+
 /// Length of each array-of-structures level along `time_slice_constraints_j_parallel`.
 fn lengths_time_slice_constraints_j_parallel(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
@@ -464,6 +393,15 @@ fn lengths_time_slice_constraints_rogowski_coil(equilibrium: &Equilibrium, level
     match level {
         0 => return Some(equilibrium.time_slice.len()),
         1 => return Some(equilibrium.time_slice[at[0]].constraints.rogowski_coil.len()),
+        _ => return None,
+    }
+}
+
+/// Length of each array-of-structures level along `time_slice_constraints_stationary_point`.
+fn lengths_time_slice_constraints_stationary_point(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(equilibrium.time_slice.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.stationary_point.len()),
         _ => return None,
     }
 }
@@ -2148,8 +2086,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
     },
     Node {
         name: "bounding",
-        documentation: "Point which defines the plasma boundary: the limiter point when the plasma is limited, or
-the X-point when it is diverted",
+        documentation: "Point which defines the plasma boundary: the limiter point when the plasma is limited, or the X-point when it is diverted",
         units: "",
         kind: NodeKind::Structure(NODES_TIME_SLICE_BOUNDARY_BOUNDING),
     },
@@ -2367,24 +2304,70 @@ static NODES_TIME_SLICE_CONTOUR_TREE: &[Node] = &[
     },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                2,
-                lengths_time_slice_constraints_b_field_tor_vacuum_r_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof[at[1]].name.clone() },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_b_field_tor_vacuum_r_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof[at[1]].name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_b_field_tor_vacuum_r_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof[at[1]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_b_field_tor_vacuum_r_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof[at[1]].time_constant.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
     Node {
@@ -2537,8 +2520,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -2555,16 +2537,34 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -2584,9 +2584,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -2774,6 +2773,26 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
             },
         }),
     },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, `equilibrium_settings/constraints/b_field_pol_probe/b_field_pol_probe(i1)/expected_value`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_b_field_pol_probe,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
 ];
 
 static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
@@ -2921,26 +2940,90 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
             },
         }),
     },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, `equilibrium_settings/constraints/diamagnetic_flux/diamagnetic_flux/expected_value`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.expected_value.clone() },
+                )
+            },
+        }),
+    },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                3,
-                lengths_time_slice_constraints_faraday_angle_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof[at[2]].name.clone() },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_faraday_angle_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof[at[2]].name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_faraday_angle_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof[at[2]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_faraday_angle_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof[at[2]].time_constant.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
     Node {
@@ -3093,8 +3176,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -3111,16 +3193,34 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_faraday_angle,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -3140,9 +3240,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -3161,26 +3260,72 @@ Shape = `(n_regularisations, n_dof)`",
     },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                3,
-                lengths_time_slice_constraints_mse_polarization_angle_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                    equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof[at[2]].name.clone()
-                },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_mse_polarization_angle_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof[at[2]].name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_mse_polarization_angle_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof[at[2]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_mse_polarization_angle_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof[at[2]]
+                            .time_constant
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
     Node {
@@ -3345,8 +3490,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -3365,16 +3509,34 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_mse_polarization_angle,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -3394,9 +3556,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -3417,24 +3578,68 @@ Shape = `(n_regularisations, n_dof)`",
     },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                3,
-                lengths_time_slice_constraints_flux_loop_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof[at[2]].name.clone() },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_flux_loop_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof[at[2]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_flux_loop_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof[at[2]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_flux_loop_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof[at[2]].time_constant.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
     Node {
@@ -3583,8 +3788,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -3601,16 +3805,32 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_flux_loop,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -3628,9 +3848,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -3796,9 +4015,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
-`constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
-`magnetics/ip(0)/method_name` for `constraints/ip`",
+        documentation: "Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and `magnetics/ip(0)/method_name` for `constraints/ip`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -3814,30 +4031,94 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
             },
         }),
     },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/rogowski_coil/rogowski_coil(i1)/expected_value` for `constraints/rogowski_coil(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.expected_value.clone() },
+                )
+            },
+        }),
+    },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                3,
-                lengths_time_slice_constraints_iron_core_segment_magnetization_r_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                    equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof[at[2]]
-                        .name
-                        .clone()
-                },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_iron_core_segment_magnetization_r_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof[at[2]]
+                            .name
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_iron_core_segment_magnetization_r_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof[at[2]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_iron_core_segment_magnetization_r_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof[at[2]]
+                            .time_constant
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] = &[
     Node {
@@ -4020,8 +4301,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -4040,16 +4320,37 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_iron_core_segment,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
+                            .magnetization_r
+                            .expected_value
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -4072,9 +4373,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -4096,28 +4396,74 @@ Shape = `(n_regularisations, n_dof)`",
     },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                3,
-                lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                    equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof[at[2]]
-                        .name
-                        .clone()
-                },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof[at[2]]
+                            .name
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof[at[2]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof[at[2]]
+                            .time_constant
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] = &[
     Node {
@@ -4300,8 +4646,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -4320,16 +4665,37 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_iron_core_segment,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
+                            .magnetization_z
+                            .expected_value
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -4352,9 +4718,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -4635,26 +5000,106 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
             },
         }),
     },
+    Node {
+        name: "name",
+        documentation: "Name of the constraint, e.g. `\"PRESSURE05\"` for `constraints/pressure(i1)`: the prefix\n`equilibrium_settings/constraints/pressure/pressure/sensor_name_prefix` followed by the two-digit number of the point it\nwas measured at, from 1, in the order of the points of the source IDS, e.g. `core_profiles/profiles_2d(itime)/grid/dim1`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_n_e,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/pressure/pressure/expected_value` for `constraints/pressure(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_n_e,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                3,
-                lengths_time_slice_constraints_n_e_line_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof[at[2]].name.clone() },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_n_e_line_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof[at[2]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_n_e_line_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof[at[2]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_n_e_line_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof[at[2]].time_constant.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
     Node {
@@ -4803,8 +5248,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -4821,16 +5265,32 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_n_e_line,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -4848,9 +5308,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -5018,9 +5477,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
-`constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
-`magnetics/ip(0)/method_name` for `constraints/ip`",
+        documentation: "Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and `magnetics/ip(0)/method_name` for `constraints/ip`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -5036,28 +5493,92 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
             },
         }),
     },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/rogowski_coil/rogowski_coil(i1)/expected_value` for `constraints/rogowski_coil(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pf_current,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
 ];
 
-static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF: &[Node] = &[Node {
-    name: "name",
-    documentation: "Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-    units: "",
-    kind: NodeKind::Leaf(Leaf {
-        data_type: "STR_0D",
-        read: |ids: &dyn Any, indices: &[IndexSpec]| {
-            let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-            gather(
-                equilibrium,
-                indices,
-                3,
-                lengths_time_slice_constraints_pf_passive_current_dof,
-                |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                    equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof[at[2]].name.clone()
-                },
-            )
-        },
-    }),
-}];
+static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_pf_passive_current_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof[at[2]].name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.\nFor `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.\nFor an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_pf_passive_current_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof[at[2]]
+                            .current_distribution
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.\nUnset for `constant_current_density`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    3,
+                    lengths_time_slice_constraints_pf_passive_current_dof,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof[at[2]]
+                            .time_constant
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+];
 
 static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
     Node {
@@ -5214,8 +5735,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
+        documentation: "Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -5232,16 +5752,34 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
         }),
     },
     Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.\nThe fit weights a flux loop's measurement by `2 pi weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pf_passive_current,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
         name: "dof",
-        documentation: "The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order",
+        documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF),
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
-regularisation, one coefficient for each `dof`; no rows for none.
-Shape = `(n_regularisations, n_dof)`",
+        documentation: "The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.\nShape = `(n_regularisations, n_dof)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -5261,9 +5799,8 @@ Shape = `(n_regularisations, n_dof)`",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
-`regularisations`",
-        units: "dimensionless",
+        documentation: "The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -5526,6 +6063,42 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     2,
                     lengths_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].chi_squared.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "name",
+        documentation: "Name of the constraint, e.g. `\"PRESSURE05\"` for `constraints/pressure(i1)`: the prefix\n`equilibrium_settings/constraints/pressure/pressure/sensor_name_prefix` followed by the two-digit number of the point it\nwas measured at, from 1, in the order of the points of the source IDS, e.g. `core_profiles/profiles_2d(itime)/grid/dim1`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/pressure/pressure/expected_value` for `constraints/pressure(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].expected_value.clone() },
                 )
             },
         }),
@@ -5797,6 +6370,44 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
             },
         }),
     },
+    Node {
+        name: "name",
+        documentation: "Name of the constraint, e.g. `\"PRESSURE05\"` for `constraints/pressure(i1)`: the prefix\n`equilibrium_settings/constraints/pressure/pressure/sensor_name_prefix` followed by the two-digit number of the point it\nwas measured at, from 1, in the order of the points of the source IDS, e.g. `core_profiles/profiles_2d(itime)/grid/dim1`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure_rotational,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/pressure/pressure/expected_value` for `constraints/pressure(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure_rotational,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
 ];
 
 static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
@@ -6039,6 +6650,42 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     2,
                     lengths_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].chi_squared.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "name",
+        documentation: "Name of the constraint, e.g. `\"PRESSURE05\"` for `constraints/pressure(i1)`: the prefix\n`equilibrium_settings/constraints/pressure/pressure/sensor_name_prefix` followed by the two-digit number of the point it\nwas measured at, from 1, in the order of the points of the source IDS, e.g. `core_profiles/profiles_2d(itime)/grid/dim1`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_q,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/pressure/pressure/expected_value` for `constraints/pressure(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_q,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].expected_value.clone() },
                 )
             },
         }),
@@ -6291,6 +6938,42 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
             },
         }),
     },
+    Node {
+        name: "name",
+        documentation: "Name of the constraint, e.g. `\"PRESSURE05\"` for `constraints/pressure(i1)`: the prefix\n`equilibrium_settings/constraints/pressure/pressure/sensor_name_prefix` followed by the two-digit number of the point it\nwas measured at, from 1, in the order of the points of the source IDS, e.g. `core_profiles/profiles_2d(itime)/grid/dim1`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_phi,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/pressure/pressure/expected_value` for `constraints/pressure(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_phi,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
 ];
 
 static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
@@ -6537,6 +7220,42 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     2,
                     lengths_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].chi_squared.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "name",
+        documentation: "Name of the constraint, e.g. `\"PRESSURE05\"` for `constraints/pressure(i1)`: the prefix\n`equilibrium_settings/constraints/pressure/pressure/sensor_name_prefix` followed by the two-digit number of the point it\nwas measured at, from 1, in the order of the points of the source IDS, e.g. `core_profiles/profiles_2d(itime)/grid/dim1`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_parallel,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/pressure/pressure/expected_value` for `constraints/pressure(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_parallel,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].expected_value.clone() },
                 )
             },
         }),
@@ -7150,9 +7869,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
     },
     Node {
         name: "name",
-        documentation: "Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
-`constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
-`magnetics/ip(0)/method_name` for `constraints/ip`",
+        documentation: "Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and `magnetics/ip(0)/method_name` for `constraints/ip`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -7167,6 +7884,989 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                 )
             },
         }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/rogowski_coil/rogowski_coil(i1)/expected_value` for `constraints/rogowski_coil(i1)`.\nThe fit weights the measurement by `weight / expected_value`",
+        units: "as_parent",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_rogowski_coil,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_1: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.r.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "phi",
+        documentation: "Toroidal angle (oriented counter-clockwise when viewed from above)",
+        units: "rad",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.phi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.z.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "rho_tor_norm",
+        documentation: "Normalized toroidal flux coordinate. The normalizing value for rho_tor_norm, is the toroidal flux coordinate at the equilibrium boundary (LCFS or 99.x % of the LCFS in case of a fixed boundary equilibium calculation, see time_slice/boundary/b_flux_pol_norm in the equilibrium IDS)",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.rho_tor_norm.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi",
+        documentation: "Poloidal magnetic flux. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.psi.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_2: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.r.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "phi",
+        documentation: "Toroidal angle (oriented counter-clockwise when viewed from above)",
+        units: "rad",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.phi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.z.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "rho_tor_norm",
+        documentation: "Normalized toroidal flux coordinate. The normalizing value for rho_tor_norm, is the toroidal flux coordinate at the equilibrium boundary (LCFS or 99.x % of the LCFS in case of a fixed boundary equilibium calculation, see time_slice/boundary/b_flux_pol_norm in the equilibrium IDS)",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.rho_tor_norm.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi",
+        documentation: "Poloidal magnetic flux. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.psi.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the isoflux constraint, matching its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/name`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "position_1",
+        documentation: "The first point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`",
+        units: "",
+        kind: NodeKind::Structure(NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_1),
+    },
+    Node {
+        name: "position_2",
+        documentation: "The second point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`",
+        units: "",
+        kind: NodeKind::Structure(NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_2),
+    },
+    Node {
+        name: "measured",
+        documentation: "The poloidal flux at `position_1` minus the poloidal flux at `position_2` which is fitted: zero, as the two points lie on the same flux surface",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].measured.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "source",
+        documentation: "Path to the source data the two points were read from",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].source.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_measurement",
+        documentation: "Exact time slice used from the time array of the source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].time_measurement.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "weight",
+        documentation: "Weight given to the constraint, from its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/weight`",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].weight.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the flux difference is normalised by in the fit, from its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/expected_value`.\nThe fit weights the constraint by `weight / expected_value`",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reconstructed",
+        documentation: "The poloidal flux at `position_1` minus the poloidal flux at `position_2` in the reconstructed equilibrium, `position_1/psi - position_2/psi`",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].reconstructed.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "chi_squared",
+        documentation: "Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / expected_value^2",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].chi_squared.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.r.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "phi",
+        documentation: "Toroidal angle (oriented counter-clockwise when viewed from above)",
+        units: "rad",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.phi.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.z.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "rho_tor_norm",
+        documentation: "Normalized toroidal flux coordinate. The normalizing value for rho_tor_norm, is the toroidal flux coordinate at the equilibrium boundary (LCFS or 99.x % of the LCFS in case of a fixed boundary equilibium calculation, see time_slice/boundary/b_flux_pol_norm in the equilibrium IDS)",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.rho_tor_norm.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi",
+        documentation: "Poloidal magnetic flux. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.psi.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the isoflux boundary constraint",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "position",
+        documentation: "The point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`",
+        units: "",
+        kind: NodeKind::Structure(NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY_POSITION),
+    },
+    Node {
+        name: "measured",
+        documentation: "The poloidal flux at `position` minus the poloidal flux at the boundary which is fitted: zero, as the point lies on the boundary",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].measured.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "source",
+        documentation: "Path to the source data the point was read from",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].source.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_measurement",
+        documentation: "Exact time slice used from the time array of the source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].time_measurement.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "weight",
+        documentation: "Weight given to the constraint, from its fit settings",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].weight.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude the flux difference is normalised by in the fit, from its fit settings.\nThe fit weights the constraint by `weight / expected_value`",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reconstructed",
+        documentation: "The poloidal flux at `position` minus the poloidal flux at the boundary in the reconstructed equilibrium, `position/psi - boundary/psi`",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].reconstructed.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "chi_squared",
+        documentation: "Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / expected_value^2",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].chi_squared.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_POSITION: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.r.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "phi",
+        documentation: "Toroidal angle (oriented counter-clockwise when viewed from above)",
+        units: "rad",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.phi.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.z.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "rho_tor_norm",
+        documentation: "Normalized toroidal flux coordinate. The normalizing value for rho_tor_norm, is the toroidal flux coordinate at the equilibrium boundary (LCFS or 99.x % of the LCFS in case of a fixed boundary equilibium calculation, see time_slice/boundary/b_flux_pol_norm in the equilibrium IDS)",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.rho_tor_norm.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi",
+        documentation: "Poloidal magnetic flux. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.psi.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_R: &[Node] = &[
+    Node {
+        name: "measured",
+        documentation: "The derivative which is fitted: zero, as the poloidal flux is stationary at a stationary point",
+        units: "Wb.m^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_r.measured.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reconstructed",
+        documentation: "The derivative at the stationary point's `position` in the reconstructed equilibrium",
+        units: "Wb.m^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]]
+                            .d_psi_d_r
+                            .reconstructed
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "chi_squared",
+        documentation: "Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / expected_value^2, with the stationary point's `weight` and `expected_value`",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_r.chi_squared.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_Z: &[Node] = &[
+    Node {
+        name: "measured",
+        documentation: "The derivative which is fitted: zero, as the poloidal flux is stationary at a stationary point",
+        units: "Wb.m^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_z.measured.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reconstructed",
+        documentation: "The derivative at the stationary point's `position` in the reconstructed equilibrium",
+        units: "Wb.m^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]]
+                            .d_psi_d_z
+                            .reconstructed
+                            .clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "chi_squared",
+        documentation: "Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / expected_value^2, with the stationary point's `weight` and `expected_value`",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_z.chi_squared.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the stationary point constraint, e.g. `\"MAGNETIC_AXIS\"` or `\"X_POINT_LOWER\"`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "position",
+        documentation: "The point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`",
+        units: "",
+        kind: NodeKind::Structure(NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_POSITION),
+    },
+    Node {
+        name: "source",
+        documentation: "Path to the source data the point was read from",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].source.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time_measurement",
+        documentation: "Exact time slice used from the time array of the source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].time_measurement.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "weight",
+        documentation: "Weight given to the constraint, from its fit settings",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].weight.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "expected_value",
+        documentation: "The magnitude each derivative of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, is normalised by in the fit, from its fit settings.\nThe fit weights each derivative by `weight / expected_value`",
+        units: "Wb.m^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].expected_value.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "d_psi_d_r",
+        documentation: "The radial derivative of the poloidal flux at `position`",
+        units: "",
+        kind: NodeKind::Structure(NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_R),
+    },
+    Node {
+        name: "d_psi_d_z",
+        documentation: "The vertical derivative of the poloidal flux at `position`",
+        units: "",
+        kind: NodeKind::Structure(NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_Z),
     },
 ];
 
@@ -7341,9 +9041,27 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
     },
     Node {
         name: "rogowski_coil",
-        documentation: "Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`. The data dictionary has no constraint for them",
+        documentation: "Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`.\nThe data dictionary has no constraint for them",
         units: "A",
         kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL),
+    },
+    Node {
+        name: "isoflux",
+        documentation: "Set of isoflux constraints, each making a pair of points lie on the same flux surface, one for each isoflux in the fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)`.\nThe data dictionary has no constraint for them",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX),
+    },
+    Node {
+        name: "isoflux_boundary",
+        documentation: "Set of isoflux boundary constraints, each making a point lie on the plasma boundary.\nThe data dictionary has no constraint for them",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY),
+    },
+    Node {
+        name: "stationary_point",
+        documentation: "Set of stationary point constraints, each making both derivatives of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, zero at a point: an X-point or the magnetic axis.\nThe data dictionary has no constraint for them: its `x_point(i1)` constrains the position of an X-point, not the flux there",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT),
     },
 ];
 
@@ -7863,9 +9581,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
     },
     Node {
         name: "beta_pol_1",
-        documentation: "Poloidal beta normalised to the flux-surface-averaged poloidal field:
-`2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
-flux-surface average",
+        documentation: "Poloidal beta normalised to the flux-surface-averaged poloidal field: `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the flux-surface average",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -7883,8 +9599,7 @@ flux-surface average",
     },
     Node {
         name: "beta_pol_2",
-        documentation: "Poloidal beta normalised to the magnetic axis major radius:
-`4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`",
+        documentation: "Poloidal beta normalised to the magnetic axis major radius: `4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -7902,10 +9617,7 @@ flux-surface average",
     },
     Node {
         name: "beta_pol_3",
-        documentation: "Poloidal beta normalised to the geometric major radius:
-`4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
-This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
-vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead",
+        documentation: "Poloidal beta normalised to the geometric major radius: `4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`\n\nThis is the closest of the three to the data dictionary's own `beta_pol`, which uses the vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -7923,12 +9635,7 @@ vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead",
     },
     Node {
         name: "bp_omp",
-        documentation: "Magnitude of the poloidal magnetic field at the outboard midplane,
-`sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
-the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
-use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
-`profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
-height within the grid",
+        documentation: "Magnitude of the poloidal magnetic field at the outboard midplane, `sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of the magnetic axis on the outboard side.\nThis is the same point `delta_r_sep` and `f_x` use.\nEvaluated from the solver's bicubic interpolation of `psi`, not from the gridded `profiles_2d/b_field_r` and `.../b_field_z`.\nNaN when the boundary does not cross that height within the grid",
         units: "T",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -7946,10 +9653,7 @@ height within the grid",
     },
     Node {
         name: "bt_vac_at_r_geo",
-        documentation: "Vacuum toroidal magnetic field at the plasma geometric axis,
-`vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
-`vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
-`vacuum_toroidal_field/r0` rather than following the plasma",
+        documentation: "Vacuum toroidal magnetic field at the plasma geometric axis, `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`.\nDistinct from `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius `vacuum_toroidal_field/r0` rather than following the plasma",
         units: "T",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -7967,9 +9671,7 @@ height within the grid",
     },
     Node {
         name: "li_1",
-        documentation: "Internal inductance normalised to the flux-surface-averaged poloidal field:
-`<b_p ** 2> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
-flux-surface average",
+        documentation: "Internal inductance normalised to the flux-surface-averaged poloidal field: `<b_p ** 2> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the flux-surface average",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -7987,10 +9689,7 @@ flux-surface average",
     },
     Node {
         name: "li_2",
-        documentation: "Internal inductance normalised to the magnetic axis major radius:
-`2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`
-The data dictionary's own `li_3` is the same quantity normalised to
-`boundary/geometric_axis/r` instead",
+        documentation: "Internal inductance normalised to the magnetic axis major radius: `2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`\n\nThe data dictionary's own `li_3` is the same quantity normalised to `boundary/geometric_axis/r` instead",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -8008,16 +9707,7 @@ The data dictionary's own `li_3` is the same quantity normalised to
     },
     Node {
         name: "delta_r_sep",
-        documentation: "Radial separation of the two separatrices at the height of the magnetic axis, on the
-outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
-X-point)`. So it is negative for a lower single null, positive for an upper single null,
-and passes through zero at a connected double null. NaN when the plasma is limited, or
-when only one X-point was found
-It is evaluated in flux rather than by differencing two traced contours: the difference in
-`psi` between the two X-points is mapped to the outboard midplane through
-`d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
-X-point positions at second order, which is what makes a sub-millimetre answer meaningful
-on a centimetre grid",
+        documentation: "Radial separation of the two separatrices at the height of the magnetic axis, on the outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper X-point)`.\nSo it is negative for a lower single null, positive for an upper single null, and passes through zero at a connected double null.\nNaN when the plasma is limited, or when only one X-point was found\n\nIt is evaluated in flux rather than by differencing two traced contours: the difference in `psi` between the two X-points is mapped to the outboard midplane through `d(psi)/d(r)` there.\n`psi` is stationary at an X-point, so this is insensitive to the X-point positions at second order, which is what makes a sub-millimetre answer meaningful on a centimetre grid",
         units: "m",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -8035,11 +9725,8 @@ on a centimetre grid",
     },
     Node {
         name: "f_x",
-        documentation: "Flux expansion from the outboard midplane to the outboard strike point on the active
-X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
-outboard midplane is at the height of the magnetic axis. This excludes the additional
-expansion along the target caused by the field-line incidence angle",
-        units: "dimensionless",
+        documentation: "Flux expansion from the outboard midplane to the outboard strike point on the active X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`.\nThe outboard midplane is at the height of the magnetic axis.\nThis excludes the additional expansion along the target caused by the field-line incidence angle",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -8056,9 +9743,7 @@ expansion along the target caused by the field-line incidence angle",
     },
     Node {
         name: "v_loop",
-        documentation: "Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over
-the reconstruction times. Distinct from the data dictionary's `v_external`, which
-differentiates `psi_external_average` instead",
+        documentation: "Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over the reconstruction times.\nDistinct from the data dictionary's `v_external`, which differentiates `psi_external_average` instead",
         units: "V",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -8970,13 +10655,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
     },
     Node {
         name: "r_inboard_z_0",
-        documentation: "Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
-The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
-moves between time-slices. This one is measured on the machine's mid-plane instead, so that
-a series of time-slices is a series of radii at one fixed height.
-The two sides are split at the major radius of the magnetic axis, which is the point every
-flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
-that point, is NaN",
+        documentation: "Major radius of each flux surface where it crosses `z = 0`, on the inboard side.\n\nThe data dictionary's `r_inboard` is measured at the height of the magnetic axis, which moves between time-slices.\nThis one is measured on the machine's mid-plane instead, so that a series of time-slices is a series of radii at one fixed height.\n\nThe two sides are split at the major radius of the magnetic axis, which is the point every flux surface encloses.\nA surface which does not reach `z = 0`, or which does not enclose that point, is NaN",
         units: "m",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -8994,8 +10673,7 @@ that point, is NaN",
     },
     Node {
         name: "r_outboard_z_0",
-        documentation: "Major radius of each flux surface where it crosses `z = 0`, on the outboard side. The
-outboard counterpart of `r_inboard_z_0`",
+        documentation: "Major radius of each flux surface where it crosses `z = 0`, on the outboard side.\nThe outboard counterpart of `r_inboard_z_0`",
         units: "m",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -9013,9 +10691,8 @@ outboard counterpart of `r_inboard_z_0`",
     },
     Node {
         name: "rho_pol",
-        documentation: "Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
-data dictionary's `rho_tor_norm`, which the data dictionary itself does not define",
-        units: "dimensionless",
+        documentation: "Normalised poloidal flux radius, `sqrt(psi_norm)`.\nThis is the poloidal counterpart of the data dictionary's `rho_tor_norm`, which the data dictionary itself does not define",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -9203,8 +10880,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
     },
     Node {
         name: "d_area",
-        documentation: "Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`. A single value, because
-the grid is rectangular and uniformly spaced in both directions",
+        documentation: "Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`.\nA single value, because the grid is rectangular and uniformly spaced in both directions",
         units: "m^2",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -9514,7 +11190,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
     Node {
         name: "mask",
         documentation: "Mask for the grid in the poloidal plane",
-        units: "dimensionless",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -9567,7 +11243,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
     },
     Node {
         name: "pressure",
-        documentation: "Plasma pressure on the grid in the poloidal plane. Zero outside the plasma boundary",
+        documentation: "Plasma pressure on the grid in the poloidal plane.\nZero outside the plasma boundary",
         units: "Pa",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -9585,8 +11261,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
     },
     Node {
         name: "d_b_field_z_d_z",
-        documentation: "Vertical derivative of the vertical magnetic field on the grid in the poloidal plane. Used
-by the vertical stability control",
+        documentation: "Vertical derivative of the vertical magnetic field on the grid in the poloidal plane.\nUsed by the vertical stability control",
         units: "T.m^-1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_2D",
@@ -10535,8 +12210,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
     },
     Node {
         name: "d_area",
-        documentation: "Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`. A single value, because
-the grid is rectangular and uniformly spaced in both directions",
+        documentation: "Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`.\nA single value, because the grid is rectangular and uniformly spaced in both directions",
         units: "m^2",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -10834,8 +12508,7 @@ static NODES_TIME_SLICE_CONVERGENCE: &[Node] = &[
     },
     Node {
         name: "delta_z",
-        documentation: "Vertical shift applied by the vertical feedback controller. Unset until the first inverse
-solve has run, and 0 while the vertical feedback is switched off",
+        documentation: "Vertical shift applied by the vertical feedback controller.\nUnset until the first inverse solve has run, and 0 while the vertical feedback is switched off",
         units: "m",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -10853,10 +12526,7 @@ solve has run, and 0 while the vertical feedback is switched off",
     },
     Node {
         name: "flux_evaluations_n",
-        documentation: "Number of times the flux was calculated on the grid from the current density, each followed
-by the search for the magnetic axis and the plasma boundary. This is where nearly all the
-time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
-whether or not the solve converged",
+        documentation: "Number of times the flux was calculated on the grid from the current density, each followed by the search for the magnetic axis and the plasma boundary.\nThis is where nearly all the time goes: a Picard iteration does it once, a Newton iteration several times.\nRecorded whether or not the solve converged",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -10948,8 +12618,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
     },
     Node {
         name: "dpressure_dpsi",
-        documentation: "Derivative of the pressure with respect to the poloidal flux, along the mid-plane. Zero
-outside the plasma boundary",
+        documentation: "Derivative of the pressure with respect to the poloidal flux, along the mid-plane.\nZero outside the plasma boundary",
         units: "Pa.Wb^-1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -10967,8 +12636,7 @@ outside the plasma boundary",
     },
     Node {
         name: "f",
-        documentation: "Diamagnetic function `f = R * b_field_phi` along the mid-plane. The vacuum value outside the
-plasma boundary, where no poloidal current flows",
+        documentation: "Diamagnetic function `f = R * b_field_phi` along the mid-plane.\nThe vacuum value outside the plasma boundary, where no poloidal current flows",
         units: "T.m",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -10986,8 +12654,7 @@ plasma boundary, where no poloidal current flows",
     },
     Node {
         name: "f_df_dpsi",
-        documentation: "Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
-Zero outside the plasma boundary",
+        documentation: "Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.\nZero outside the plasma boundary",
         units: "T^2.m^2.Wb^-1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -11005,9 +12672,7 @@ Zero outside the plasma boundary",
     },
     Node {
         name: "j_phi",
-        documentation: "Toroidal plasma current density along the mid-plane. Zero outside the plasma boundary.
-Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
-solved current density",
+        documentation: "Toroidal plasma current density along the mid-plane.\nZero outside the plasma boundary.\nUnlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the solved current density",
         units: "A.m^-2",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -11025,7 +12690,7 @@ solved current density",
     },
     Node {
         name: "pressure",
-        documentation: "Plasma pressure along the mid-plane. Zero outside the plasma boundary",
+        documentation: "Plasma pressure along the mid-plane.\nZero outside the plasma boundary",
         units: "Pa",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -11043,9 +12708,8 @@ solved current density",
     },
     Node {
         name: "q",
-        documentation: "Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
-flux surface to define it",
-        units: "dimensionless",
+        documentation: "Safety factor along the mid-plane.\nNaN outside the plasma boundary, where there is no closed flux surface to define it",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11065,9 +12729,7 @@ flux surface to define it",
 static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE_H: &[Node] = &[
     Node {
         name: "r",
-        documentation: "Major radius of each point along the refined mid-plane. The solved grid's radial axis
-subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
-these, and the same on every time-slice",
+        documentation: "Major radius of each point along the refined mid-plane.\nThe solved grid's radial axis subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of these, and the same on every time-slice",
         units: "m",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -11085,8 +12747,7 @@ these, and the same on every time-slice",
     },
     Node {
         name: "psi",
-        documentation: "Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
-NaN on a time-slice which did not converge",
+        documentation: "Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.\nNaN on a time-slice which did not converge",
         units: "Wb",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -11104,13 +12765,8 @@ NaN on a time-slice which did not converge",
     },
     Node {
         name: "psi_norm",
-        documentation: "Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary -
-psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
-Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
-point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
-across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
-means picking the inboard or outboard branch first",
-        units: "dimensionless",
+        documentation: "Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary - psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.\n\nUnlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole point of it: it carries on rising past 1 through the scrape-off layer.\nIt is not monotonic across the full radial span, having a minimum at the magnetic axis, so inverting it for `R` means picking the inboard or outboard branch first",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11427,8 +13083,8 @@ static NODES_TIME_SLICE: &[Node] = &[
     },
     Node {
         name: "passive_dof_values",
-        documentation: "Fitted degrees of freedom of the passive structure currents",
-        units: "A",
+        documentation: "The fitted amplitude of each passive degree of freedom, in the order of `constraints/pf_passive_current`, and then of each one's `dof`, which is the order of the Greens tables, `gsfit_rs::Equilibrium`'s `greens_tables/grid/pf_passive(:)/dof(:)`.\nAn element's current is the sum, over its passive loop's degrees of freedom, of the amplitude times the degree of freedom's `current_distribution`.\nIts units are those of a current divided by the `current_distribution`'s: A.m^-2, a current density, for `constant_current_density`, and A for an eigenmode",
+        units: "mixed",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11556,2236 +13212,6 @@ static NODES_CODE_LIBRARY: &[Node] = &[
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
-    Node {
-        name: "time_start",
-        documentation: "First time.",
-        units: "second",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.timeslices.arange.time_start.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "time_end",
-        documentation: "End of the times, which is not included.",
-        units: "second",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.timeslices.arange.time_end.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "dt",
-        documentation: "Step between times.",
-        units: "second",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.timeslices.arange.dt.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE: &[Node] = &[
-    Node {
-        name: "time_start",
-        documentation: "First time.",
-        units: "second",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.timeslices.linspace.time_start.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "time_end",
-        documentation: "Last time.",
-        units: "second",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.timeslices.linspace.time_end.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "n_time",
-        documentation: "Number of times.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.timeslices.linspace.n_time.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_TIMESLICES: &[Node] = &[
-    Node {
-        name: "method",
-        documentation: "How the times are chosen. Its settings are in the element of the same name, below.
-One of: \"arange\", \"linspace\", \"user_defined\", \"good_pressure_sensors\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters_parsed.timeslices.method.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "arange",
-        documentation: "Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE),
-    },
-    Node {
-        name: "linspace",
-        documentation: "n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE),
-    },
-    Node {
-        name: "user_defined",
-        documentation: "User defined time-slices, space-separated list, e.g. \"80.e-3 100.0e-3 120.0e-3\".",
-        units: "second",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium.code.parameters_parsed.timeslices.user_defined.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD: &[Node] = &[
-    Node {
-        name: "n_iter_no_vertical_feedback",
-        documentation: "Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .numerics
-                        .nonlinear_solver
-                        .picard
-                        .n_iter_no_vertical_feedback
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "apply_anderson_mixing",
-        documentation: "Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .numerics
-                        .nonlinear_solver
-                        .picard
-                        .apply_anderson_mixing
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "anderson_n_history",
-        documentation: "Maximum number of previous iterations Anderson mixing combines.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.nonlinear_solver.picard.anderson_n_history.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "anderson_mixing",
-        documentation: "Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.numerics.nonlinear_solver.picard.anderson_mixing.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[Node] = &[
-    Node {
-        name: "picard_handover",
-        documentation: "Grad-Shafranov deviation below which it hands over from Picard to Newton iterations.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .numerics
-                        .nonlinear_solver
-                        .newton_krylov
-                        .picard_handover
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "n_krylov_max",
-        documentation: "Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.nonlinear_solver.newton_krylov.n_krylov_max.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "krylov_tolerance",
-        documentation: "The Krylov solve stops once the linearised residual is this fraction of the residual.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .numerics
-                        .nonlinear_solver
-                        .newton_krylov
-                        .krylov_tolerance
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "finite_difference_step",
-        documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .numerics
-                        .nonlinear_solver
-                        .newton_krylov
-                        .finite_difference_step
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "verbose",
-        documentation: "Whether to print the progress of each Newton iteration.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.nonlinear_solver.newton_krylov.verbose.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[Node] = &[
-    Node {
-        name: "n_basis_max",
-        documentation: "Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.nonlinear_solver.newton_picard.n_basis_max.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "contraction_threshold",
-        documentation: "A direction is added when the residual outside them shrinks by less than this factor per iteration.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .numerics
-                        .nonlinear_solver
-                        .newton_picard
-                        .contraction_threshold
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "finite_difference_step",
-        documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .numerics
-                        .nonlinear_solver
-                        .newton_picard
-                        .finite_difference_step
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "verbose",
-        documentation: "Whether to print the progress of each Newton-Picard iteration.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.nonlinear_solver.newton_picard.verbose.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER: &[Node] = &[
-    Node {
-        name: "method",
-        documentation: "The solver to use. Its settings are in the element of the same name, below.
-One of: \"picard\", \"newton_krylov\", \"newton_picard\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters_parsed.numerics.nonlinear_solver.method.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "picard",
-        documentation: "Settings for Picard iterations.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD),
-    },
-    Node {
-        name: "newton_krylov",
-        documentation: "Settings for Jacobian-free Newton-Krylov.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV),
-    },
-    Node {
-        name: "newton_picard",
-        documentation: "Settings for Newton-Picard, the recursive projection method (RPM).",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
-    Node {
-        name: "RAYON_NUM_THREADS",
-        documentation: "Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.RAYON_NUM_THREADS.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "n_iter_max",
-        documentation: "Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.n_iter_max.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "grad_shafranov_deviation_tolerance",
-        documentation: "The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.numerics.grad_shafranov_deviation_tolerance.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "n_iter_min",
-        documentation: "Minimum number of nonlinear solver iterations before the convergence test may pass.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.n_iter_min.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "save_unconverged",
-        documentation: "Not read by the code at present.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.numerics.save_unconverged.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "nonlinear_solver",
-        documentation: "The nonlinear solver for the Grad-Shafranov equation.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
-    Node {
-        name: "n_r",
-        documentation: "Number of radial grid points.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.grid.n_r.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "n_z",
-        documentation: "Number of vertical grid points.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.grid.n_z.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "r_min",
-        documentation: "Lower radial bound of the grid.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.grid.r_min.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "r_max",
-        documentation: "Upper radial bound of the grid.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.grid.r_max.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "z_min",
-        documentation: "Lower vertical bound of the grid.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.grid.z_min.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "z_max",
-        documentation: "Upper vertical bound of the grid.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.grid.z_max.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "n_psi_norm",
-        documentation: "Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.grid.n_psi_norm.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
-    Node {
-        name: "ip",
-        documentation: "Plasma current.",
-        units: "ampere",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.initial_guess.ip.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "cur_r",
-        documentation: "Radial centre of the current.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.initial_guess.cur_r.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "cur_z",
-        documentation: "Vertical centre of the current.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.initial_guess.cur_z.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "minor_radius",
-        documentation: "Radial semi-axis of the current.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.initial_guess.minor_radius.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "elongation",
-        documentation: "Elongation of the current.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.initial_guess.elongation.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_EFIT_POLYNOMIAL: &[Node] = &[
-    Node {
-        name: "n_dof",
-        documentation: "Number of polynomials, and so of degrees of freedom.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.source_function_p_prime.efit_polynomial.n_dof.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "regularisations",
-        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
-Shape [n_rows, n_columns], one row per `row` element",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .efit_polynomial
-                        .regularisations
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "exact",
-        documentation: "When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.source_function_p_prime.efit_polynomial.exact.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "coefficients",
-        documentation: "The fixed coefficients, one per polynomial, used when `exact` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium.code.parameters_parsed.source_function_p_prime.efit_polynomial.coefficients.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER: &[Node] = &[
-    Node {
-        name: "regularisation_scale",
-        documentation: "Multiplies the rows which regularise the bulk of the profile.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .regularisation_scale
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "regularisation_mode",
-        documentation: "How the bulk of the profile is regularised.
-One of: \"second_derivative_zero\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .regularisation_mode
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "left_boundary_condition",
-        documentation: "The boundary condition at psi_n = 0, the magnetic axis.
-One of: \"free\", \"dirichlet\", \"neumann\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .left_boundary_condition
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "left_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .left_boundary_weight
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "right_boundary_condition",
-        documentation: "The boundary condition at psi_n = 1, the plasma boundary.
-One of: \"free\", \"dirichlet\", \"neumann\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .right_boundary_condition
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "right_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .right_boundary_weight
-                        .clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SPLINE: &[Node] = &[
-    Node {
-        name: "regularisations",
-        documentation:
-            "The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
-Shape [n_rows, n_columns], one row per `row` element
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .regularisations
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "interior_knots",
-        documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .interior_knots
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "interval_tensions",
-        documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .interval_tensions
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "make_cubic_spline_regularisations",
-        documentation: "When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_p_prime
-                        .tensioned_cubic_b_spline
-                        .make_cubic_spline_regularisations
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "regularisation_builder",
-        documentation: "How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME: &[Node] = &[
-    Node {
-        name: "method",
-        documentation: "The basis functions to use. Their settings are in the element of the same name, below.
-One of: \"efit_polynomial\", \"tensioned_cubic_b_spline\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters_parsed.source_function_p_prime.method.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "efit_polynomial",
-        documentation: "Settings for EFIT's polynomials.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_EFIT_POLYNOMIAL),
-    },
-    Node {
-        name: "tensioned_cubic_b_spline",
-        documentation: "Settings for the tensioned cubic B-splines.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SPLINE),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_EFIT_POLYNOMIAL: &[Node] = &[
-    Node {
-        name: "n_dof",
-        documentation: "Number of polynomials, and so of degrees of freedom.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.source_function_ff_prime.efit_polynomial.n_dof.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "regularisations",
-        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
-Shape [n_rows, n_columns], one row per `row` element",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .efit_polynomial
-                        .regularisations
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "exact",
-        documentation: "When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.source_function_ff_prime.efit_polynomial.exact.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "coefficients",
-        documentation: "The fixed coefficients, one per polynomial, used when `exact` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium.code.parameters_parsed.source_function_ff_prime.efit_polynomial.coefficients.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER: &[Node] = &[
-    Node {
-        name: "regularisation_scale",
-        documentation: "Multiplies the rows which regularise the bulk of the profile.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .regularisation_scale
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "regularisation_mode",
-        documentation: "How the bulk of the profile is regularised.
-One of: \"second_derivative_zero\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .regularisation_mode
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "left_boundary_condition",
-        documentation: "The boundary condition at psi_n = 0, the magnetic axis.
-One of: \"free\", \"dirichlet\", \"neumann\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .left_boundary_condition
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "left_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .left_boundary_weight
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "right_boundary_condition",
-        documentation: "The boundary condition at psi_n = 1, the plasma boundary.
-One of: \"free\", \"dirichlet\", \"neumann\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .right_boundary_condition
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "right_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .regularisation_builder
-                        .right_boundary_weight
-                        .clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_SPLINE: &[Node] = &[
-    Node {
-        name: "regularisations",
-        documentation:
-            "The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
-Shape [n_rows, n_columns], one row per `row` element
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .regularisations
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "interior_knots",
-        documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .interior_knots
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "interval_tensions",
-        documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .interval_tensions
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "make_cubic_spline_regularisations",
-        documentation: "When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .source_function_ff_prime
-                        .tensioned_cubic_b_spline
-                        .make_cubic_spline_regularisations
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "regularisation_builder",
-        documentation: "How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME: &[Node] = &[
-    Node {
-        name: "method",
-        documentation: "The basis functions to use. Their settings are in the element of the same name, below.
-One of: \"efit_polynomial\", \"tensioned_cubic_b_spline\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters_parsed.source_function_ff_prime.method.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "efit_polynomial",
-        documentation: "Settings for EFIT's polynomials.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_EFIT_POLYNOMIAL),
-    },
-    Node {
-        name: "tensioned_cubic_b_spline",
-        documentation: "Settings for the tensioned cubic B-splines.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_SPLINE),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "The passive's name in the database, e.g. \"IVC\".",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_pf_passive_dof_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "current_distribution_type",
-        documentation: "How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
-One of: \"constant_current_density\", \"eig\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_pf_passive_dof_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]]
-                            .current_distribution_type
-                            .clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "include",
-        documentation: "Whether the passive is included. Not read at present.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_pf_passive_dof_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].include.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "n_dof",
-        documentation: "Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_pf_passive_dof_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].n_dof.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "regularisations",
-        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none.
-Shape [n_rows, n_columns], one row per `row` element",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_pf_passive_dof_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
-                        equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].regularisations.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_pf_passive_dof_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
-                        equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].regularisations_weight.clone()
-                    },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF: &[Node] = &[Node {
-    name: "passive",
-    documentation: "One passive structure.
-Optional in the settings: unset when it is left out",
-    units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE),
-}];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the probe, e.g. `P101`.
-                        Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].name.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "comment",
-        documentation: "Free-text comment, e.g. on the quality of the signal; may be empty.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].comment.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "expected_value",
-        documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
-        units: "tesla",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].expected_value.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "include",
-        documentation: "Whether to include the probe in the fit.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].include.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "weight",
-        documentation: "Relative weight of the probe in the least-squares fit.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.b_field_pol_probe[at[0]].weight.clone()
-                    },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the flux loop, e.g. `L001`.
-                        Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "expected_value",
-        documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
-        units: "weber",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].expected_value.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "weight",
-        documentation: "Relative weight of the flux loop in the least-squares fit.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].weight.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "include",
-        documentation: "Whether to include the flux loop in the fit.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].include.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "comment",
-        documentation: "Free-text comment, e.g. on the quality of the signal; may be empty.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.flux_loop[at[0]].comment.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the Rogowski coil, e.g. `INIVC000` or `BVLT`.
-                        Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "expected_value",
-        documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
-        units: "ampere",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].expected_value.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "weight",
-        documentation: "Relative weight of the Rogowski coil in the least-squares fit.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].weight.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "include",
-        documentation: "Whether to include the Rogowski coil in the fit.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].include.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "comment",
-        documentation: "Free-text comment, e.g. on the quality of the signal; may be empty.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.rogowski_coil[at[0]].comment.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
-    Node {
-        name: "expected_value",
-        documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
-        units: "weber",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.expected_value.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "weight",
-        documentation: "Relative weight of the diamagnetic flux in the least-squares fit.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.weight.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "include",
-        documentation: "Whether to include the diamagnetic flux in the fit.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.include.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "comment",
-        documentation: "Free-text comment, e.g. on the quality of the signal; may be empty.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.comment.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "The constraint's name.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "expected_value",
-        documentation: "The typical size of the flux difference between the two points. The fit divides the residual by it.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
-                        equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].expected_value.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "weight",
-        documentation: "Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].weight.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "include",
-        documentation: "Whether the constraint is fitted.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].include.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "comment",
-        documentation: "Free text, e.g. why the constraint is not included; not used by the fit.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_code_parameters_parsed_constraints_isoflux,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.constraints.isoflux[at[0]].comment.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_THOMSON_SCATTERING: &[Node] = &[
-    Node {
-        name: "pressure_multiplier",
-        documentation: "Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature.",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .constraints
-                        .pressure
-                        .thomson_scattering
-                        .pressure_multiplier
-                        .clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "minimum_pressure",
-        documentation: "Total pressures at or below this are ignored. A channel with none above it gets no constraint.",
-        units: "pascal",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium
-                        .code
-                        .parameters_parsed
-                        .constraints
-                        .pressure
-                        .thomson_scattering
-                        .minimum_pressure
-                        .clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_SYNTHETIC: &[Node] = &[
-    Node {
-        name: "r_start",
-        documentation: "Major radius of the first sensor, relative to the magnetic axis.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.r_start.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "r_end",
-        documentation: "Major radius of the last sensor, relative to the magnetic axis.",
-        units: "metre",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.r_end.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "n_sensors",
-        documentation: "Number of sensors, evenly spaced from r_start to r_end.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.n_sensors.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "minimum_pressure",
-        documentation: "Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint.",
-        units: "pascal",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.parameters_parsed.constraints.pressure.synthetic.minimum_pressure.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE: &[Node] = &[
-    Node {
-        name: "include",
-        documentation: "Whether to fit pressure. When false, nothing else in this file is read.",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-                data_type: "INT_0D",
-                read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                    let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                    gather(
-                    equilibrium,
-                        indices,
-                        0,
-                        no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.include.clone()
-                        },
-                    )
-                },
-            }),
-    },
-    Node {
-        name: "sensor_name_prefix",
-        documentation: "The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-                data_type: "STR_0D",
-                read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                    let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                    gather(
-                    equilibrium,
-                        indices,
-                        0,
-                        no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.sensor_name_prefix.clone()
-                        },
-                    )
-                },
-            }),
-    },
-    Node {
-        name: "expected_value",
-        documentation: "The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
-Optional in the settings: unset when it is left out",
-        units: "pascal",
-        kind: NodeKind::Leaf(Leaf {
-                data_type: "FLT_0D",
-                read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                    let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                    gather(
-                    equilibrium,
-                        indices,
-                        0,
-                        no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.expected_value.clone()
-                        },
-                    )
-                },
-            }),
-    },
-    Node {
-        name: "weight",
-        documentation: "Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true.
-Optional in the settings: unset when it is left out",
-        units: "dimensionless",
-        kind: NodeKind::Leaf(Leaf {
-                data_type: "FLT_0D",
-                read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                    let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                    gather(
-                    equilibrium,
-                        indices,
-                        0,
-                        no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.weight.clone()
-                        },
-                    )
-                },
-            }),
-    },
-    Node {
-        name: "comment",
-        documentation: "Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-                data_type: "STR_0D",
-                read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                    let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                    gather(
-                    equilibrium,
-                        indices,
-                        0,
-                        no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                            equilibrium.code.parameters_parsed.constraints.pressure.comment.clone()
-                        },
-                    )
-                },
-            }),
-    },
-    Node {
-        name: "thomson_scattering",
-        documentation: "Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_THOMSON_SCATTERING),
-    },
-    Node {
-        name: "synthetic",
-        documentation: "Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_SYNTHETIC),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS: &[Node] = &[
-    Node {
-        name: "b_field_pol_probe",
-        documentation: "How each poloidal field probe (Mirnov coil) is fitted.
-Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
-                A probe read by the `database_reader` which is not listed here is not included in the fit.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE),
-    },
-    Node {
-        name: "flux_loop",
-        documentation: "How each flux loop is fitted.
-Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
-                A flux loop read by the `database_reader` which is not listed here is not included in the fit.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP),
-    },
-    Node {
-        name: "rogowski_coil",
-        documentation: "How each Rogowski coil is fitted.
-Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
-                A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
-                A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
-                Not read by the freegs reader.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL),
-    },
-    Node {
-        name: "diamagnetic_flux",
-        documentation: "How the diamagnetic loop is fitted.
-Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
-                GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
-                A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
-                Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
-                With one, the magnetics IDS must hold the diamagnetic flux.
-                Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX),
-    },
-    Node {
-        name: "isoflux",
-        documentation: "The isoflux constraints: pairs of points on the same flux surface.
-The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
-Optional in the settings: unset when it is left out",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX),
-    },
-    Node {
-        name: "pressure",
-        documentation: "How pressure sensors are fitted.
-Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE),
-    },
-];
-
-static NODES_CODE_PARAMETERS_PARSED: &[Node] = &[
-    Node {
-        name: "timeslices",
-        documentation: "The times to reconstruct.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_TIMESLICES),
-    },
-    Node {
-        name: "numerics",
-        documentation: "Settings for the Grad-Shafranov solve, and the number of threads it runs on.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS),
-    },
-    Node {
-        name: "grid",
-        documentation: "The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_GRID),
-    },
-    Node {
-        name: "initial_guess",
-        documentation: "Initial guess for first iteration.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS),
-    },
-    Node {
-        name: "source_function_p_prime",
-        documentation: "The p' source function: its basis functions and their regularisation.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME),
-    },
-    Node {
-        name: "source_function_ff_prime",
-        documentation: "The ff' source function: its basis functions and their regularisation.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME),
-    },
-    Node {
-        name: "pf_passive_dof",
-        documentation: "The degrees of freedom of the currents in the passive structures, and their regularisation.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF),
-    },
-    Node {
-        name: "constraints",
-        documentation: "Constraints used in the least-squares fit.",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS),
-    },
-];
-
 static NODES_CODE: &[Node] = &[
     Node {
         name: "name",
@@ -13891,905 +13317,6 @@ static NODES_CODE: &[Node] = &[
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
     },
-    Node {
-        name: "parameters_parsed",
-        documentation: "GSFit's settings, `code/parameters`, read into structs. The XML of `code/parameters` is
-`equilibrium.xml` with each file it links to written in its link's place, so each element
-is the key of the same name, e.g. `<grid><n_r>` is `code/parameters_parsed/grid/n_r`. Its
-structs are generated from GSFit's XML schema of the settings,
-`python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`, rather than declared here",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED),
-    },
-];
-
-static NODES_GREENS_GRID_PLASMA: &[Node] = &[
-    Node {
-        name: "psi",
-        documentation: "Poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.psi.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d_psi_d_r",
-        documentation: "Radial derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d_psi_d_r.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d_psi_d_z",
-        documentation: "Vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d_psi_d_z.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_r2",
-        documentation: "Second radial derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d2_psi_d_r2.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_r_d_z",
-        documentation: "Mixed second derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d2_psi_d_r_d_z.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_z2",
-        documentation: "Second vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d2_psi_d_z2.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_r2_d_z",
-        documentation: "Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d3_psi_d_r2_d_z.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_r_d_z2",
-        documentation: "Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d3_psi_d_r_d_z2.clone()
-                })
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_z3",
-        documentation: "Third vertical derivative of the poloidal flux, per ampere in the source.
-Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_3D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_3D {
-                    equilibrium.greens.grid.plasma.d3_psi_d_z3.clone()
-                })
-            },
-        }),
-    },
-];
-
-static NODES_GREENS_GRID_PF_ACTIVE: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `\"BVL\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.grid.pf_active[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "psi",
-        documentation: "Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].psi.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_psi_d_r",
-        documentation: "Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d_psi_d_r.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_psi_d_z",
-        documentation: "Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d_psi_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_r2",
-        documentation: "Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d2_psi_d_r2.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_r_d_z",
-        documentation: "Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d2_psi_d_r_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_z2",
-        documentation: "Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d2_psi_d_z2.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_r2_d_z",
-        documentation: "Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d3_psi_d_r2_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_r_d_z2",
-        documentation: "Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d3_psi_d_r_d_z2.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_z3",
-        documentation: "Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_active[at[0]].d3_psi_d_z3.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_GREENS_GRID_PF_PASSIVE_DOF: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `\"eig_01\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "psi",
-        documentation: "Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].psi.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_psi_d_r",
-        documentation: "Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d_psi_d_r.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_psi_d_z",
-        documentation: "Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d_psi_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_r2",
-        documentation: "Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d2_psi_d_r2.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_r_d_z",
-        documentation: "Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d2_psi_d_r_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d2_psi_d_z2",
-        documentation: "Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-2",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d2_psi_d_z2.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_r2_d_z",
-        documentation: "Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d3_psi_d_r2_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_r_d_z2",
-        documentation: "Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d3_psi_d_r_d_z2.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d3_psi_d_z3",
-        documentation: "Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-3",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    2,
-                    lengths_greens_grid_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.grid.pf_passive[at[0]].dof[at[1]].d3_psi_d_z3.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_GREENS_GRID_PF_PASSIVE: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `\"IVC\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_grid_pf_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.grid.pf_passive[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "dof",
-        documentation: "Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GREENS_GRID_PF_PASSIVE_DOF),
-    },
-];
-
-static NODES_GREENS_GRID: &[Node] = &[
-    Node {
-        name: "plasma",
-        documentation: "Source: the plasma current in each grid cell",
-        units: "",
-        kind: NodeKind::Structure(NODES_GREENS_GRID_PLASMA),
-    },
-    Node {
-        name: "pf_active",
-        documentation: "Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GREENS_GRID_PF_ACTIVE),
-    },
-    Node {
-        name: "pf_passive",
-        documentation: "Source: each passive conductor, in the order of `pf_passive/loop`, with its degrees of freedom. Every sensor's
-`pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GREENS_GRID_PF_PASSIVE),
-    },
-];
-
-static NODES_GREENS_B_FIELD_POL_PROBE: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the probe, matching `magnetics/b_field_pol_probe(i1)/name` and `time_slice(itime)/constraints/b_field_pol_probe(i1)/name`,
-e.g. `\"P101\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.b_field_pol_probe[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "plasma",
-        documentation: "Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`",
-        units: "T.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.b_field_pol_probe[at[0]].plasma.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_plasma_d_z",
-        documentation: "Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the probe's height, for the change
-in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
-Shape = `(n_z, n_r)`",
-        units: "T.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.b_field_pol_probe[at[0]].d_plasma_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "pf_active",
-        documentation: "Source: each PF coil, in the order of `greens/grid/pf_active`",
-        units: "T.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.b_field_pol_probe[at[0]].pf_active.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "pf_passive",
-        documentation: "Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`",
-        units: "T.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.b_field_pol_probe[at[0]].pf_passive.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_GREENS_FLUX_LOOP: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the flux loop, matching `magnetics/flux_loop(i1)/name` and `time_slice(itime)/constraints/flux_loop(i1)/name`, e.g.
-`\"L001\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.flux_loop[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "plasma",
-        documentation: "Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.flux_loop[at[0]].plasma.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_plasma_d_z",
-        documentation: "Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the loop's height, for the change
-in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
-Shape = `(n_z, n_r)`",
-        units: "Wb.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.flux_loop[at[0]].d_plasma_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "pf_active",
-        documentation: "Source: each PF coil, in the order of `greens/grid/pf_active`",
-        units: "Wb.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.flux_loop[at[0]].pf_active.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "pf_passive",
-        documentation: "Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`",
-        units: "Wb.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.flux_loop[at[0]].pf_passive.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_GREENS_ROGOWSKI_COIL: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the Rogowski coil, matching `magnetics/rogowski_coil(i1)/name` and
-`time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `\"INIVC000\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.rogowski_coil[at[0]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "plasma",
-        documentation: "Source: the plasma current in each grid cell.
-Shape = `(n_z, n_r)`",
-        units: "A.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.rogowski_coil[at[0]].plasma.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_plasma_d_z",
-        documentation: "Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the coil's height, for the change
-in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
-Shape = `(n_z, n_r)`",
-        units: "A.A^-1.m^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_2D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.rogowski_coil[at[0]].d_plasma_d_z.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "pf_active",
-        documentation: "Source: each PF coil, in the order of `greens/grid/pf_active`",
-        units: "A.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.rogowski_coil[at[0]].pf_active.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "pf_passive",
-        documentation: "Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`",
-        units: "A.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_greens_rogowski_coil,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.rogowski_coil[at[0]].pf_passive.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_GREENS: &[Node] = &[
-    Node {
-        name: "grid",
-        documentation: "Observer: the (R, Z) grid",
-        units: "",
-        kind: NodeKind::Structure(NODES_GREENS_GRID),
-    },
-    Node {
-        name: "b_field_pol_probe",
-        documentation: "Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GREENS_B_FIELD_POL_PROBE),
-    },
-    Node {
-        name: "flux_loop",
-        documentation: "Observer: each flux loop, in the order of `magnetics/flux_loop`",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GREENS_FLUX_LOOP),
-    },
-    Node {
-        name: "rogowski_coil",
-        documentation: "Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GREENS_ROGOWSKI_COIL),
-    },
 ];
 
 static NODES_LIMITER_UNIT_OUTLINE: &[Node] = &[
@@ -14860,12 +13387,7 @@ static NODES_LIMITER_UNIT: &[Node] = &[
 
 static NODES_LIMITER: &[Node] = &[Node {
     name: "unit",
-    documentation: "Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`. The order is part
-of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
-the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
-`unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
-vessel contour. The points of every unit are candidate limit points, so a plasma may be
-limited on the vessel or on any of the tiles",
+    documentation: "Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`.\nThe order is part of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region the plasma is allowed to occupy, and only `unit(0)` is used as the vessel.\n`unit(1)`, `unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the vessel contour.\nThe points of every unit are candidate limit points, so a plasma may be limited on the vessel or on any of the tiles",
     units: "",
     kind: NodeKind::ArrayOfStructures(NODES_LIMITER_UNIT),
 }];
@@ -14896,16 +13418,8 @@ static NODES_ROOT: &[Node] = &[
         kind: NodeKind::Structure(NODES_CODE),
     },
     Node {
-        name: "greens",
-        documentation: "Greens tables: what each observer, the grid or a magnetic sensor, sees per ampere in each current source",
-        units: "",
-        kind: NodeKind::Structure(NODES_GREENS),
-    },
-    Node {
         name: "limiter",
-        documentation: "The limiter: the immobile surfaces which bound the plasma. A copy of the `wall` IDS's
-`wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
-the post-processor read it from the equilibrium IDS rather than from the `wall` IDS",
+        documentation: "The limiter: the immobile surfaces which bound the plasma.\nA copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the equilibrium IDS rather than from the `wall` IDS",
         units: "",
         kind: NodeKind::Structure(NODES_LIMITER),
     },

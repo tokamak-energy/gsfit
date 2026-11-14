@@ -18,7 +18,7 @@ import numpy as np
 import numpy.typing as npt
 from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 
-# How the current is distributed over a passive's filaments, from `PfPassive::add_loop`.
+# How the current is distributed over a passive's filaments, by `Equilibrium.copy_from_pf_passive_ids`.
 CurrentDistributionType: typing.TypeAlias = typing.Literal[
     "constant_current_density",
     "eig",
@@ -28,7 +28,7 @@ CurrentDistributionType: typing.TypeAlias = typing.Literal[
 @dataclass(kw_only=True)
 class PfPassiveDof:
     """
-    The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it.
+    The passive structures to fit, one `passive` for each, in the order they are fitted, with the degrees of freedom of each one's current, and their regularisation. `Equilibrium.copy_from_pf_passive_ids` reads them, finding each passive structure in the pf_passive IDS by its `name`, and makes the degrees of freedom from its filaments. `include` is not read at present.
 
     :param passive: One passive structure. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `passive[name]`
     """
@@ -45,7 +45,7 @@ class Passive:
     The degrees of freedom of one passive structure's current, and their regularisation.
 
     :param name: The passive's name in the database, e.g. "IVC".
-    :param current_distribution_type: How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
+    :param current_distribution_type: How the current is distributed over the passive's filaments.
     :param include: Whether the passive is included. Not read at present.
     :param n_dof: Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.
     :param regularisations: The regularisations, one `row` of n_dof coefficients each; no rows for none.

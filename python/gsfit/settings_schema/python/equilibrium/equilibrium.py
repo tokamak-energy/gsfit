@@ -26,10 +26,14 @@ from .constraints_flux_loop import ConstraintsFluxLoop
 from .constraints_flux_loop import FluxLoop
 from .constraints_isoflux import ConstraintsIsoflux
 from .constraints_isoflux import Isoflux
+from .constraints_isoflux_boundary import ConstraintsIsofluxBoundary
+from .constraints_isoflux_boundary import IsofluxBoundary
 from .constraints_pressure import ConstraintsPressure
 from .constraints_pressure import Pressure
 from .constraints_rogowski_coil import ConstraintsRogowskiCoil
 from .constraints_rogowski_coil import RogowskiCoil
+from .constraints_stationary_point import ConstraintsStationaryPoint
+from .constraints_stationary_point import StationaryPoint
 from .grid import Grid
 from .initial_guess import InitialGuess
 from .numerics import Numerics
@@ -77,8 +81,10 @@ class EquilibriumConstraints:
     :param flux_loop: How each flux loop is fitted. Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop. A flux loop read by the `database_reader` which is not listed here is not included in the fit. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `flux_loop[name]`
     :param rogowski_coil: How each Rogowski coil is fitted. Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil. A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses. A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit. Not read by the freegs reader. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `rogowski_coil[name]`
     :param diamagnetic_flux: How the diamagnetic loop is fitted. Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element. GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`. A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it. Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit. With one, the magnetics IDS must hold the diamagnetic flux. Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
-    :param isoflux: The isoflux constraints: pairs of points on the same flux surface. The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux[name]`
-    :param pressure: How pressure sensors are fitted. Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
+    :param isoflux: The isoflux constraints: pairs of points on the same flux surface. The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Each is fitted with the two points of the isoflux constraint of the same `name` in the magnetics IDS, `magnetics/isoflux`, a custom key, which the database reader adds, each on its own timebase; listing one which the magnetics IDS does not have is an error. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux[name]`
+    :param isoflux_boundary: The isoflux boundary constraints: points on the plasma boundary. The isoflux boundary constraints, which make points lie on the plasma boundary, one `isoflux_boundary` per point. Each is fitted with the point of the isoflux boundary constraint of the same `name` in the magnetics IDS, `magnetics/isoflux_boundary`, a custom key, which the database reader adds, on its own timebase; listing one which the magnetics IDS does not have is an error. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux_boundary[name]`
+    :param stationary_point: The stationary point constraints: points where d(psi)/d(r) and d(psi)/d(z) are zero, each an X-point or the magnetic axis. The stationary point constraints, which make d(psi)/d(r) and d(psi)/d(z) zero at points, each an X-point or the magnetic axis, one `stationary_point` per point. Each is fitted with the point of the stationary point constraint of the same `name` in the magnetics IDS, `magnetics/stationary_point`, a custom key, which the database reader adds, on its own timebase; listing one which the magnetics IDS does not have is an error. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `stationary_point[name]`
+    :param pressure: How pressure sensors are fitted. Whether pressure is fitted, and how the pressure constraints are made from the core_profiles IDS, by Equilibrium.copy_from_core_profiles_ids.
     """
 
     b_field_pol_probe: KeyedList[BFieldPolProbe] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsBFieldPolProbe})
@@ -86,4 +92,6 @@ class EquilibriumConstraints:
     rogowski_coil: KeyedList[RogowskiCoil] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsRogowskiCoil})
     diamagnetic_flux: DiamagneticFlux | None = field(default=None, metadata={"linked_file_root": ConstraintsDiamagneticFlux})
     isoflux: KeyedList[Isoflux] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsIsoflux})
+    isoflux_boundary: KeyedList[IsofluxBoundary] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsIsofluxBoundary})
+    stationary_point: KeyedList[StationaryPoint] = field(default_factory=KeyedList, metadata={"linked_file_root": ConstraintsStationaryPoint})
     pressure: Pressure = field(metadata={"linked_file_root": ConstraintsPressure})

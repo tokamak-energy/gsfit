@@ -39,6 +39,9 @@ def setup_magnetics(
     3. `add_to_magnetics_rogowski_coil` fills `magnetics/rogowski_coil`
     4. `add_to_magnetics_diamagnetic_flux` fills `magnetics/diamagnetic_flux`, when the pulse has a DIALOOP run
 
+    No constraints at points which can move are read for ST40 yet, so `magnetics/isoflux`, `magnetics/isoflux_boundary` and
+    `magnetics/stationary_point` are left empty, and the equilibrium's fit settings must not list any.
+
     Every signal is stored on its **experimental** timebase.
     Every sensor is added, whether or not it is fitted: which sensors are fitted, and their weights, are the equilibrium's constraints.
 

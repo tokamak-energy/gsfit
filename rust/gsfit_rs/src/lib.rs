@@ -4,36 +4,41 @@ use pyo3::prelude::*;
 // Load modules
 mod analytic_grad_shafranov;
 mod circuit_equations;
+mod core_profiles;
+mod core_sources;
 mod equilibrium;
 mod equilibrium_post_processor;
 mod grad_shafranov;
-mod limiter;
+mod greens_storage;
 mod magnetic_sensors;
 mod magnetics;
 mod pf_active;
 mod pf_passive;
+mod plasma_current_sources;
 mod pulse_schedule;
-mod sensors;
+mod settings;
 mod source_functions;
 mod tf;
 mod wall;
 
 // Load structs and functions
-use analytic_grad_shafranov::{Configuration, GuazzottoFreidberg, Symmetry};
+use analytic_grad_shafranov::{BuxtonProkopyszyn, Configuration, GuazzottoFreidberg, Symmetry};
 use circuit_equations::solve_circuit_equations;
+use core_profiles::CoreProfiles;
+use core_sources::CoreSources;
 use equilibrium::Equilibrium;
 use grad_shafranov::solve_grad_shafranov;
 use greens::{
     greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_d3_psi_d_r2_d_z,
     greens_d3_psi_d_z3, greens_py,
 };
+use greens_storage::{GREENS_TABLES_ROOT, PyGreensTables};
 use magnetics::Magnetics;
 mod material_properties;
 use pf_active::PfActive;
 use pf_passive::PfPassive;
+use plasma_current_sources::{PyPlasmaCurrentComponent, PyPlasmaCurrentComponents, calculate_plasma_current_components};
 use pulse_schedule::PulseSchedule;
-mod python_pickling_methods;
-use sensors::{Isoflux, IsofluxBoundary, Pressure, StationaryPoint};
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
 use tf::Tf;
 use wall::Wall;
@@ -68,8 +73,13 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(greens_d3_psi_d_z3, m)?)?;
     m.add_function(wrap_pyfunction!(solve_grad_shafranov, m)?)?;
     m.add_function(wrap_pyfunction!(solve_circuit_equations, m)?)?;
+    m.add_function(wrap_pyfunction!(calculate_plasma_current_components, m)?)?;
 
     // Expose current source classes
+    m.add_class::<CoreProfiles>()?;
+    m.add_class::<CoreSources>()?;
+    m.add_class::<PyPlasmaCurrentComponents>()?;
+    m.add_class::<PyPlasmaCurrentComponent>()?;
     m.add_class::<Equilibrium>()?;
     m.add_class::<PfActive>()?;
     m.add_class::<PfPassive>()?;
@@ -79,12 +89,8 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose machine operation classes
     m.add_class::<PulseSchedule>()?;
 
-    // Expose sensor classes
-    m.add_class::<Isoflux>()?;
-    m.add_class::<IsofluxBoundary>()?;
+    // Expose sensor classes. The isoflux, isoflux boundary and stationary point constraints are custom keys of the magnetics IDS
     m.add_class::<Magnetics>()?;
-    m.add_class::<StationaryPoint>()?;
-    m.add_class::<Pressure>()?;
 
     // Expose source functions
     m.add_class::<EfitPolynomial>()?;
@@ -94,6 +100,7 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<GuazzottoFreidberg>()?;
     m.add_class::<Symmetry>()?;
     m.add_class::<Configuration>()?;
+    m.add_class::<BuxtonProkopyszyn>()?;
 
     // Expose solovev equilibrium function
     // m.add_function(wrap_pyfunction!(run_solovev, m)?)?;
@@ -103,6 +110,10 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // `gsfit_rs` only mounts them, because it is the crate that builds the `cdylib`.
     let imas: Bound<'_, PyModule> = PyModule::new(py, "imas")?;
     imas_rs::python::register(&imas)?;
+    // GSFit's own structures, which are read through paths as the IDSs are, are mounted beside them, sharing their `Path`:
+    // `Equilibrium.greens_tables` is a `GreensTables`, read with `gsfit_rs.imas.greens_tables_paths`
+    imas.add_class::<PyGreensTables>()?;
+    imas.add("greens_tables_paths", imas_rs::python::PyPath::at_root(&GREENS_TABLES_ROOT).into_pyobject(py)?)?;
     m.add_submodule(&imas)?;
     // `add_submodule` only sets the attribute; registering in `sys.modules` is what makes
     // `from gsfit_rs.imas import equilibrium_paths` work.

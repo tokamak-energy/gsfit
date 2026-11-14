@@ -9,7 +9,6 @@ name = "gsfit_rs"
 
 [dependencies]
 # Local dependency
-data_tree = { path = "../data_tree" }
 imas_rs = { path = "../imas_rs", features = ["python"] }  # "python" = expose the data dictionary as the `gsfit_rs.imas` submodule
 interpolation = { path = "../interpolation" }
 npy_reader_and_writer = { path = "../npy_reader_and_writer" }
@@ -17,7 +16,7 @@ npy_reader_and_writer = { path = "../npy_reader_and_writer" }
 # External dependencies
 diffsol = "0.17.1"
 geo = "0.33.1"  # For centre of mass; polygon area
-pyo3 = { version = "0.30.1", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = allow more than one `#[pymethods]` impl block per `#[pyclass]` struct, needed because the `#[derive(AddDataTreeGetters)]` macro generates a second block
+pyo3 = { version = "0.30.1", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = allow more than one `#[pymethods]` impl block per `#[pyclass]` struct, needed because each file of `magnetic_sensors/` adds its own block to `Magnetics`, and `plasma_current_components_python_interface.rs` has two
 physical_constants = "0.5.0"  # For MU_0
 rayon = "1.12.0"
 spec_math = "0.1.6"  # For elliptic integrals
@@ -30,7 +29,11 @@ approx = "0.5.1"
 faer = "0.24.4"
 ndarray-stats = "0.7.0"  # TODO: I want to remove this dependency, because it restricts `ndarray` version!
 rand = "0.10.2"
+roxmltree = "0.21.1"  # For reading the settings from XML into structs
+rustfft = "6.4.1"  # For the FFTs of the lattice series products, in the Buxton-Prokopyszyn analytic solution
 special = "0.14.1" # "special" mathematical functions, used for `Lambert`
+oxml = "0.0.13"  # For parsing the settings' XML for `xmlschema`; must be same version as `xmlschema` uses internally
+xmlschema = "0.0.14"  # For validating the settings' XML against their XML schema
 
 [build-dependencies]
 # Used in `build.rs` to discover the Python interpreter (uv, venv, conda, or system Python)

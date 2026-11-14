@@ -17,12 +17,12 @@
         <equilibrium href="equilibrium/equilibrium.xml"/>
 
         <!-- The IDSs GSFit reads, built by the database reader -->
+        <core_profiles href="core_profiles/core_profiles.xml"/>
         <magnetics href="magnetics/magnetics.xml"/>
         <pf_active href="pf_active/pf_active.xml"/>
         <pf_passive href="pf_passive/pf_passive.xml"/>
         <pulse_schedule href="pulse_schedule/pulse_schedule.xml"/>
         <tf href="tf/tf.xml"/>
-        <thomson_scattering href="thomson_scattering/thomson_scattering.xml"/>
         <wall href="wall/wall.xml"/>
     </ids>
 </gsfit_code_settings>

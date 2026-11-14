@@ -44,11 +44,13 @@
     <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -60,6 +62,18 @@
         </xs:annotation>
         <xs:restriction base="FiniteDouble">
             <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="PositiveFraction">
+        <xs:annotation>
+            <xs:documentation>
+                A number greater than 0 and at most 1.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+            <xs:maxInclusive value="1.0"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -166,7 +180,7 @@
                                                 </xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="anderson_mixing" type="FinitePositiveDouble">
+                                        <xs:element name="anderson_mixing" type="PositiveFraction">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.
@@ -187,6 +201,13 @@
                                 </xs:annotation>
                                 <xs:complexType>
                                     <xs:all>
+                                        <xs:element name="n_iter_no_vertical_feedback" type="xs:nonNegativeInteger">
+                                            <xs:annotation>
+                                                <xs:documentation>
+                                                    Number of initial iterations with the vertical feedback (the fit of delta_z) switched off, which are Picard iterations, before the hand over to Newton.
+                                                </xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
                                         <xs:element name="picard_handover" type="FinitePositiveDouble">
                                             <xs:annotation>
                                                 <xs:documentation>

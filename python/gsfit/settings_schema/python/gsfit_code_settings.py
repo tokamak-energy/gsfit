@@ -6,7 +6,7 @@ Any changes will be overwritten.
 
 This module defines the types of `GSFIT_code_settings.xml`, generated from the XML schema `python/gsfit/settings_schema/xsd/GSFIT_code_settings.xsd`.
 Its root element, `<gsfit_code_settings>`, is `GsfitCodeSettings`.
-Each link to another XML file has the type of that file's root element, e.g. `DatabaseReader`, from `.database_reader`, as the linked file is read in the link's place.
+Each link to another XML file has the type of that file's root element, e.g. `CoreProfilesSettings`, from `.core_profiles.core_profiles`, as the linked file is read in the link's place.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
+from .core_profiles.core_profiles import CoreProfilesSettings
 from .database_reader import DatabaseReader
 from .database_writer import DatabaseWriter
 from .equilibrium.equilibrium import EquilibriumSettings
@@ -25,7 +26,6 @@ from .rtgsfit_code_settings import RtgsfitCodeSettings
 from .rtgsfit_initial_conditions import RtgsfitInitialConditions
 from .sensor_replacement import SensorReplacement
 from .tf.tf import TfSettings
-from .thomson_scattering.thomson_scattering import ThomsonScatteringSettings
 from .wall.wall import WallSettings
 
 
@@ -59,20 +59,20 @@ class GsfitCodeSettingsIds:
     Settings needed to build IDSs. These settings will be stored within the IDSs once built.
 
     :param equilibrium: Settings needed to build `equilibrium` IDS; e.g. `time_slices`, the numerical grid, ...
+    :param core_profiles: Settings needed to build `core_profiles` IDS; e.g. where to read data from, and how the measurements are turned into the profiles. Needed when the equilibrium fits pressure, see equilibrium/constraints_pressure.xml.
     :param magnetics: Settings needed to build `magnetics` IDS; e.g. where to read data from.
     :param pf_active: Settings needed to build `pf_active` IDS; e.g. where to read data from.
     :param pf_passive: Settings needed to build `pf_passive` IDS; e.g. where to read data from.
     :param pulse_schedule: Settings needed to build `pulse_schedule` IDS; e.g. where to read data from.
     :param tf: Settings needed to build `tf` IDS; e.g. where to read data from, and reference radius for toroidal vacuum field.
-    :param thomson_scattering: Settings needed to build `thomson_scattering` IDS; e.g. where to read data from, and which time-sices/channels have trustworthy data.
     :param wall: Settings needed to build `wall` IDS; e.g. where to read data from.
     """
 
     equilibrium: EquilibriumSettings
+    core_profiles: CoreProfilesSettings | None = None
     magnetics: MagneticsSettings
     pf_active: PfActiveSettings
     pf_passive: PfPassiveSettings
     pulse_schedule: PulseScheduleSettings | None = None
     tf: TfSettings
-    thomson_scattering: ThomsonScatteringSettings | None = None
     wall: WallSettings

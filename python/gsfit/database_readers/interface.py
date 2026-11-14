@@ -1,20 +1,16 @@
 import typing
 from typing import Protocol
 
-import numpy as np
-import numpy.typing as npt
+from gsfit_rs import CoreProfiles
 from gsfit_rs import Equilibrium
-from gsfit_rs import Isoflux
-from gsfit_rs import IsofluxBoundary
 from gsfit_rs import Magnetics
 from gsfit_rs import PfActive
 from gsfit_rs import PfPassive
-from gsfit_rs import Pressure
 from gsfit_rs import PulseSchedule
-from gsfit_rs import StationaryPoint
 from gsfit_rs import Tf
 from gsfit_rs import Wall
 
+from ..settings_schema.python.core_profiles.core_profiles import CoreProfilesSettings
 from ..settings_schema.python.equilibrium.equilibrium import EquilibriumSettings
 from ..settings_schema.python.magnetics.magnetics import MagneticsSettings
 from ..settings_schema.python.pf_active.pf_active import PfActiveSettings
@@ -28,7 +24,7 @@ class DatabaseReaderProtocol(Protocol):
     """
     Protocol for reading experimental data.
     Each method is responsible for initialising one of the Rust objects:
-    `equilibrium`, `isoflux`, `isoflux_boundary`, `magnetics`, `stationary_point`, `pf_active`, `pf_passive`, `tf`, and `wall`.
+    `equilibrium`, `magnetics`, `pf_active`, `pf_passive`, `tf`, and `wall`.
 
     The Protocol defines the inputs and outputs of each method.
     New database readers should be implemented **all** methods.
@@ -46,18 +42,17 @@ class DatabaseReaderProtocol(Protocol):
         :param kwargs: Additional objects, such as FreeGNSKE object
 
         The equilibrium is built from its settings alone. `equilibrium/code/parameters` holds them as XML: `equilibrium.xml`, with
-        each file it links to written in its link's place. `Equilibrium` reads the XML into `equilibrium/code/parameters_parsed`,
-        e.g. `equilibrium/code/parameters_parsed/grid/n_r`, whose structs are generated from the settings' XML schema, and makes
-        everything else from it: one time-slice per time to reconstruct, each with the grid and the magnetic sensors' weights, the
-        Greens tables between the grid points, `greens/grid/plasma`, and the p' and ff' source functions. So **record all the settings**: a reader which records
-        only some leaves the rest of `code/parameters_parsed` unset.
+        each file it links to written in its link's place. `Equilibrium` validates the XML against its XML schema, reads it into structs
+        generated from that XML schema, and makes everything else from them: one time-slice per time to reconstruct, each with the grid and
+        the magnetic sensors' weights, the Greens tables between the grid points, `greens_tables/grid/plasma`, and the p' and ff' source functions.
+        So **pass all the settings**: settings which leave out a required element do not follow their XML schema, and are refused.
 
         The output of this method must always be an `Equilibrium` object.
 
         At a minimum this method should look like this:
         ```python
         # Initialise the Equilibrium Rust class, with the settings it is built from, which it records in `equilibrium/code/parameters`,
-        # and reads into `equilibrium/code/parameters_parsed`. See `serialise_python_dataclass_to_imas_parameters_input`
+        # and reads into structs. See `serialise_python_dataclass_to_imas_parameters_input`
         equilibrium = Equilibrium(parameters_input)
 
         return equilibrium
@@ -116,153 +111,23 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_isoflux_sensors(
-        self, pulseNo: int, settings: MagneticsSettings, times_to_reconstruct: npt.NDArray[np.float64], **kwargs: dict[str, typing.Any]
-    ) -> Isoflux:
-        """
-        This method initialises the Rust `Isoflux` class (two locations which have equal poloidal flux).
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
-        :param times_to_reconstruct: Times to reconstruct the equilibrium
-        :param kwargs: Additional objects, such as FreeGNSKE object
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
-
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_isoflux.json`: Which contains "fitting parameters", e.g. if the constraint should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the coordinates where the isoflux constraint is applied
-
-        Different machines will use different data stores for the isoflux coordiantes.
-        This Protocol allows different database readers to be selected.
-        The output of this method must always be a `Isoflux` object.
-
-        At a minimum this method should look like this:
-        ```python
-        # Initialise the Isoflux Rust class
-        isoflux = Isoflux()
-
-        # Add all of the isoflux constraints
-        for i_isoflux_constraint in range(n_isoflux_constraints):
-            isoflux.add_sensor(
-                name=...,                  # need to be same in database and `sensor_weights_isoflux.json` file
-                fit_settings_comment=...,  # read from `sensor_weights_isoflux.json` file
-                fit_settings_include=...,  # read from `sensor_weights_isoflux.json` file
-                fit_settings_weight=...,   # read from `sensor_weights_isoflux.json` file
-                time=...,                  # read from a database
-                location_1_r=...,          # read from a database
-                location_1_z=...,          # read from a database
-                location_2_r=...,          # read from a database
-                location_2_z=...,          # read from a database
-                times_to_reconstruct=...,  # read from `GSFIT_code_settings.json` file
-            )
-
-        return isoflux
-        ```
-        """
-        ...
-
-    def setup_isoflux_boundary_sensors(self, pulseNo: int, settings: MagneticsSettings, **kwargs: dict[str, typing.Any]) -> IsofluxBoundary:
-        """
-        This method initialises the Rust `IsofluxBoundary` class (a location which has the same poloidal flux as the plasma boundary).
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
-        :param kwargs: Additional objects, such as FreeGNSKE object
-
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_isoflux_boundary.json`: Which contains "fitting parameters", e.g. if the constraint should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the coordinates where the isoflux boundary constraint is applied
-
-        Different machines will use different data stores for the isoflux coordiantes.
-        This Protocol allows different database readers to be selected.
-        The output of this method must always be a `IsofluxBoundary` object.
-
-        At a minimum this method should look like this:
-        ```python
-        # Initialise the IsofluxBoundary Rust class
-        isoflux_boundary = IsofluxBoundary()
-
-        # Add all of the isoflux_boundary constraints
-        for i_isoflux_boundary_constraint in range(n_isoflux_boundary_constraints):
-            isoflux_boundary.add_sensor(
-                name=...,                         # need to be same in database and `sensor_weights_isoflux_boundary.json` file
-                fit_settings_comment=...,         # read from `sensor_weights_isoflux_boundary.json` file
-                fit_settings_include=...,         # read from `sensor_weights_isoflux_boundary.json` file
-                fit_settings_weight=...,          # read from `sensor_weights_isoflux_boundary.json` file
-                time=...,                         # read from a database
-                location_1_r=...,                 # read from a database
-                location_1_z=...,                 # read from a database
-                location_2_r=...,                 # read from a database
-                location_2_z=...,                 # read from a database
-                times_to_reconstruct=...,         # read from `GSFIT_code_settings.json` file
-            )
-
-        return isoflux_boundary
-        ```
-        """
-        ...
-
-    def setup_stationary_point_sensors(self, pulseNo: int, settings: MagneticsSettings, **kwargs: dict[str, typing.Any]) -> StationaryPoint:
-        """
-        This method initialises the Rust `StationaryPoint` class (the magnetic axis, and x-point positions).
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
-        :param kwargs: Additional objects, such as FreeGNSKE object
-
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_magnetic_axis.json`: Which contains "fitting parameters", e.g. if a probe should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the measurements and the probe geometry
-
-        Different machines will use different data stores for the measured signals.
-        This Protocol allows different database readers to be selected.
-        The output of this method must always be a `StationaryPoint` object.
-
-        At a minimum this method should look like this:
-        ```python
-        # Initialise the StationaryPoint Rust class
-        stationary_point = StationaryPoint()
-
-        # Add all of the magnetic axis sensors
-        for i_magnetic_axis in range(n_magnetic_axis_sensors):
-            stationary_point.add_sensor(
-                name=...,                         # read from a database
-                fit_settings_comment=...,         # read from `sensor_weights_magnetic_axis.json` file
-                fit_settings_expected_value=...,  # read from `sensor_weights_magnetic_axis.json` file
-                fit_settings_include=...,         # read from `sensor_weights_magnetic_axis.json` file
-                fit_settings_weight=...,          # read from `sensor_weights_magnetic_axis.json` file
-                time=...,                         # read from a database
-                mag_axis_r=...,                   # read from a database
-                mag_axis_z=...,                   # read from a database
-                times_to_reconstruct=...,         # read from `GSFIT_code_settings.json` file
-            )
-
-        return stationary_point
-        ```
-        """
-        ...
-
-    def setup_pf_passive(
-        self, pulseNo: int, settings: PfPassiveSettings, settings_equilibrium: EquilibriumSettings, **kwargs: dict[str, typing.Any]
-    ) -> PfPassive:
+    def setup_pf_passive(self, pulseNo: int, settings: PfPassiveSettings, **kwargs: dict[str, typing.Any]) -> PfPassive:
         """
         This method initialises the Rust `PfPassive` class, which holds an IMAS `pf_passive` IDS (the passive toroidal conductors).
 
         :param pulseNo: Pulse number, used to read from the database
         :param settings: `PfPassiveSettings` object containing the XML settings read from the `settings` directory
-        :param settings_equilibrium: `EquilibriumSettings` object, whose `pf_passive_dof` says which passive conductors to fit, and how
         :param kwargs: Additional objects, such as FreeGSNKE object
 
-        Initialising requires reading data from two locations:
-        1. `equilibrium/pf_passive_dof.xml`: Which specifies how the conductor should be represented (e.g. constant current density,
-           or eigenmode decomposition)
-        2. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the coordinates where the passive conductors are located
+        The passive conductors are machine data only: where they are and their resistivity, read from a database (e.g. MDSplus, or a
+        FreeGSNKE object). **Add every passive conductor the database holds**: which of them to fit, and how (e.g. a constant current density,
+        or an eigenmode decomposition), is the equilibrium's, `equilibrium/pf_passive_dof.xml`, which `Equilibrium.copy_from_pf_passive_ids`
+        reads, finding each passive conductor by its `name`.
 
         One `pf_passive/loop(i1)` is added for each passive conductor, with one `element(i2)` per filament.
 
-        **Each loop's `name` must be unique**: the sensors and the solver match up the passive conductors by name.
+        **Each loop's `name` must be unique**, and is the name `pf_passive_dof.xml` gives it: the equilibrium, the sensors and the solver match up
+        the passive conductors by name.
 
         **Each filament is a parallelogram, described as the data dictionary's `oblique`**: from one of its corners, the reference point `r`, `z`,
         with the lengths of the two sides which meet there, `length_alpha` and `length_beta`, and their angles, `alpha` counter-clockwise from the
@@ -290,10 +155,6 @@ class DatabaseReaderProtocol(Protocol):
                 alpha=...,                      # read from a database, one value per filament
                 beta=...,                       # read from a database, one value per filament
                 resistivity=...,                # read from a database
-                current_distribution_type=...,  # read from `pf_passive_dof.xml` file
-                n_dof=...,                      # read from `pf_passive_dof.xml` file
-                regularisations=...,            # read from `pf_passive_dof.xml` file
-                regularisations_weight=...,     # read from `pf_passive_dof.xml` file
             )
 
         return pf_passive
@@ -312,8 +173,9 @@ class DatabaseReaderProtocol(Protocol):
         Initialising requires reading data from:
         1. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the toroidal field measurement
 
-        Two nodes are filled. `tf/r0` is the machine's reference major radius, which the solver
-        copies onto `equilibrium/vacuum_toroidal_field/r0` so that the two IDSs cannot disagree.
+        Two nodes are filled. `tf/r0` is the machine's reference major radius, which `Tf` sets from the settings'
+        `vacuum_toroidal_field_reference_radius`, and which the solver copies onto
+        `equilibrium/vacuum_toroidal_field/r0` so that the two IDSs cannot disagree.
         `tf/b_field_phi_vacuum_r` is the vacuum field times major radius, which is the vacuum
         poloidal-current function `f_vac = R0 * B_phi0 = mu_0 * i_rod / (2 * pi)`. The rod current
         is not stored separately: the solver recovers it as `i_rod = 2 * pi * f_vac / mu_0`.
@@ -331,11 +193,9 @@ class DatabaseReaderProtocol(Protocol):
 
         At a minimum this method should look like this:
         ```python
-        # Initialise the Tf Rust class, with the settings it is built from, which it records in `tf/code/parameters`.
+        # Initialise the Tf Rust class, with the settings it is built from, which set `tf/r0` and which it records in `tf/code/parameters`.
         # See `serialise_python_dataclass_to_imas_parameters_input`
         tf = Tf(parameters_input)
-
-        tf.set_r0(...)  # read from `GSFIT_code_settings.json` file
 
         # A machine holding a rod current converts it; one holding `R * B_phi` passes it straight
         tf.set_b_field_phi_vacuum_r(
@@ -410,6 +270,11 @@ class DatabaseReaderProtocol(Protocol):
 
         Every sensor is added, whether or not it is fitted: which sensors are fitted, and their weights, are the equilibrium's constraints.
 
+        The constraints at points which can move are added here too, as custom keys of the magnetics IDS: the isoflux constraints, two points
+        on the same flux surface, the isoflux boundary constraints, a point on the plasma boundary, and the stationary point constraints, an
+        X-point or the magnetic axis. Each point is a time trace on the constraint's own timebase, which need not be the reconstruction
+        times; NaN where it is not known. A reader with none of them adds none.
+
         **Store the experimental signals**, each on its own timebase, not interpolated onto the reconstruction times.
 
         **The probes' `poloidal_angle` keeps GSFit's present definition, COCOS 13**: counter-clockwise from `grad(R)`, in the usual plot with `R` to the
@@ -468,50 +333,88 @@ class DatabaseReaderProtocol(Protocol):
             data=...,         # read from a database
         )
 
+        for i_isoflux in range(n_isofluxes):
+            magnetics.add_isoflux(
+                name=...,          # need to be same in database and `constraints_isoflux.xml` file
+                description=...,   # e.g. where the two points are read from
+                time=...,          # read from a database
+                position_1_r=...,  # read from a database, NaN where not known
+                position_1_z=...,  # read from a database
+                position_2_r=...,  # read from a database, NaN where not known
+                position_2_z=...,  # read from a database
+            )
+
+        for i_isoflux_boundary in range(n_isoflux_boundaries):
+            magnetics.add_isoflux_boundary(
+                name=...,         # need to be same in database and `constraints_isoflux_boundary.xml` file
+                description=...,  # e.g. where the point is read from
+                time=...,         # read from a database
+                position_r=...,   # read from a database, NaN where not known
+                position_z=...,   # read from a database
+            )
+
+        for i_stationary_point in range(n_stationary_points):
+            magnetics.add_stationary_point(
+                name=...,         # need to be same in database and `constraints_stationary_point.xml` file, e.g. "MAGNETIC_AXIS"
+                description=...,  # e.g. whether the point is the magnetic axis or an X-point, and where it is read from
+                time=...,         # read from a database
+                position_r=...,   # read from a database, NaN where not known
+                position_z=...,   # read from a database
+            )
+
         return magnetics
         ```
         """
         ...
 
-    def setup_pressure_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Pressure:
+    def setup_core_profiles(self, pulseNo: int, settings: CoreProfilesSettings, **kwargs: dict[str, typing.Any]) -> CoreProfiles | None:
         """
-        This method initialises the Rust `Pressure` class (pressure measurements at specific locations in the poloidal plane).
+        This method initialises the Rust `CoreProfiles` class, which holds an IMAS `core_profiles` IDS: the kinetic profiles which the
+        pressure constraints are made from.
 
         :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param settings: `CoreProfilesSettings` object containing the XML settings read from the `settings` directory
         :param kwargs: Additional objects, such as FreeGNSKE object
 
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_pressure.json`: Which contains "fitting parameters", e.g. if a sensor should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the measurements and sensor geometry
+        **This method is optional.**
+        Like `setup_pulse_schedule` it has a default, which returns `None`: the equilibrium then cannot fit pressure. `Gsfit` only calls
+        it when the equilibrium fits pressure, with the `core_profiles.xml` which `GSFIT_code_settings.xml` links, and then calls
+        `Equilibrium.copy_from_core_profiles_ids` with what it returns.
 
-        Different machines will use different data stores for the sensor geometry and measured signals.
+        Initialising requires reading data from:
+        1. Database reading (e.g. MDSplus): Which contains the kinetic measurements, e.g. the Thomson scattering
+
+        `core_profiles/profiles_2d(itime)` is filled at a list of points in the poloidal cross-section, the irregular (R, Z) grid
+        `irregular_rz_na`, one time per measurement time: the electron pressure, `electrons/pressure`, and the thermal pressure,
+        `pressure_thermal`, which `Equilibrium.copy_from_core_profiles_ids` makes one pressure constraint per point from. A value which was
+        not measured, or is not physical, is NaN, which the equilibrium does not fit.
+
+        **Store the experimental times**, not the reconstruction times. `Equilibrium.copy_from_core_profiles_ids` interpolates onto them
+        itself.
+
+        Different machines will use different data stores for the kinetic measurements.
         This Protocol allows different database readers to be selected.
-        The output of this method must always be a `Pressure` object.
+        The output of this method must always be a `CoreProfiles` object, or `None`.
 
         At a minimum this method should look like this:
         ```python
-        # Initialise the Pressure Rust class
-        pressure = Pressure()
+        # Initialise the CoreProfiles Rust class, with the settings it is built from, which it records in `core_profiles/code/parameters`.
+        # See `serialise_python_dataclass_to_imas_parameters_input`
+        core_profiles = CoreProfiles(parameters_input)
 
-        # Add all of the pressure sensors
-        for i_pressure_sensor in range(n_pressure_sensors):
-            pressure.add_sensor(
-                name=...,                         # need to be same in database and `sensor_weights_pressure.json` file
-                geometry_r=...,                   # read from a database
-                geometry_z=...,                   # read from a database
-                fit_settings_comment=...,         # read from `sensor_weights_pressure.json` file
-                fit_settings_expected_value=...,  # read from `sensor_weights_pressure.json` file
-                fit_settings_include=...,         # read from `sensor_weights_pressure.json` file
-                fit_settings_weight=...,          # read from `sensor_weights_pressure.json` file
-                time=...,                         # read from a database
-                measured=...,                     # read from a database
-            )
+        core_profiles.set_profiles_2d_irregular_rz(
+            time=...,                # read from a database, shape = [n_time]
+            r=...,                   # read from a database, shape = [n_point]
+            z=...,                   # read from a database, shape = [n_point]
+            electrons_pressure=...,  # read from a database, shape = [n_time, n_point]
+            pressure_thermal=...,    # e.g. 2 * electrons_pressure, shape = [n_time, n_point]
+        )
 
-        return pressure
+        return core_profiles
         ```
         """
-        ...
+
+        return None
 
     def setup_pulse_schedule(self, pulseNo: int, settings: PulseScheduleSettings, **kwargs: dict[str, typing.Any]) -> PulseSchedule | None:
         """

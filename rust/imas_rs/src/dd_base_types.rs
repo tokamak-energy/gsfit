@@ -154,9 +154,9 @@ pub type StructArray<T> = Vec<T>;
 // not contiguous in memory, so they have to be gathered into a fresh array.
 //
 // Arrays of structures can be sliced at more than one level, e.g.
-// `magnetics.flux_loop(..).greens.pf_active(..).value`. The dimensions are then gained from left to
+// `pf_active.coil(..).element(..).turns_with_sign`. The dimensions are then gained from left to
 // right: one per sliced level in the order they appear on the path, followed by the leaf's own
-// dimensions, so that example is `(n_flux_loop, n_pf)`. See `arrange_left_to_right`, which is the
+// dimensions, so that example is `(n_coil, n_element)`. See `arrange_left_to_right`, which is the
 // one place that rule lives.
 //
 // The accumulator is generic and hand-written once: the generated code supplies the field path as
@@ -173,7 +173,7 @@ pub type StructArray<T> = Vec<T>;
 ///
 /// The result has shape `[n_level_1, ..., n_level_k, leaf...]`: one dimension per sliced level, in
 /// the order they appear on the path, followed by the leaf's own dimensions. So
-/// `flux_loop(..)/greens/pf_active(..)/value` is `(n_flux_loop, n_pf)`, and
+/// `coil(..)/element(..)/turns_with_sign` is `(n_coil, n_element)`, and
 /// `time_slice(..)/profiles_2d(0)/psi` is `(n_time, n_z, n_r)`, which is how IMAS lays out a time
 /// series: time first. A signal stored inside an array of structures therefore has its time last,
 /// e.g. `flux_loop(..)/flux/data` is `(n_flux_loop, n_time)`.
@@ -257,7 +257,7 @@ impl<'a, T, D> Elements<'a, T, D> {
 impl<'a, T, D: Dimension> Elements<'a, T, D> {
     /// Slice a nested array of structures under every element, adding one dimension.
     ///
-    /// `get` reaches the nested array from one element, e.g. `|flux_loop| &flux_loop.greens.pf_active`,
+    /// `get` reaches the nested array from one element, e.g. `|description_2d| &description_2d.limiter.unit`,
     /// and `range` is applied under every element. `field_path` is only used to name the nested
     /// array if this panics.
     ///
@@ -401,7 +401,7 @@ impl<'a, T, U, D> Accumulator<'a, T, U, D> {
 
 impl<T, U: Copy, D: Dimension> Accumulator<'_, T, U, D> {
     /// Gather every value of a numeric leaf into an array whose dimensions are gained from left to
-    /// right, e.g. `flux_loop(..).greens.pf_active(..).value.to_array()` is `(n_flux_loop, n_pf)`.
+    /// right, e.g. `coil(..).element(..).turns_with_sign.to_array()` is `(n_coil, n_element)`.
     ///
     /// A string leaf gathers with `to_vec` instead; see [`Accumulator`].
     pub fn to_array(&self) -> Array<U, D> {
@@ -606,135 +606,166 @@ pub use num_complex::Complex64 as Complex;
 mod tests {
     use super::*;
     use crate::ids::equilibrium::Equilibrium;
-    use crate::ids::magnetics::{Magnetics, MagneticsFluxLoop, MagneticsFluxLoopGreensPfActive};
+    use crate::ids::pf_active::{PfActive, PfCoils, PfCoilsElements};
+    use crate::ids::wall::{Wall, Wall2d, Wall2dLimiterUnit};
 
-    /// A distinct value for every (flux loop, PF coil) pair, so that a transposed or mis-ordered
+    /// A distinct value for every (outer element, inner element) pair, so that a transposed or mis-ordered
     /// gather cannot pass by accident.
-    fn greens_value(i_flux_loop: usize, i_pf: usize) -> f64 {
-        10.0 * (i_flux_loop as f64) + (i_pf as f64)
+    fn leaf_value(i_outer: usize, i_inner: usize) -> f64 {
+        10.0 * (i_outer as f64) + (i_inner as f64)
     }
 
-    /// `n_flux_loop` flux loops, each with `n_pf` PF coil Greens entries.
-    fn magnetics_with_greens(n_flux_loop: usize, n_pf: usize) -> Magnetics {
-        let mut magnetics: Magnetics = Magnetics {
-            flux_loop: vec![MagneticsFluxLoop::default(); n_flux_loop],
-            ..Magnetics::default()
+    /// `n_coil` PF coils, each with `n_element` elements, every one of them named.
+    fn pf_active_with_elements(n_coil: usize, n_element: usize) -> PfActive {
+        let mut pf_active: PfActive = PfActive {
+            coil: vec![PfCoils::default(); n_coil],
+            ..PfActive::default()
         };
-        for i_flux_loop in 0..n_flux_loop {
-            magnetics.flux_loop[i_flux_loop].name = format!("L{i_flux_loop:03}");
-            magnetics.flux_loop[i_flux_loop].greens.pf_active = vec![MagneticsFluxLoopGreensPfActive::default(); n_pf];
-            for i_pf in 0..n_pf {
-                magnetics.flux_loop[i_flux_loop].greens.pf_active[i_pf].name = format!("PF{i_pf}");
-                magnetics.flux_loop[i_flux_loop].greens.pf_active[i_pf].value = greens_value(i_flux_loop, i_pf);
+        for i_coil in 0..n_coil {
+            pf_active.coil[i_coil].name = format!("C{i_coil:03}");
+            pf_active.coil[i_coil].element = vec![PfCoilsElements::default(); n_element];
+            for i_element in 0..n_element {
+                pf_active.coil[i_coil].element[i_element].name = format!("E{i_element}");
+                pf_active.coil[i_coil].element[i_element].turns_with_sign = leaf_value(i_coil, i_element);
             }
         }
-        magnetics
+        pf_active
     }
 
     /// Two sliced levels are gained from left to right: the first on the path is the leftmost dimension.
     #[test]
     fn two_sliced_levels_are_gained_from_left_to_right() {
-        let n_flux_loop: usize = 3;
-        let n_pf: usize = 2;
-        let magnetics: Magnetics = magnetics_with_greens(n_flux_loop, n_pf);
+        let n_coil: usize = 3;
+        let n_element: usize = 2;
+        let pf_active: PfActive = pf_active_with_elements(n_coil, n_element);
 
-        let values: Array2<f64> = magnetics.flux_loop(..).greens.pf_active(..).value.to_array(); // shape = (n_flux_loop, n_pf)
-        assert_eq!(values.dim(), (n_flux_loop, n_pf));
-        for i_flux_loop in 0..n_flux_loop {
-            for i_pf in 0..n_pf {
-                assert_eq!(values[[i_flux_loop, i_pf]], greens_value(i_flux_loop, i_pf));
+        let values: Array2<f64> = pf_active.coil(..).element(..).turns_with_sign.to_array(); // shape = (n_coil, n_element)
+        assert_eq!(values.dim(), (n_coil, n_element));
+        for i_coil in 0..n_coil {
+            for i_element in 0..n_element {
+                assert_eq!(values[[i_coil, i_element]], leaf_value(i_coil, i_element));
             }
         }
 
         // Strings gather into a `Vec<String>`, over a single sliced level
-        let pf_names: Vec<String> = magnetics.flux_loop[2].greens.pf_active(..).name.to_vec();
-        assert_eq!(pf_names, vec!["PF0".to_string(), "PF1".to_string()]);
+        let element_names: Vec<String> = pf_active.coil[2].element(..).name.to_vec();
+        assert_eq!(element_names, vec!["E0".to_string(), "E1".to_string()]);
 
         // A leaf above the second level is still gathered over the first level only
-        let flux_loop_names: Vec<String> = magnetics.flux_loop(..).name.to_vec();
-        assert_eq!(flux_loop_names, vec!["L000".to_string(), "L001".to_string(), "L002".to_string()]);
+        let coil_names: Vec<String> = pf_active.coil(..).name.to_vec();
+        assert_eq!(coil_names, vec!["C000".to_string(), "C001".to_string(), "C002".to_string()]);
 
-        assert_eq!(magnetics.flux_loop(..).greens.pf_active(..).shape(), vec![n_flux_loop, n_pf]);
-        assert_eq!(magnetics.flux_loop(..).greens.pf_active(..).len(), n_flux_loop * n_pf);
+        assert_eq!(pf_active.coil(..).element(..).shape(), vec![n_coil, n_element]);
+        assert_eq!(pf_active.coil(..).element(..).len(), n_coil * n_element);
     }
 
     /// A range at each level selects the same elements it would from a single `Vec`.
     #[test]
     fn ranges_apply_at_every_level() {
-        let magnetics: Magnetics = magnetics_with_greens(4, 3);
+        let pf_active: PfActive = pf_active_with_elements(4, 3);
 
-        let values: Array2<f64> = magnetics.flux_loop(1..3).greens.pf_active(1..).value.to_array(); // shape = (n_flux_loop, n_pf)
+        let values: Array2<f64> = pf_active.coil(1..3).element(1..).turns_with_sign.to_array(); // shape = (n_coil, n_element)
         assert_eq!(values.dim(), (2, 2));
-        assert_eq!(values[[0, 0]], greens_value(1, 1));
-        assert_eq!(values[[0, 1]], greens_value(1, 2));
-        assert_eq!(values[[1, 0]], greens_value(2, 1));
-        assert_eq!(values[[1, 1]], greens_value(2, 2));
+        assert_eq!(values[[0, 0]], leaf_value(1, 1));
+        assert_eq!(values[[0, 1]], leaf_value(1, 2));
+        assert_eq!(values[[1, 0]], leaf_value(2, 1));
+        assert_eq!(values[[1, 1]], leaf_value(2, 2));
 
         // Slicing from a single element is one level, not two
-        let values: Array1<f64> = magnetics.flux_loop[2].greens.pf_active(..).value.to_array();
-        assert_eq!(values, array![greens_value(2, 0), greens_value(2, 1), greens_value(2, 2)]);
+        let values: Array1<f64> = pf_active.coil[2].element(..).turns_with_sign.to_array();
+        assert_eq!(values, array![leaf_value(2, 0), leaf_value(2, 1), leaf_value(2, 2)]);
     }
 
     #[test]
-    #[should_panic(expected = "cannot gather `greens.pf_active`")]
+    #[should_panic(expected = "cannot gather `element`")]
     fn a_jagged_nested_level_panics() {
-        let mut magnetics: Magnetics = magnetics_with_greens(3, 2);
-        magnetics.flux_loop[1].greens.pf_active.pop();
+        let mut pf_active: PfActive = pf_active_with_elements(3, 2);
+        pf_active.coil[1].element.pop();
 
-        let _values: Array2<f64> = magnetics.flux_loop(..).greens.pf_active(..).value.to_array();
+        let _values: Array2<f64> = pf_active.coil(..).element(..).turns_with_sign.to_array();
     }
 
     /// A name selects the one element with that name, from the structure which holds the array.
     #[test]
     fn a_name_selects_one_element() {
-        let magnetics: Magnetics = magnetics_with_greens(3, 2);
+        let pf_active: PfActive = pf_active_with_elements(3, 2);
 
-        assert_eq!(magnetics.flux_loop("L001").name, "L001");
-        assert_eq!(magnetics.flux_loop("L002").greens.pf_active("PF1").value, greens_value(2, 1));
+        assert_eq!(pf_active.coil("C001").name, "C001");
+        assert_eq!(pf_active.coil("C002").element("E1").turns_with_sign, leaf_value(2, 1));
 
         // A name held in a `String`
-        let flux_loop_name: String = "L000".to_string();
-        assert_eq!(magnetics.flux_loop(&flux_loop_name).greens.pf_active("PF0").value, greens_value(0, 0));
+        let coil_name: String = "C000".to_string();
+        assert_eq!(pf_active.coil(&coil_name).element("E0").turns_with_sign, leaf_value(0, 0));
     }
 
     /// A name under every element takes the element with that name under each of them, adding no dimension.
     #[test]
     fn a_name_under_every_element_adds_no_dimension() {
-        let magnetics: Magnetics = magnetics_with_greens(3, 2);
+        let pf_active: PfActive = pf_active_with_elements(3, 2);
 
-        let values: Array1<f64> = magnetics.flux_loop(..).greens.pf_active("PF1").value.to_array(); // shape = (n_flux_loop)
-        assert_eq!(values, array![greens_value(0, 1), greens_value(1, 1), greens_value(2, 1)]);
+        let values: Array1<f64> = pf_active.coil(..).element("E1").turns_with_sign.to_array(); // shape = (n_coil)
+        assert_eq!(values, array![leaf_value(0, 1), leaf_value(1, 1), leaf_value(2, 1)]);
 
         // A range above a name still adds its own dimension
-        let values: Array1<f64> = magnetics.flux_loop(1..).greens.pf_active("PF0").value.to_array(); // shape = (n_flux_loop)
-        assert_eq!(values, array![greens_value(1, 0), greens_value(2, 0)]);
+        let values: Array1<f64> = pf_active.coil(1..).element("E0").turns_with_sign.to_array(); // shape = (n_coil)
+        assert_eq!(values, array![leaf_value(1, 0), leaf_value(2, 0)]);
     }
 
     #[test]
-    #[should_panic(expected = "cannot select from `flux_loop`: no element is named `L009`; the names are [\"L000\", \"L001\", \"L002\"]")]
+    #[should_panic(expected = "cannot select from `coil`: no element is named `C009`; the names are [\"C000\", \"C001\", \"C002\"]")]
     fn a_name_which_no_element_has_panics() {
-        let magnetics: Magnetics = magnetics_with_greens(3, 2);
+        let pf_active: PfActive = pf_active_with_elements(3, 2);
 
-        let _flux_loop: &MagneticsFluxLoop = magnetics.flux_loop("L009");
+        let _coil: &PfCoils = pf_active.coil("C009");
     }
 
     /// The data dictionary asks for names to be unique, so a repeated name is an error rather than a choice of the first.
     #[test]
-    #[should_panic(expected = "cannot select from `greens.pf_active` under the element at [1]: more than one element is named `PF0`, at positions 0 and 1")]
+    #[should_panic(expected = "cannot select from `element` under the element at [1]: more than one element is named `E0`, at positions 0 and 1")]
     fn a_name_which_more_than_one_element_has_panics() {
-        let mut magnetics: Magnetics = magnetics_with_greens(3, 2);
-        magnetics.flux_loop[1].greens.pf_active[1].name = "PF0".to_string();
+        let mut pf_active: PfActive = pf_active_with_elements(3, 2);
+        pf_active.coil[1].element[1].name = "E0".to_string();
 
-        let _values: Array1<f64> = magnetics.flux_loop(..).greens.pf_active("PF0").value.to_array();
+        let _values: Array1<f64> = pf_active.coil(..).element("E0").turns_with_sign.to_array();
     }
 
     /// Gathering over no outer elements is empty at every level, rather than a panic.
     #[test]
     fn no_outer_elements_gathers_an_empty_array() {
-        let magnetics: Magnetics = Magnetics::default();
+        let pf_active: PfActive = PfActive::default();
 
-        let values: Array2<f64> = magnetics.flux_loop(..).greens.pf_active(..).value.to_array();
+        let values: Array2<f64> = pf_active.coil(..).element(..).turns_with_sign.to_array();
         assert_eq!(values.dim(), (0, 0));
+    }
+
+    /// An array of structures under a structure, e.g. `limiter.unit` under every `description_2d`, is sliced, or selected
+    /// from by name, through that structure.
+    #[test]
+    fn an_array_of_structures_under_a_structure_is_sliced_through_it() {
+        let n_description_2d: usize = 2;
+        let n_unit: usize = 3;
+        let mut wall: Wall = Wall {
+            description_2d: vec![Wall2d::default(); n_description_2d],
+            ..Wall::default()
+        };
+        for i_description_2d in 0..n_description_2d {
+            wall.description_2d[i_description_2d].limiter.unit = vec![Wall2dLimiterUnit::default(); n_unit];
+            for i_unit in 0..n_unit {
+                wall.description_2d[i_description_2d].limiter.unit[i_unit].name = format!("U{i_unit}");
+                wall.description_2d[i_description_2d].limiter.unit[i_unit].resistivity = leaf_value(i_description_2d, i_unit);
+            }
+        }
+
+        let values: Array2<f64> = wall.description_2d(..).limiter.unit(..).resistivity.to_array(); // shape = (n_description_2d, n_unit)
+        assert_eq!(values.dim(), (n_description_2d, n_unit));
+        for i_description_2d in 0..n_description_2d {
+            for i_unit in 0..n_unit {
+                assert_eq!(values[[i_description_2d, i_unit]], leaf_value(i_description_2d, i_unit));
+            }
+        }
+
+        let values: Array1<f64> = wall.description_2d(..).limiter.unit("U2").resistivity.to_array(); // shape = (n_description_2d)
+        assert_eq!(values, array![leaf_value(0, 2), leaf_value(1, 2)]);
     }
 
     /// One sliced level is unchanged: a scalar leaf gathers into an `Array1`.

@@ -3,8 +3,17 @@ IMAS IDS Rust Code Generator
 
 Generates Rust struct definitions from IMAS Data Dictionary XSD schema files.
 Includes accessor, view, and accumulator types for slicing Vec<T> fields.
+
+Every input is an XSD schema: the Data Dictionary's schema of each IDS, and GSFit's custom keys for it in
+`custom_keys/custom_<ids>_keys.xsd`. GSFit's settings are not kept in an IDS: their structs are generated from
+their own XML schemas by `python/gsfit/settings_schema/_generate_rust_schema.py`.
+
+Structures of GSFit's own which are not part of any IDS, e.g. the Greens tables in `greens_storage.xsd`, are
+generated as an IDS is, so that they have the same accessors, into the crate which holds them; see `build_structure`.
 """
 
+import inspect
+import os
 import re
 import subprocess
 import xml.etree.ElementTree as ET
@@ -21,14 +30,21 @@ CRATE_DIR: Path = IMAS_UPDATER_DIR.parent
 WORKSPACE_DIR: Path = CRATE_DIR.parent
 # Local clone of the IMAS Data Dictionary; see `README.md` for the pinned version
 DATA_DICTIONARY_DIR: Path = IMAS_UPDATER_DIR / "IMAS-Data-Dictionary"
+# The Data Dictionary's schema of the types shared by every IDS, e.g. the base type `FLT_1D` and the structure
+# `identifier_static`. Each IDS's schema includes it, and so does the schema of each IDS's custom keys
+DD_SUPPORT_XSD_FILE: Path = DATA_DICTIONARY_DIR / "schemas" / "utilities" / "dd_support.xsd"
 # Rust edition of the `imas_rs` crate, needed so that `rustfmt` sorts imports correctly
 RUST_EDITION: str = "2024"
-# Hand-written, non-IMAS keys spliced into the generated structs; see
-# `add_custom_keys_to_ids`. These live here, and not in `src/ids/`, because they
-# are an input to this script rather than compiled Rust
+# The XSD schemas of GSFit's hand-written, non-IMAS keys, merged into the generated structs; see
+# `add_custom_keys_to_ids`. These live here, and not in `src/ids/`, because they are an input to this
+# script rather than compiled Rust
 CUSTOM_KEYS_DIR: Path = IMAS_UPDATER_DIR / "custom_keys"
 # The repository root: `rust/` sits directly inside it
 REPO_ROOT: Path = WORKSPACE_DIR.parent
+# The XSD schema of the Greens tables, a structure of GSFit's own rather than part of any IDS, and the module `build_structure` generates
+# from it, in the `gsfit_rs` crate, whose `Equilibrium` holds them: their structs, their Python bindings, and their pickling
+GREENS_STORAGE_XSD_FILE: Path = IMAS_UPDATER_DIR / "greens_storage.xsd"
+GREENS_STORAGE_RUST_FILE: Path = WORKSPACE_DIR / "gsfit_rs" / "src" / "greens_storage.rs"
 # Where the generated Python type stub goes. This is the `gsfit_rs` Python package, which
 # mounts the `imas_rs` classes as the `gsfit_rs.imas` submodule.
 PYTHON_STUB_FILE: Path = REPO_ROOT / "python" / "gsfit_rs" / "imas.pyi"
@@ -117,16 +133,6 @@ def snake_to_pascal_case(name: str) -> str:
     return "".join(word.capitalize() for word in name.split("_"))
 
 
-def pascal_case_to_snake(name: str) -> str:
-    """Convert PascalCase back to snake_case.
-
-    Custom structs are declared by their Rust (PascalCase) name, while `ComplexType.name` holds
-    the data dictionary's snake_case name and is converted on the way out. Storing the converted
-    form keeps a custom struct's emitted name identical to what was written by hand.
-    """
-    return re.sub(r"(?<!^)(?=[A-Z0-9])", "_", name).lower()
-
-
 def path_to_pascal_case(path: str) -> str:
     """Convert a DD field path ('global_quantities.magnetic_axis.r') to PascalCase."""
     return "".join(snake_to_pascal_case(part) for part in path.split("."))
@@ -195,12 +201,20 @@ def get_rust_type_from_group_ref(group_ref: str) -> str:
 
 
 def extract_documentation(element: ET.Element) -> str:
-    """Extract documentation string from xs:annotation/xs:documentation."""
+    """Extract documentation string from xs:annotation/xs:documentation.
+
+    The documentation is dedented, so that a schema can indent it to line up with its element, as
+    GSFit's schemas do: each line keeps only the indentation it has relative to the others, and the
+    blank lines around it are removed. A blank line inside it, between two paragraphs, is kept.
+    """
     annotation = element.find(f"{XS_NS}annotation")
     if annotation is not None:
         doc = annotation.find(f"{XS_NS}documentation")
         if doc is not None and doc.text:
-            return doc.text.strip()
+            lines: list[str] = []
+            for line in inspect.cleandoc(doc.text).split("\n"):
+                lines.append(line.rstrip())
+            return "\n".join(lines)
     return ""
 
 
@@ -509,18 +523,19 @@ def element_has_name(ct: ComplexType) -> bool:
 def nested_slice_method(f: Field, field_name: str, parent_type_name: str, field_path: str, element_is_named: bool) -> list[str]:
     """Return the method which selects from a nested array of structures from inside a view.
 
-    This is what makes `flux_loop(..).greens.pf_active(..)` possible: `greens` is a view over every
-    flux loop, and `pf_active(..)` slices the `pf_active` array under each of them, adding one
-    dimension after the flux loop's: `flux_loop(..).greens.pf_active(..).value` is `(n_flux_loop, n_pf)`.
-    Where the elements have a `name`, `pf_active(name)` instead takes the element with that name under
-    every flux loop, adding no dimension: `flux_loop(..).greens.pf_active(name).value` is `(n_flux_loop)`.
+    This is what makes `description_2d(..).limiter.unit(..)` possible: `limiter` is a view over every
+    `description_2d`, and `unit(..)` slices the `unit` array under each of them, adding one dimension
+    after the `description_2d`'s: `description_2d(..).limiter.unit(..).resistivity` is
+    `(n_description_2d, n_unit)`. Where the elements have a `name`, `unit(name)` instead takes the element
+    with that name under every `description_2d`, adding no dimension:
+    `description_2d(..).limiter.unit(name).resistivity` is `(n_description_2d)`.
     The method takes any `Selection`; see `dd_base_types.rs`.
 
     Args:
         f: The array-of-structures field.
         field_name: The Rust-safe field name.
         parent_type_name: The array-of-structures element type the view gathers over.
-        field_path: Path to the field from the parent (e.g. "greens.pf_active").
+        field_path: Path to the field from the parent (e.g. "limiter.unit").
         element_is_named: Whether the field's elements have a `name`, so can be selected by it.
     """
     inner_type: str = f.inner_type
@@ -571,7 +586,7 @@ def collect_view_members(
     * a scalar leaf becomes an `Accumulator`;
     * a nested structure becomes a nested view, generated recursively;
     * a nested array of structures becomes a method which slices it under every element, which is
-      what lets `flux_loop(..).greens.pf_active(..)` gather over two levels.
+      what lets `coil(..).element(..)` gather over two levels.
 
     `ancestry` carries the DD types currently being expanded, so a self-referential schema stops
     instead of recursing forever.
@@ -1117,717 +1132,302 @@ def resolve_supporting_types(
 
 def add_custom_keys_to_ids(
     complex_types: list[ComplexType],
-    root_element: Optional[ComplexType],
+    root_element: ComplexType | None,
+    supporting_types: dict[str, ComplexType],
+    ids_name: str,
     path_to_custom_keys_file: Path,
 ) -> None:
-    """Splice hand-written, non-IMAS keys into the parsed IDS structs, in place.
+    """Merge GSFit's custom (non-IMAS) keys, declared in the XSD schema `path_to_custom_keys_file`, into the IDS's structs, in place.
 
-    Rust cannot add a field to a struct declared in another file, so custom keys that must
-    sit flat alongside the IMAS ones (`profiles_2d.d_psi_d_r`, not
-    `profiles_2d.custom.d_psi_d_r`) have to be merged in before the struct is emitted.
+    Rust cannot add a field to a struct declared in another file, so custom keys that must sit flat alongside the IMAS ones
+    (`profiles_2d.d_psi_d_r`, not `profiles_2d.custom.d_psi_d_r`) have to be merged in before the structs are emitted.
 
-    `path_to_custom_keys_file` is ordinary Rust syntax so that it reads like the generated
-    file, but it is never compiled. Each `pub struct <Name>` in it names a *generated*
-    struct, and its fields are appended to that struct. Only `pub <name>: <Type>,` lines and
-    their preceding `///` comments are read; a `/// Units: <units>` line is taken as the
-    field's units, exactly as the XSD parser does.
+    The schema is laid out as the data dictionary's own schema of the IDS, `dd_<ids>.xsd`, is, and holds only GSFit's additions:
+    * a top-level `xs:complexType` named as one of `dd_<ids>.xsd` adds its elements to it, e.g. `equilibrium_profiles_2d`;
+    * a top-level `xs:complexType` with any other name declares a new structure, which some key must have as its type;
+    * the top-level `xs:element` named as the IDS adds its elements to the IDS's root;
+    * inside any of these, an element named as one the data dictionary already has there, holding an `xs:complexType`, adds that
+      complexType's elements to the existing element's structure, which is one declared in `dd_support.xsd`, e.g. `code`.
+    The schema includes `dd_support.xsd`, so that every type it uses is declared and it is a valid schema, which is also why it cannot
+    declare one of `dd_support.xsd`'s structures again to add keys to it. A structure is one struct wherever it is used, so a key added
+    to it is on every element of its type. The data dictionary's structures keep its documentation, so a note on the keys added to one is
+    an XML comment.
+
+    The keys use the data dictionary's types, written as it writes its own: a leaf holds `<xs:group ref="FLT_1D"/>`, or another base
+    type, and a structure names a data dictionary complexType in `type`, e.g. `identifier_static`, or a new structure. Anything else,
+    e.g. `xs:double` or a simple type of the schema's own, is rejected. Each key is then read by `parse_element`, exactly as the data
+    dictionary's own keys are, documentation and units included, and an unset key reads as the IMAS empty value (NaN, `EMPTY_INT`, or
+    empty), just like they do.
+
+    An array of structures has `minOccurs="0"`, as it can be empty, which in IMAS any array can; the data dictionary's own schemas never
+    write `minOccurs`, so read as if each held at least one. A leaf or a single structure has no `minOccurs`: like the data dictionary's,
+    it is always there, a leaf reading as unset when it has no value. `minOccurs` changes nothing generated: an array is a `Vec` either way.
 
     Missing file is not an error: an IDS need not have any custom keys.
+
+    Args:
+        complex_types: The IDS's structs, which the new structures are added to
+        root_element: The IDS's root struct
+        supporting_types: Every structure of `dd_support.xsd`, keyed by its Rust name
+        ids_name: The IDS's name, e.g. "equilibrium"
+        path_to_custom_keys_file: The XSD schema of the custom keys, e.g. `custom_keys/custom_equilibrium_keys.xsd`
     """
     if not path_to_custom_keys_file.is_file():
         return
 
-    source: str = path_to_custom_keys_file.read_text()
+    file_name: str = path_to_custom_keys_file.name
+    schema_root: ET.Element = ET.parse(path_to_custom_keys_file).getroot()
 
-    # Strip the module-level `//!` header and any `use` lines, so they cannot be mistaken
-    # for struct bodies
-    source = re.sub(r"^\s*//!.*$", "", source, flags=re.MULTILINE)
+    # Every structure a key can have as its type, by its name in the schemas: those of `dd_support.xsd`, the IDS's own, and the new ones
+    # below. The IDS's own are the structs which are not from `dd_support.xsd`, as there is nothing else before the custom keys
+    support_types_by_name: dict[str, ComplexType] = {}
+    for supporting_type in supporting_types.values():
+        support_types_by_name[supporting_type.name] = supporting_type
+    ids_types_by_name: dict[str, ComplexType] = {}
+    for ct in complex_types:
+        if ct.name not in support_types_by_name:
+            ids_types_by_name[ct.name] = ct
+    types_by_name: dict[str, ComplexType] = dict(support_types_by_name)
+    types_by_name.update(ids_types_by_name)
 
-    # The root element is included so that custom keys can be added to the IDS itself, e.g. the
-    # `code` structure, and not only to the types nested inside it
-    all_types: list[ComplexType] = complex_types + ([root_element] if root_element else [])
-    types_by_struct_name: dict[str, ComplexType] = {snake_to_pascal_case(ct.name): ct for ct in all_types}
+    # The Rust name of every struct, so that a new structure is not named as one which already exists
+    struct_names: set[str] = set()
+    for ct in types_by_name.values():
+        struct_names.add(snake_to_pascal_case(ct.name))
+    if root_element is not None:
+        struct_names.add(snake_to_pascal_case(root_element.name))
 
-    struct_pattern = re.compile(r"pub\s+struct\s+(\w+)\s*\{(.*?)\n\}", re.DOTALL)
-    # `(?:r#)?` so a key whose name is a Rust keyword can be written as the raw identifier it has
-    # to be in the generated code; the bare name is captured, and `sanitize_rust_identifier`
-    # puts the `r#` back
-    field_pattern = re.compile(r"((?:\s*///.*\n)*)\s*pub\s+(?:r#)?(\w+)\s*:\s*([^,]+?)\s*,", re.MULTILINE)
-
-    # A struct name which is not already generated declares a *new* nested type, e.g. the
-    # `bounding` sub-structure of `boundary`. It is validated at the end: every new type must be
-    # referenced by some custom field, so that a typo'd struct name is still caught.
-    new_struct_names: list[str] = []
-
-    for struct_match in struct_pattern.finditer(source):
-        struct_name: str = struct_match.group(1)
-        struct_body: str = struct_match.group(2)
-
-        if struct_name not in types_by_struct_name:
-            new_complex_type = ComplexType(
-                name=struct_name,
-                documentation=f"Custom (non-IMAS) structure, declared in {path_to_custom_keys_file.name}",
-            )
-            # `generate_rust_struct` derives the Rust name from `name` via `snake_to_pascal_case`,
-            # so store the PascalCase name in a form which round-trips back to itself
-            new_complex_type.name = pascal_case_to_snake(struct_name)
-            complex_types.append(new_complex_type)
-            types_by_struct_name[struct_name] = new_complex_type
-            new_struct_names.append(struct_name)
-            print(f"  Custom struct: {struct_name}")
-
-        ct: ComplexType = types_by_struct_name[struct_name]
-
-        existing_field_names: list[str] = [f.name for f in ct.fields]
-
-        for field_match in field_pattern.finditer(struct_body):
-            doc_block: str = field_match.group(1)
-            field_name: str = field_match.group(2)
-            rust_type: str = field_match.group(3)
-
-            if field_name in existing_field_names:
-                raise ValueError(
-                    f"{path_to_custom_keys_file.name} declares custom key "
-                    f"`{struct_name}.{field_name}`, but the IMAS data dictionary already "
-                    f"defines it. Remove the custom key and use the IMAS one."
-                )
-
-            # Split the `///` block into documentation lines and a units line
-            documentation_lines: list[str] = []
-            units: str = ""
-            for doc_line in doc_block.splitlines():
-                doc_text: str = doc_line.strip().removeprefix("///").strip()
-                if not doc_text:
-                    continue
-                if doc_text.startswith("Units:"):
-                    units = doc_text.removeprefix("Units:").strip()
-                else:
-                    documentation_lines.append(doc_text)
-
-            ct.fields.append(
-                Field(
-                    name=field_name,
-                    rust_type=rust_type,
-                    documentation="\n".join(documentation_lines),
-                    units=units,
-                    is_array=rust_type.startswith("Vec<"),
-                )
-            )
-            print(f"  Custom key: {struct_name}.{field_name}: {rust_type}")
-
-    # A new struct which nothing refers to is almost certainly a mistyped struct name
-    # Recomputed rather than reusing `all_types`, which was snapshotted before the loop: a new
-    # struct may be referenced by a field on another new struct, e.g. `code.parameters`
-    referenced_types: set[str] = {f.inner_type for ct in complex_types + ([root_element] if root_element else []) for f in ct.fields}
-    for struct_name in new_struct_names:
-        if struct_name not in referenced_types:
-            raise ValueError(
-                f"{path_to_custom_keys_file.name} declares `{struct_name}`, which is neither a "
-                f"generated struct nor used as the type of any custom key. If it was meant to add "
-                f"keys to an existing struct, check the spelling; if it is a new nested structure, "
-                f"add a field of that type to its parent."
-            )
-
-
-# ============================================================================
-# `code/parameters_parsed`: the settings an IDS is built with, read into structs
-#
-# `code/parameters` holds the settings an IDS was built with as XML text, which is what the data
-# dictionary asks for. `code/parameters_parsed` holds the same settings read into structs, so that
-# they are read by name and with their types, e.g. `code/parameters_parsed/grid/n_r`. Two things are
-# generated from the settings' XML schema, following its links to the XML schemas of the files it
-# links to, so that neither can drift from it:
-#   * the structs, added to the IDS's own, so that they get views and Python paths like any other;
-#   * `src/ids/<ids>_parameters_parsed.rs`, which reads the XML into them.
-# ============================================================================
-
-# The XML schema of the settings each IDS is built with, keyed by the IDS's name. Only an IDS listed
-# here gets a `code/parameters_parsed`, and its custom keys must declare the field, e.g.
-# `pub parameters_parsed: EquilibriumCodeParametersParsed,` in `Code`.
-# The settings' XML schemas live in the `gsfit` Python package, which is assumed not to move relative to this script
-PARAMETERS_PARSED_XSD_FILES: dict[str, Path] = {
-    "equilibrium": REPO_ROOT / "python" / "gsfit" / "settings_schema" / "xsd" / "equilibrium" / "equilibrium.xsd",
-}
-
-# The XML schema's built-in types which the settings use, with the base type each is stored as and the
-# function in `src/parameters_parsed.rs` which reads it. The data dictionary has no boolean, so an
-# `xs:boolean` is stored as an integer, 1 for true and 0 for false, as it does for e.g. `constraints/ip/exact`
-XSD_BUILT_IN_LEAF_TYPES: dict[str, tuple[str, str]] = {
-    "xs:double": ("FLT_0D", "read_double"),
-    "xs:integer": ("INT_0D", "read_integer"),
-    "xs:nonNegativeInteger": ("INT_0D", "read_integer"),
-    "xs:positiveInteger": ("INT_0D", "read_integer"),
-    "xs:boolean": ("INT_0D", "read_boolean"),
-    "xs:string": ("STR_0D", "read_string"),
-}
-
-
-@dataclass
-class SettingsSchema:
-    """One XML schema file of the settings, with its named types looked up by name."""
-
-    xsd_file_path: Path
-    root: ET.Element
-    complex_types: dict[str, ET.Element]
-    simple_types: dict[str, ET.Element]
-
-
-@dataclass
-class ParametersParsedStruct:
-    """A struct of `code/parameters_parsed`, and the function reading each of its fields from the XML."""
-
-    complex_type: ComplexType
-    # Keyed by the field's name, which is the name of the XML element it is read from. A leaf is read by a
-    # function in `src/parameters_parsed.rs`; a struct by its own generated function
-    readers: dict[str, str] = field(default_factory=dict)
-    # The fields which are collapsed links, see `add_parameters_parsed_struct`, keyed by the field's name, with the field's
-    # path, e.g. "b_field_pol_probe" -> "code/parameters_parsed/constraints/b_field_pol_probe". `code/parameters` holds the
-    # linked file's root element in the link's place, so such a field is read from the elements inside it
-    collapsed_links: dict[str, str] = field(default_factory=dict)
-
-
-def read_settings_schema(xsd_file_path: Path) -> SettingsSchema:
-    """Read one XML schema file of the settings."""
-
-    root: ET.Element = ET.parse(xsd_file_path).getroot()
-    complex_types: dict[str, ET.Element] = {}
-    simple_types: dict[str, ET.Element] = {}
-    for component in root:
+    # Each complexType declaring keys, with the struct they are added to and their path in the schema, for the error messages. Every
+    # new structure is found before any key is read, so that a key can have as its type a structure declared after it
+    additions: list[tuple[ET.Element, ComplexType, str]] = []
+    new_types: list[ComplexType] = []
+    complex_type_names: set[str] = set()
+    n_includes: int = 0
+    for component in schema_root:
         component_name: str | None = component.get("name")
         if component.tag == f"{XS_NS}complexType" and component_name is not None:
-            complex_types[component_name] = component
-        elif component.tag == f"{XS_NS}simpleType" and component_name is not None:
-            simple_types[component_name] = component
+            if component_name in complex_type_names:
+                raise ValueError(f"{file_name} declares `{component_name}` twice")
+            complex_type_names.add(component_name)
 
-    return SettingsSchema(xsd_file_path=xsd_file_path, root=root, complex_types=complex_types, simple_types=simple_types)
-
-
-def xsd_type_name_to_pascal_case(type_name: str) -> str:
-    """
-    An XML schema type's name in PascalCase, e.g. `BFieldPolProbe` for `b_field_pol_probe`.
-
-    The settings' type names are either snake_case, e.g. `b_field_pol_probe`, or PascalCase already, e.g. `EfitPolynomial`, which
-    `snake_to_pascal_case` would turn into `Efitpolynomial`, so only the first letter of each word is changed.
-    """
-
-    pascal_case: str = ""
-    for word in type_name.split("_"):
-        pascal_case += word[:1].upper() + word[1:]
-
-    return pascal_case
-
-
-def parameters_parsed_reader_name(struct_name: str) -> str:
-    """The name of the generated function which reads the struct `struct_name` from its XML element."""
-
-    return f"read_{pascal_case_to_snake(struct_name)}"
-
-
-def resolve_settings_leaf_type(type_name: str, schema: SettingsSchema) -> tuple[str, str, list[str]]:
-    """
-    The base type a leaf of the settings is stored as, the function reading it, and its enumeration values, if it has any.
-
-    A simple type is resolved through its restrictions to the built-in type it restricts, e.g. `FiniteNonNegativeDouble` to
-    `xs:double`. A space-separated list of numbers, an `xs:list` of `xs:double`, is a `FLT_1D`.
-    """
-
-    if type_name in XSD_BUILT_IN_LEAF_TYPES:
-        rust_type, reader = XSD_BUILT_IN_LEAF_TYPES[type_name]
-        return rust_type, reader, []
-
-    if type_name not in schema.simple_types:
-        raise NotImplementedError(
-            f"{schema.xsd_file_path}: the type `{type_name}` is neither a simple type of this XML schema nor one of {sorted(XSD_BUILT_IN_LEAF_TYPES)}"
-        )
-    simple_type: ET.Element = schema.simple_types[type_name]
-
-    list_element: ET.Element | None = simple_type.find(f"{XS_NS}list")
-    if list_element is not None:
-        item_rust_type, _, _ = resolve_settings_leaf_type(list_element.get("itemType", ""), schema)
-        if item_rust_type != "FLT_0D":
-            raise NotImplementedError(f"{schema.xsd_file_path}: `{type_name}` is a list of `{item_rust_type}`, but only lists of numbers are handled")
-        return "FLT_1D", "read_double_list", []
-
-    restriction: ET.Element | None = simple_type.find(f"{XS_NS}restriction")
-    if restriction is None:
-        raise NotImplementedError(f"{schema.xsd_file_path}: `{type_name}` is neither an `xs:list` nor an `xs:restriction`")
-    rust_type, reader, _ = resolve_settings_leaf_type(restriction.get("base", ""), schema)
-    enumeration_values: list[str] = []
-    for enumeration in restriction.findall(f"{XS_NS}enumeration"):
-        enumeration_values.append(enumeration.get("value", ""))
-
-    return rust_type, reader, enumeration_values
-
-
-def settings_element_content(element: ET.Element, schema: SettingsSchema) -> ET.Element:
-    """The complex type holding an element's children: its named type, or the complex type written inside it."""
-
-    type_name: str | None = element.get("type")
-    if type_name is not None:
-        if type_name not in schema.complex_types:
+        if component.tag == f"{XS_NS}include":
+            included_file_path: Path = (path_to_custom_keys_file.parent / component.get("schemaLocation", "")).resolve()
+            if included_file_path != DD_SUPPORT_XSD_FILE.resolve():
+                raise ValueError(f"{file_name} includes {included_file_path}, but only the data dictionary's `dd_support.xsd` is included, for its types")
+            n_includes += 1
+        elif component.tag == f"{XS_NS}complexType" and component_name in ids_types_by_name:
+            if component.find(f"{XS_NS}annotation") is not None:
+                raise ValueError(
+                    f"{file_name}: `{component_name}` is the data dictionary's, and so is its documentation. Write a note on the keys added to it as an XML comment"
+                )
+            additions.append((component, ids_types_by_name[component_name], component_name))
+        elif component.tag == f"{XS_NS}complexType" and component_name is not None:
+            struct_name: str = snake_to_pascal_case(component_name)
+            if component_name in support_types_by_name:
+                raise ValueError(
+                    f"{file_name} declares `{component_name}`, which `dd_support.xsd` declares already. Add keys to it inside an element of its type: "
+                    "an element named as that element, holding an `xs:complexType` of the keys"
+                )
+            if struct_name in struct_names:
+                raise ValueError(
+                    f"{file_name} declares the new structure `{component_name}`, but its struct, `{struct_name}`, is already that of a data dictionary structure. "
+                    "To add keys to that structure, name it exactly as the data dictionary does"
+                )
+            documentation: str = extract_documentation(component)
+            if documentation == "":
+                raise ValueError(f"{file_name}: the new structure `{component_name}` has no `xs:documentation`")
+            new_type: ComplexType = ComplexType(name=component_name, documentation=f"{documentation}\nCustom (non-IMAS) structure, declared in {file_name}")
+            complex_types.append(new_type)
+            types_by_name[component_name] = new_type
+            struct_names.add(struct_name)
+            new_types.append(new_type)
+            additions.append((component, new_type, component_name))
+            print(f"  Custom struct: {struct_name}")
+        elif component.tag == f"{XS_NS}element" and root_element is not None and component_name == root_element.name:
+            root_complex_type: ET.Element | None = component.find(f"{XS_NS}complexType")
+            if root_complex_type is None or len(component.attrib) != 1:
+                raise NotImplementedError(f"{file_name}: <{component_name}> adds keys to the IDS's root, so holds only an `xs:complexType` of them")
+            if component.find(f"{XS_NS}annotation") is not None or root_complex_type.find(f"{XS_NS}annotation") is not None:
+                raise ValueError(
+                    f"{file_name}: <{component_name}> is the IDS's root, whose documentation is the data dictionary's. Write a note on the keys added to it as an XML comment"
+                )
+            additions.append((root_complex_type, root_element, component_name))
+        else:
             raise NotImplementedError(
-                f"{schema.xsd_file_path}: <{element.get('name')}> has the type `{type_name}`, which is not a complex type of this XML schema"
+                f"{file_name} holds the `{component.tag.removeprefix(XS_NS)}` `{component_name}`, but only the `xs:include` of `dd_support.xsd`, `xs:complexType`s, "
+                "and the `xs:element` named as the IDS are handled: the custom keys use the data dictionary's types, rather than types of their own"
             )
-        return schema.complex_types[type_name]
+    if n_includes != 1:
+        dd_support_relative_path: str = os.path.relpath(DD_SUPPORT_XSD_FILE, path_to_custom_keys_file.parent)
+        raise ValueError(f'{file_name} must include the data dictionary\'s types, with `<xs:include schemaLocation="{dd_support_relative_path}"/>`, once')
 
-    inline_complex_type: ET.Element | None = element.find(f"{XS_NS}complexType")
-    if inline_complex_type is None:
-        raise NotImplementedError(f"{schema.xsd_file_path}: <{element.get('name')}> has neither a `type` nor a complex type inside it")
-    return inline_complex_type
+    custom_keys: set[tuple[str, str]] = set()
+    for complex_type_element, struct, path in additions:
+        add_custom_keys_to_struct(
+            complex_type_element=complex_type_element,
+            struct=struct,
+            path=path,
+            types_by_name=types_by_name,
+            support_types_by_name=support_types_by_name,
+            custom_keys=custom_keys,
+            path_to_custom_keys_file=path_to_custom_keys_file,
+        )
+
+    # A new structure which no key has as its type is almost certainly a mistyped name
+    referenced_struct_names: set[str] = set()
+    for ct in complex_types + ([root_element] if root_element else []):
+        for f in ct.fields:
+            referenced_struct_names.add(f.inner_type)
+    for new_type in new_types:
+        if snake_to_pascal_case(new_type.name) not in referenced_struct_names:
+            raise ValueError(
+                f"{file_name} declares `{new_type.name}`, which is neither a data dictionary structure nor the type of any custom key. If it was meant to add "
+                "keys to a data dictionary structure, check the spelling; if it is a new structure, add a key of its type"
+            )
 
 
-def settings_child_elements(complex_type: ET.Element, schema: SettingsSchema, path: str) -> list[ET.Element]:
+def add_custom_keys_to_struct(
+    complex_type_element: ET.Element,
+    struct: ComplexType,
+    path: str,
+    types_by_name: dict[str, ComplexType],
+    support_types_by_name: dict[str, ComplexType],
+    custom_keys: set[tuple[str, str]],
+    path_to_custom_keys_file: Path,
+) -> None:
+    """Add the custom keys declared in `complex_type_element` to the struct `struct`, in place; see `add_custom_keys_to_ids`.
+
+    Args:
+        complex_type_element: The `xs:complexType` declaring the keys, in an `xs:sequence`
+        struct: The struct the keys are added to
+        path: Where the keys are in the custom keys' schema, e.g. `equilibrium/code`, for the error messages
+        types_by_name: Every structure a key can have as its type, by its name in the schemas: those of `dd_support.xsd`, the IDS's own,
+            and the new ones
+        support_types_by_name: Every structure of `dd_support.xsd`, by its name in the schemas
+        custom_keys: The custom keys added so far, as (the name of the struct, the name of the key), which those added here are added to
+        path_to_custom_keys_file: The XSD schema of the custom keys
     """
-    The elements a complex type holds, in an `xs:all` or an `xs:sequence`.
+    file_name: str = path_to_custom_keys_file.name
 
-    Anything else, e.g. an `xs:choice` or an attribute, is not handled, so raises rather than being silently left out.
-    """
-
-    groups: list[ET.Element] = []
-    for component in complex_type:
+    sequences: list[ET.Element] = []
+    for component in complex_type_element:
         if component.tag == f"{XS_NS}annotation":
             continue
-        if component.tag not in (f"{XS_NS}all", f"{XS_NS}sequence"):
-            raise NotImplementedError(
-                f"{schema.xsd_file_path}: `{path}` holds an `{component.tag.removeprefix(XS_NS)}`, but only an `xs:all` or `xs:sequence` of elements is handled"
-            )
-        groups.append(component)
-    if len(groups) > 1:
-        raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds {len(groups)} groups of elements, rather than one")
+        if component.tag != f"{XS_NS}sequence":
+            raise NotImplementedError(f"{file_name}: `{path}` holds an `{component.tag.removeprefix(XS_NS)}`, but only an `xs:sequence` of elements is handled")
+        sequences.append(component)
+    if len(sequences) != 1:
+        raise NotImplementedError(f"{file_name}: `{path}` holds {len(sequences)} `xs:sequence`s of elements, rather than one")
 
-    child_elements: list[ET.Element] = []
-    for group in groups:
-        for component in group:
-            if component.tag == f"{XS_NS}annotation":
-                continue
-            if component.tag != f"{XS_NS}element":
-                raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds an `{component.tag.removeprefix(XS_NS)}`, but only elements are handled")
-            child_elements.append(component)
-
-    return child_elements
-
-
-def is_settings_matrix(complex_type: ET.Element, schema: SettingsSchema) -> bool:
-    """Whether a complex type is a matrix: an element holding only a repeated `row`, each a list of numbers."""
-
-    sequence: ET.Element | None = complex_type.find(f"{XS_NS}sequence")
-    if sequence is None:
-        return False
-    row_elements: list[ET.Element] = sequence.findall(f"{XS_NS}element")
-    if len(row_elements) != 1:
-        return False
-    row_element: ET.Element = row_elements[0]
-    if row_element.get("name") != "row" or row_element.get("maxOccurs") != "unbounded":
-        return False
-    row_rust_type, _, _ = resolve_settings_leaf_type(row_element.get("type", ""), schema)
-
-    return row_rust_type == "FLT_1D"
-
-
-def add_parameters_parsed_struct(
-    complex_type: ET.Element,
-    schema: SettingsSchema,
-    struct_name: str,
-    path: str,
-    documentation: str,
-    root_struct_name: str,
-    named_types: dict[str, tuple[Path, str]],
-    parameters_parsed_structs: list[ParametersParsedStruct],
-    xsd_type_name: str | None = None,
-) -> None:
-    """
-    Add the struct read from the elements of `complex_type`, and the structs of the elements inside it, to `parameters_parsed_structs`.
-
-    Each element is a field of the same name. A link to another file, an element naming the XML schema of the file it links to in
-    `xs:appinfo/schema`, holds the linked file's root element, which is how the settings are written into `code/parameters`.
-
-    A link to a file whose root element holds only one element, named as the link, is collapsed: the field is read from that element,
-    as if the link held it. E.g. `constraints/b_field_pol_probe` links to `constraints_b_field_pol_probe.xml`, whose root element,
-    `<constraints__b_field_pol_probe>`, holds only `<b_field_pol_probe>` elements, one per probe. So the field is
-    `constraints.b_field_pol_probe`, the probes, rather than `constraints.b_field_pol_probe.b_field_pol_probe`. The settings files, and
-    `code/parameters`, still hold the linked file's root element, so the reader reads the field from the elements inside it.
-
-    A struct of a named XML schema type is named after the type, e.g. `EquilibriumCodeParametersParsedEfitPolynomial` for
-    `EfitPolynomial`, and is one struct wherever the type is used, e.g. for both p' and ff', so that the code reading it is written
-    once. A type used by several XML schemas is repeated in each, so they must agree on it, as they must for the settings to be
-    written into `code/parameters`. A struct of a type written inside its element is named after the struct holding it and the
-    element, e.g. `EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard` for `code/parameters_parsed/numerics/nonlinear_solver/picard`.
-
-    Args:
-        complex_type: The complex type holding the struct's elements
-        schema: The XML schema file `complex_type` is in, whose named types its elements' types are looked up in
-        struct_name: The struct's Rust name
-        path: The struct's path in the IDS, e.g. `code/parameters_parsed/grid`, for the error messages
-        documentation: The struct's documentation
-        root_struct_name: The name of the struct of `code/parameters_parsed`, e.g. `EquilibriumCodeParametersParsed`, which the
-            name of each struct of a named type starts with
-        named_types: The structs of named types so far, keyed by the struct's name, with the XML schema each was first found in and
-            its type, as canonical XML, to check that every XML schema using it agrees
-        parameters_parsed_structs: The structs so far, which this struct, and those inside it, are added to
-        xsd_type_name: The name of the XML schema type `complex_type` is, if it is a named one, for the documentation
-    """
-
-    xsd_relative_path: Path = schema.xsd_file_path.relative_to(REPO_ROOT)
-    generated_from: str = f"Generated from the XML schema `{xsd_relative_path}`"
-    if xsd_type_name is not None:
-        generated_from = f"Generated from the XML schema type `{xsd_type_name}`, in `{xsd_relative_path}`"
-    parameters_parsed_struct: ParametersParsedStruct = ParametersParsedStruct(
-        complex_type=ComplexType(
-            # `generate_rust_struct` derives the Rust name from `name` via `snake_to_pascal_case`
-            name=pascal_case_to_snake(struct_name),
-            documentation=f"{documentation}\n{generated_from}",
-        )
-    )
-    parameters_parsed_structs.append(parameters_parsed_struct)
-
-    child_elements: list[ET.Element] = settings_child_elements(complex_type, schema, path)
-    n_child_elements: int = len(child_elements)
-    for i_child_element in range(n_child_elements):
-        element: ET.Element = child_elements[i_child_element]
-        element_name: str | None = element.get("name")
-        if element_name is None:
-            raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds an element with no `name`, e.g. an `xs:element ref`")
-        element_path: str = f"{path}/{element_name}"
-        # The element's documentation, for the struct of its type, and the field's documentation, which differ for a collapsed link
-        element_documentation: str = extract_documentation(element)
-        field_documentation: str = element_documentation
-
-        # A link names the XML schema of the file it links to, relative to this XML schema, and holds that file's root element
-        linked_schema: SettingsSchema | None = None
-        linked_root_element: ET.Element | None = None
-        appinfo: ET.Element | None = element.find(f"{XS_NS}annotation/{XS_NS}appinfo")
-        if appinfo is not None:
-            linked_schema_element: ET.Element | None = appinfo.find("schema")
-            if linked_schema_element is not None and linked_schema_element.text:
-                linked_schema = read_settings_schema((schema.xsd_file_path.parent / linked_schema_element.text.strip()).resolve())
-                linked_root_elements: list[ET.Element] = linked_schema.root.findall(f"{XS_NS}element")
-                if len(linked_root_elements) != 1:
-                    raise NotImplementedError(f"{linked_schema.xsd_file_path}: {len(linked_root_elements)} root elements, rather than one")
-                linked_root_element = linked_root_elements[0]
-
-        # A link to a file whose root element holds only one element, named as the link, is collapsed: the field is read from that element,
-        # which is declared in the linked file's XML schema, as if the link held it; see the docstring. Its documentation is the link's, and
-        # that of the linked file's root element, which both describe the whole file
-        element_schema: SettingsSchema = schema
-        if linked_schema is not None and linked_root_element is not None:
-            linked_root_child_elements: list[ET.Element] = settings_child_elements(
-                settings_element_content(linked_root_element, linked_schema), linked_schema, element_path
-            )
-            if len(linked_root_child_elements) == 1 and linked_root_child_elements[0].get("name") == element_name:
-                if element.get("maxOccurs", "1") != "1" or element.get("minOccurs", "1") != "1":
-                    raise NotImplementedError(f"{schema.xsd_file_path}: `{element_path}` is a link which is repeated or optional, so cannot be collapsed")
-                if linked_root_child_elements[0].find(f"{XS_NS}annotation/{XS_NS}appinfo/schema") is not None:
-                    raise NotImplementedError(f"{linked_schema.xsd_file_path}: `{element_path}` is a collapsed link holding another link, which is not handled")
-                field_documentation = f"{element_documentation}\n{extract_documentation(linked_root_element)}".strip()
-                element = linked_root_child_elements[0]
-                element_schema = linked_schema
-                element_documentation = extract_documentation(element)
-                linked_schema = None
-                linked_root_element = None
-                parameters_parsed_struct.collapsed_links[element_name] = element_path
-
-        if element.get("nillable") == "true":
-            raise NotImplementedError(f"{element_schema.xsd_file_path}: `{element_path}` is nillable, but a nil element is not handled")
-        max_occurs: str = element.get("maxOccurs", "1")
-        if max_occurs not in ("1", "unbounded"):
-            raise NotImplementedError(
-                f'{element_schema.xsd_file_path}: `{element_path}` has maxOccurs="{max_occurs}", but only "1" and "unbounded" are handled'
-            )
-        is_array: bool = max_occurs == "unbounded"
-        is_optional: bool = element.get("minOccurs", "1") == "0"
-        child_struct_name: str = f"{struct_name}{snake_to_pascal_case(element_name)}"
+    for element in sequences[0]:
+        if element.tag != f"{XS_NS}element":
+            raise NotImplementedError(f"{file_name}: `{path}` holds an `{element.tag.removeprefix(XS_NS)}`, but only elements are handled")
+        key_name: str | None = element.get("name")
+        if key_name is None:
+            raise NotImplementedError(f"{file_name}: `{path}` holds an element with no `name`, e.g. an `xs:element ref`, which is not handled")
+        key_path: str = f"{path}/{key_name}"
+        if (struct.name, key_name) in custom_keys:
+            raise ValueError(f"{file_name} declares `{key_path}` twice")
 
         type_name: str | None = element.get("type")
-        rust_type: str
-        reader: str
-        if linked_schema is not None and linked_root_element is not None:
-            # The link holds the linked file's root element, so the struct is read from that root element's type
-            struct_documentation: str = extract_documentation(linked_root_element)
-            if struct_documentation == "":
-                struct_documentation = element_documentation
-            add_parameters_parsed_struct(
-                complex_type=settings_element_content(linked_root_element, linked_schema),
-                schema=linked_schema,
-                struct_name=child_struct_name,
-                path=element_path,
-                documentation=struct_documentation,
-                root_struct_name=root_struct_name,
-                named_types=named_types,
-                parameters_parsed_structs=parameters_parsed_structs,
-            )
-            rust_type = child_struct_name
-            reader = parameters_parsed_reader_name(child_struct_name)
-        elif type_name is not None and type_name not in element_schema.complex_types:
-            rust_type, reader, enumeration_values = resolve_settings_leaf_type(type_name, element_schema)
-            if len(enumeration_values) > 0:
-                quoted_enumeration_values: list[str] = []
-                for enumeration_value in enumeration_values:
-                    quoted_enumeration_values.append(f'"{enumeration_value}"')
-                field_documentation += "\nOne of: " + ", ".join(quoted_enumeration_values)
-            if is_array:
-                raise NotImplementedError(
-                    f"{element_schema.xsd_file_path}: `{element_path}` is a repeated leaf, but only a repeated `row` of a matrix, or a repeated element holding others, is handled"
+        inline_complex_type: ET.Element | None = element.find(f"{XS_NS}complexType")
+
+        # An element the data dictionary already has here is not a key: holding an `xs:complexType` of keys, it adds them to its structure
+        existing_field: Field | None = None
+        for f in struct.fields:
+            if f.name == key_name:
+                existing_field = f
+        if existing_field is not None:
+            if inline_complex_type is None or inline_complex_type.find(f"{XS_NS}sequence") is None:
+                raise ValueError(
+                    f"{file_name} declares the custom key `{key_path}`, but the IMAS data dictionary already defines it. Remove the custom key and use the IMAS one"
                 )
-        else:
-            element_content: ET.Element = settings_element_content(element, element_schema)
-            if is_settings_matrix(element_content, element_schema):
-                rust_type = "FLT_2D"
-                reader = "read_matrix"
-                field_documentation += "\nShape [n_rows, n_columns], one row per `row` element"
-            else:
-                is_new_struct: bool = True
-                if type_name is not None:
-                    # One struct per named type, wherever it is used: see the docstring
-                    child_struct_name = f"{root_struct_name}{xsd_type_name_to_pascal_case(type_name)}"
-                    canonical_type: str = ET.canonicalize(ET.tostring(element_content, encoding="unicode"), strip_text=True)
-                    if child_struct_name in named_types:
-                        first_xsd_file_path, first_canonical_type = named_types[child_struct_name]
-                        if canonical_type != first_canonical_type:
-                            raise ValueError(
-                                f"{first_xsd_file_path} and {element_schema.xsd_file_path} both have a type named `{type_name}`, which are not the same. "
-                                "A type used by several XML schemas must be the same in each"
-                            )
-                        is_new_struct = False
-                    else:
-                        named_types[child_struct_name] = (element_schema.xsd_file_path, canonical_type)
-                    # The type's own documentation, as the element's is about where it is used
-                    struct_documentation = extract_documentation(element_content)
-                    if struct_documentation == "":
-                        struct_documentation = element_documentation
-                else:
-                    struct_documentation = element_documentation
-                    if struct_documentation == "":
-                        struct_documentation = extract_documentation(element_content)
-                if is_new_struct:
-                    add_parameters_parsed_struct(
-                        complex_type=element_content,
-                        schema=element_schema,
-                        struct_name=child_struct_name,
-                        path=f"{element_path}(i1)" if is_array else element_path,
-                        documentation=struct_documentation,
-                        root_struct_name=root_struct_name,
-                        named_types=named_types,
-                        parameters_parsed_structs=parameters_parsed_structs,
-                        xsd_type_name=type_name,
-                    )
-                rust_type = child_struct_name
-                reader = parameters_parsed_reader_name(child_struct_name)
-
-        if is_optional:
-            field_documentation += "\nOptional in the settings: unset when it is left out"
-        if is_array:
-            rust_type = f"Vec<{rust_type}>"
-
-        parameters_parsed_struct.complex_type.fields.append(
-            Field(
-                name=element_name,
-                rust_type=rust_type,
-                documentation=field_documentation.strip(),
-                units=extract_units(element),
-                is_array=is_array,
-                is_optional=is_optional,
+            # A structure of the IDS's own schema has its keys added by a top-level `xs:complexType` of its name instead, so that there is one way
+            nested_struct: ComplexType | None = None
+            for support_type in support_types_by_name.values():
+                if snake_to_pascal_case(support_type.name) == existing_field.inner_type:
+                    nested_struct = support_type
+            if nested_struct is None:
+                existing_type_name: str = existing_field.inner_type
+                for ct in types_by_name.values():
+                    if snake_to_pascal_case(ct.name) == existing_field.inner_type:
+                        existing_type_name = ct.name
+                raise ValueError(
+                    f"{file_name}: `{key_path}` adds keys to the data dictionary's `{key_name}`, whose type, `{existing_type_name}`, the IDS's own "
+                    f'schema declares rather than `dd_support.xsd`. Add them with a top-level `<xs:complexType name="{existing_type_name}">` instead'
+                )
+            if len(element.attrib) != 1 or element.find(f"{XS_NS}annotation") is not None or inline_complex_type.find(f"{XS_NS}annotation") is not None:
+                raise ValueError(
+                    f"{file_name}: `{key_path}` adds keys to the data dictionary's `{key_name}`, so holds only an `xs:complexType` of them: the rest, "
+                    "documentation included, is the data dictionary's. Write a note on the keys added to it as an XML comment"
+                )
+            add_custom_keys_to_struct(
+                complex_type_element=inline_complex_type,
+                struct=nested_struct,
+                path=key_path,
+                types_by_name=types_by_name,
+                support_types_by_name=support_types_by_name,
+                custom_keys=custom_keys,
+                path_to_custom_keys_file=path_to_custom_keys_file,
             )
-        )
-        parameters_parsed_struct.readers[element_name] = reader
+            continue
 
+        for attribute_name in element.attrib:
+            if attribute_name not in ("name", "type", "minOccurs", "maxOccurs"):
+                raise NotImplementedError(
+                    f"{file_name}: `{key_path}` has the attribute `{attribute_name}`, but only `name`, `type`, `minOccurs` and `maxOccurs` are handled"
+                )
+        if extract_documentation(element) == "":
+            raise ValueError(f"{file_name}: the custom key `{key_path}` has no `xs:documentation`")
 
-def add_parameters_parsed_to_ids(
-    complex_types: list[ComplexType],
-    root_element: ComplexType | None,
-    ids_name: str,
-    xsd_file_path: Path,
-) -> tuple[list[ParametersParsedStruct], str]:
-    """
-    Add the structs of `code/parameters_parsed`, generated from the XML schema of the settings the IDS is built with, to the IDS's structs, in place.
+        # Settings are not kept in an IDS, as an IDS can also be made by another code
+        if element.find(f"{XS_NS}annotation/{XS_NS}appinfo/schema") is not None:
+            raise NotImplementedError(
+                f"{file_name}: `{key_path}` names the XML schema of settings in `xs:appinfo/schema`, but settings are not kept in an IDS: their "
+                "structs are generated by `python/gsfit/settings_schema/_generate_rust_schema.py`, and kept with the Rust class they configure"
+            )
+        new_field: Field | None
+        if inline_complex_type is not None:
+            # A leaf, written as the data dictionary writes its own: `<xs:complexType><xs:group ref="FLT_1D"/></xs:complexType>`
+            leaf_components: list[ET.Element] = list(inline_complex_type)
+            if (
+                type_name is not None
+                or len(leaf_components) != 1
+                or leaf_components[0].tag != f"{XS_NS}group"
+                or leaf_components[0].get("ref") not in BASE_TYPES
+            ):
+                raise ValueError(
+                    f'{file_name}: `{key_path}` is a leaf, so holds only `<xs:group ref="..."/>`, naming one of the data dictionary\'s base types: '
+                    f"{', '.join(sorted(BASE_TYPES))}. A new structure is a top-level `xs:complexType`, which the key names in `type`"
+                )
+            if "maxOccurs" in element.attrib:
+                raise ValueError(
+                    f"{file_name}: `{key_path}` is a leaf, which is not repeated. Give it a base type of one more dimension instead, e.g. `FLT_1D` for `FLT_0D`"
+                )
+            if "minOccurs" in element.attrib:
+                raise ValueError(f"{file_name}: `{key_path}` is a leaf, which is always there, reading as unset when it has no value, so has no `minOccurs`")
+            new_field = parse_element(element, set())
+        elif type_name is not None:
+            # A structure, or an array of structures: one of the data dictionary's, e.g. `identifier_static`, or a new one
+            if type_name not in types_by_name:
+                raise ValueError(
+                    f"{file_name}: `{key_path}` has the type `{type_name}`, which is neither a data dictionary structure, e.g. `identifier_static`, nor a new one "
+                    f'declared in {file_name}. A leaf holds `<xs:group ref="FLT_1D"/>`, or another of the data dictionary\'s base types, rather than a type of its own'
+                )
+            new_field = parse_element(element, set())
+        else:
+            raise ValueError(f'{file_name}: the custom key `{key_path}` has neither a `type` nor an `xs:complexType` holding `<xs:group ref="..."/>`')
+        if new_field is None:
+            raise ValueError(f"{file_name}: the custom key `{key_path}` is marked as obsolescent; remove it instead")
+        # An array of structures can be empty, which its schema says, unlike the data dictionary's; a single structure is always there
+        if type_name is not None and new_field.is_array and element.get("minOccurs") != "0":
+            raise ValueError(f'{file_name}: `{key_path}` is an array of structures, which can be empty, so has `minOccurs="0"`')
+        if type_name is not None and not new_field.is_array and "minOccurs" in element.attrib:
+            raise ValueError(f"{file_name}: `{key_path}` is a single structure, which is always there, so has no `minOccurs`")
 
-    The field itself, `code/parameters_parsed`, is declared in the IDS's custom keys, with the type of the root struct, e.g.
-    `EquilibriumCodeParametersParsed`, so that it is listed and documented with the other custom keys.
-
-    Args:
-        complex_types: The IDS's structs, which the structs of `code/parameters_parsed` are added to
-        root_element: The IDS's root struct
-        ids_name: The IDS's name, e.g. "equilibrium"
-        xsd_file_path: The XML schema of the settings the IDS is built with, e.g. `equilibrium/equilibrium.xsd`
-
-    Returns:
-        The structs of `code/parameters_parsed`, with the function reading each field, and the name of the settings' root element,
-        e.g. "equilibrium_settings"
-    """
-
-    schema: SettingsSchema = read_settings_schema(xsd_file_path)
-    settings_root_elements: list[ET.Element] = schema.root.findall(f"{XS_NS}element")
-    if len(settings_root_elements) != 1:
-        raise NotImplementedError(f"{xsd_file_path}: {len(settings_root_elements)} root elements, rather than one")
-    settings_root_element: ET.Element = settings_root_elements[0]
-    settings_root_element_name: str = settings_root_element.get("name", "")
-
-    root_struct_name: str = f"{snake_to_pascal_case(ids_name)}CodeParametersParsed"
-    parameters_parsed_structs: list[ParametersParsedStruct] = []
-    named_types: dict[str, tuple[Path, str]] = {}
-    add_parameters_parsed_struct(
-        complex_type=settings_element_content(settings_root_element, schema),
-        schema=schema,
-        struct_name=root_struct_name,
-        path="code/parameters_parsed",
-        documentation=extract_documentation(settings_root_element),
-        root_struct_name=root_struct_name,
-        named_types=named_types,
-        parameters_parsed_structs=parameters_parsed_structs,
-    )
-
-    # A struct's name could clash with another's, e.g. a named type's with that of a type written inside an element, or with a struct
-    # the IDS already has
-    existing_struct_names: set[str] = set()
-    for ct in complex_types + ([root_element] if root_element else []):
-        existing_struct_names.add(snake_to_pascal_case(ct.name))
-    for parameters_parsed_struct in parameters_parsed_structs:
-        struct_name: str = snake_to_pascal_case(parameters_parsed_struct.complex_type.name)
-        if struct_name in existing_struct_names:
-            raise ValueError(f"`{struct_name}`, generated from {xsd_file_path}, is already a struct of the {ids_name} IDS")
-        existing_struct_names.add(struct_name)
-        complex_types.append(parameters_parsed_struct.complex_type)
-        print(f"  Parameters parsed struct: {struct_name}")
-
-    # The custom keys must declare the field which holds them
-    is_referenced: bool = False
-    for ct in complex_types + ([root_element] if root_element else []):
-        for f in ct.fields:
-            if f.rust_type == root_struct_name:
-                is_referenced = True
-    if not is_referenced:
-        raise ValueError(
-            f"`{root_struct_name}`, generated from {xsd_file_path}, is not the type of any key. "
-            f"Declare `pub parameters_parsed: {root_struct_name},` in `Code`, in custom_{ids_name}_keys.rs"
-        )
-
-    return parameters_parsed_structs, settings_root_element_name
-
-
-def generate_parameters_parsed_reader(
-    ids_name: str,
-    settings_root_element_name: str,
-    xsd_file_path: Path,
-    parameters_parsed_structs: list[ParametersParsedStruct],
-) -> str:
-    """
-    Generate `src/ids/<ids>_parameters_parsed.rs`, which reads `code/parameters`, the settings' XML, into `code/parameters_parsed`.
-
-    Each struct gets a function which reads it from its XML element, one field per child element. The leaves are read by the functions
-    in `src/parameters_parsed.rs`.
-    """
-
-    root_struct_name: str = snake_to_pascal_case(parameters_parsed_structs[0].complex_type.name)
-    xsd_relative_path: Path = xsd_file_path.relative_to(REPO_ROOT)
-
-    struct_names: list[str] = []
-    leaf_readers: set[str] = {"child_elements", "unexpected_element"}
-    functions: list[str] = []
-    for parameters_parsed_struct in parameters_parsed_structs:
-        ct: ComplexType = parameters_parsed_struct.complex_type
-        struct_name: str = snake_to_pascal_case(ct.name)
-        struct_names.append(struct_name)
-
-        lines: list[str] = [
-            f"/// Read `{struct_name}` from its XML element, whose path is `path`",
-            f"fn {parameters_parsed_reader_name(struct_name)}(node: Node<'_, '_>, path: &str) -> Result<{struct_name}, String> {{",
-            f"    let mut parsed: {struct_name} = {struct_name}::default();",
-            "    for child in child_elements(node, path)? {",
-            "        let child_name: &str = child.tag_name().name();",
-            "        match child_name {",
-        ]
-        for f in ct.fields:
-            reader: str = parameters_parsed_struct.readers[f.name]
-            field_name: str = sanitize_rust_identifier(f.name)
-            # A leaf is read by a function from `src/parameters_parsed.rs`, which has to be imported
-            if f.is_base_type:
-                leaf_readers.add(reader)
-            # A collapsed link: `code/parameters` holds the linked file's root element in the link's place, and the field is read from the
-            # elements inside it, which are named as the link
-            is_collapsed_link: bool = f.name in parameters_parsed_struct.collapsed_links
-            indent: str = "            "
-            node: str = "child"
-            if is_collapsed_link:
-                lines.append(f'            "{f.name}" => {{')
-                lines.append("                // A collapsed link: this is the linked file's root element, and the field is read from the elements inside it")
-                lines.append('                for grandchild in child_elements(child, &format!("{path}/{child_name}"))? {')
-                lines.append("                    let grandchild_name: &str = grandchild.tag_name().name();")
-                lines.append("                    match grandchild_name {")
-                indent = "                        "
-                node = "grandchild"
-            if f.is_array:
-                lines.append(f'{indent}"{f.name}" => {{')
-                lines.append(f'{indent}    let child_path: String = format!("{{path}}/{f.name}({{}})", parsed.{field_name}.len());')
-                lines.append(f"{indent}    parsed.{field_name}.push({reader}({node}, &child_path)?);")
-                lines.append(f"{indent}}}")
-            else:
-                lines.append(f'{indent}"{f.name}" => parsed.{field_name} = {reader}({node}, &format!("{{path}}/{f.name}"))?,')
-            if is_collapsed_link:
-                lines.append('                        _ => return Err(unexpected_element(&format!("{path}/{child_name}/{grandchild_name}"))),')
-                lines.append("                    }")
-                lines.append("                }")
-                lines.append("            }")
-        lines.append('            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),')
-        lines.append("        }")
-        lines.append("    }")
-        lines.append("")
-        lines.append("    Ok(parsed)")
-        lines.append("}")
-        functions.append("\n".join(lines))
-
-    # The path of the first collapsed link, as an example for the documentation
-    collapsed_link_path: str = ""
-    for parameters_parsed_struct in parameters_parsed_structs:
-        for field_path in parameters_parsed_struct.collapsed_links.values():
-            if collapsed_link_path == "":
-                collapsed_link_path = field_path
-    collapsed_link_documentation: list[str] = []
-    if collapsed_link_path != "":
-        collapsed_link_documentation = [
-            "    /// A link to a file whose root element holds only one element, named as the link, is collapsed, e.g.",
-            f"    /// `{collapsed_link_path}`: the field is read from that element, inside the linked file's root element.",
-        ]
-
-    header: list[str] = [
-        f"//! Reading `{ids_name}/code/parameters`, the XML of the settings the IDS was built with, into `{ids_name}/code/parameters_parsed`",
-        "//!",
-        "//! **WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.",
-        "//! Any changes will be overwritten.",
-        "//!",
-        f"//! Generated from the XML schema `{xsd_relative_path}`, and the XML schemas of the files it links to.",
-        "",
-        f"use super::{ids_name}::{{{', '.join(sorted(struct_names))}}};",
-        f"use crate::parameters_parsed::{{{', '.join(sorted(leaf_readers))}}};",
-        "use roxmltree::{Document, Node};",
-        "",
-        f"impl {root_struct_name} {{",
-        "    /// Read the settings the IDS was built with, the XML text of `code/parameters`, into `code/parameters_parsed`.",
-        "    ///",
-        f"    /// The XML is that of `{xsd_relative_path.with_suffix('.xml').name}`, with each file it links to written in its link's place, as",
-        "    /// `serialise_python_dataclass_to_imas_parameters_input` writes it, e.g. `<grid><n_r>81</n_r>...</grid>`. Each",
-        "    /// element is read into the field of the same name. One which is left out is left unset, and the XML is not",
-        "    /// checked against its XML schema here: that was done when it was written.",
-        *collapsed_link_documentation,
-        "    ///",
-        "    /// # Errors",
-        f"    /// The XML is not well-formed, its root element is not `<{settings_root_element_name}>`, it holds an element which is",
-        "    /// not in the XML schema this was generated from, or a value cannot be read as its type",
-        "    pub fn from_xml(xml: &str) -> Result<Self, String> {",
-        '        let document: Document = Document::parse(xml).map_err(|error| format!("`code/parameters` is not well-formed XML: {error}"))?;',
-        "        let root: Node = document.root_element();",
-        f'        if root.tag_name().name() != "{settings_root_element_name}" {{',
-        "            return Err(format!(",
-        f'                "the root element of `code/parameters` is <{{}}>, rather than <{settings_root_element_name}>",',
-        "                root.tag_name().name()",
-        "            ));",
-        "        }",
-        "",
-        f'        {parameters_parsed_reader_name(root_struct_name)}(root, "code/parameters_parsed")',
-        "    }",
-        "}",
-        "",
-    ]
-
-    return "\n".join(header) + "\n" + "\n\n".join(functions) + "\n"
+        struct.fields.append(new_field)
+        custom_keys.add((struct.name, key_name))
+        print(f"  Custom key: {snake_to_pascal_case(struct.name)}.{key_name}: {new_field.rust_type}")
 
 
 # ============================================================================
@@ -1926,19 +1526,35 @@ class PathNode:
 
 
 def rust_string_literal(text: str) -> str:
-    """Quote a string for Rust source."""
-    escaped = text.replace("\\", "\\\\").replace('"', '\\"')
+    """Quote a string for Rust source.
+
+    A newline is escaped, so that the literal is on one line: `rustfmt` gives up on the whole item holding a
+    literal which spans several lines when one of them is longer than `max_width`, as documentation written one
+    sentence per line often is, and leaves it unformatted.
+    """
+    escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
     return f'"{escaped}"'
 
 
 def python_docstring(documentation: str, units: str, indent: str) -> list[str]:
-    """Render a docstring for the type stub, keeping it valid whatever the DD says."""
+    """Render a docstring for the type stub, keeping it valid whatever the DD says.
+
+    Every line after the first is indented as the quotes are, so that the units line up with the
+    documentation above them however many lines it has.
+    """
     body = documentation.replace('"""', "'''").replace("\\", "\\\\").strip()
     if units:
-        body = f"{body}\n\n{indent}Units: {units}" if body else f"{indent}Units: {units}"
+        body = f"{body}\n\nUnits: {units}" if body else f"Units: {units}"
     if not body:
         return []
-    return [f'{indent}"""{body}', f'{indent}"""']
+    lines: list[str] = body.split("\n")
+    n_lines: int = len(lines)
+    for i_line in range(1, n_lines):
+        if lines[i_line] != "":
+            lines[i_line] = f"{indent}{lines[i_line]}"
+    lines[0] = f'{indent}"""{lines[0]}'
+    lines.append(f'{indent}"""')
+    return lines
 
 
 def build_path_tree(
@@ -2136,13 +1752,29 @@ def collect_types_from_path_tree(nodes: list[PathNode], collected: dict[str, lis
         collect_types_from_path_tree(node.children, collected, seen_paths)
 
 
-def generate_python_paths_rust(
+def generate_python_paths_body(
     root_nodes: list[PathNode],
     lengths_registry: dict[tuple[str, ...], str],
     root_ct: ComplexType,
     ids_name: str,
-) -> str:
-    """Generate the static data dictionary description the Rust navigator walks."""
+    root_kind: str,
+) -> tuple[list[str], list[str], list[str]]:
+    """Generate the body of the static description the Rust navigator walks: a function per array-of-structures chain giving its
+    lengths, the nodes, and the root, `<NAME>_ROOT`.
+
+    Shared by an IDS's `src/python/<ids>_paths.rs`, see `generate_python_paths_rust`, and a structure's, see `build_structure`, which
+    differ only in their header and in where they import from.
+
+    Args:
+        root_nodes: The root's children, from `build_path_tree`
+        lengths_registry: The array-of-structures chains, from `build_path_tree`
+        root_ct: The root struct
+        ids_name: The root's name, e.g. "equilibrium", which names the root and the variable each reader takes
+        root_kind: What the root is, "IDS" or "structure", for the readers' error and the root's documentation
+
+    Returns:
+        The lines; the names they use from the Python bindings' module, `imas_rs::python`; and the base types they use
+    """
     ids_pascal = snake_to_pascal_case(ids_name)
 
     statics: list[str] = []
@@ -2158,7 +1790,7 @@ def generate_python_paths_rust(
                     "NodeKind::Leaf(Leaf {\n"
                     f"                data_type: {rust_string_literal(node.data_type)},\n"
                     "                read: |ids: &dyn Any, indices: &[IndexSpec]| {\n"
-                    f'                    let {ids_name}: &{ids_pascal} = ids.downcast_ref().ok_or_else(|| "not a {ids_name} IDS".to_string())?;\n'
+                    f'                    let {ids_name}: &{ids_pascal} = ids.downcast_ref().ok_or_else(|| "not a {ids_name} {root_kind}".to_string())?;\n'
                     "                    gather(\n"
                     f"                    {ids_name},\n"
                     "                        indices,\n"
@@ -2191,6 +1823,46 @@ def generate_python_paths_rust(
 
     root_children_name = emit_children(root_nodes, "")
 
+    imports = ["IndexSpec", "Leaf", "Node", "NodeKind", "gather"]
+    if any(node.kind == "leaf" and node.n_levels == 0 for node in iterate_path_tree(root_nodes)):
+        imports.append("no_levels")
+    used_base_types = sorted({node.data_type for node in iterate_path_tree(root_nodes) if node.kind == "leaf"})
+
+    lines: list[str] = []
+    lines.append("// " + "=" * 76)
+    lines.append("// Array-of-structures lengths")
+    lines.append("// " + "=" * 76)
+    lines.append("")
+    lines.extend(generate_lengths_functions(lengths_registry, ids_name, ids_pascal))
+    lines.append("// " + "=" * 76)
+    lines.append("// Nodes")
+    lines.append("// " + "=" * 76)
+    lines.append("")
+    lines.extend(statics)
+    if root_kind == "IDS":
+        lines.append(f"/// The root of the {ids_name} data dictionary.")
+    else:
+        lines.append(f"/// The root of `{ids_name}`.")
+    lines.append(f"pub static {ids_name.upper()}_ROOT: Node = Node {{")
+    lines.append(f"    name: {rust_string_literal(ids_name)},")
+    lines.append(f"    documentation: {rust_string_literal(root_ct.documentation)},")
+    lines.append('    units: "",')
+    lines.append(f"    kind: NodeKind::Structure({root_children_name}),")
+    lines.append("};")
+
+    return lines, imports, used_base_types
+
+
+def generate_python_paths_rust(
+    root_nodes: list[PathNode],
+    lengths_registry: dict[tuple[str, ...], str],
+    root_ct: ComplexType,
+    ids_name: str,
+) -> str:
+    """Generate an IDS's static data dictionary description, `src/python/<ids>_paths.rs`, which the Rust navigator walks."""
+    ids_pascal = snake_to_pascal_case(ids_name)
+    body_lines, imports, used_base_types = generate_python_paths_body(root_nodes, lengths_registry, root_ct, ids_name, "IDS")
+
     lines: list[str] = []
     lines.append(f"//! Static description of the {ids_name} data dictionary, used to build and resolve paths.")
     lines.append("//!")
@@ -2204,33 +1876,133 @@ def generate_python_paths_rust(
     lines.append("")
     lines.append("#![allow(clippy::all)]")
     lines.append("")
-    imports = ["IndexSpec", "Leaf", "Node", "NodeKind", "gather"]
-    if any(node.kind == "leaf" and node.n_levels == 0 for node in iterate_path_tree(root_nodes)):
-        imports.append("no_levels")
     lines.append(f"use super::{{{', '.join(imports)}}};")
-
-    used_base_types = sorted({node.data_type for node in iterate_path_tree(root_nodes) if node.kind == "leaf"})
     lines.append(f"use crate::dd_base_types::{{{', '.join(used_base_types)}}};")
     lines.append(f"use crate::ids::{ids_name}::{ids_pascal};")
     lines.append("use std::any::Any;")
     lines.append("")
-    lines.append("// " + "=" * 76)
-    lines.append("// Array-of-structures lengths")
-    lines.append("// " + "=" * 76)
+    lines.extend(body_lines)
+
+    return "\n".join(lines)
+
+
+def generate_python_pickle_body(complex_types: list[ComplexType], root_element: ComplexType, structs_prefix: str) -> list[str]:
+    """Generate the pickling of a structure's structs, an implementation of `PickleState` for each.
+
+    Each converts its struct to and from the `dict` of its nodes which `pickle` stores, keyed by their names, leaving out those which
+    are unset; see `src/python/pickle.rs`, which implements it for the leaves and for `Vec`.
+
+    Shared by an IDS's `src/python/<ids>_pickle.rs`, see `generate_python_pickle_rust`, and a structure's module, see `build_structure`,
+    which differ in their header and in where the structs are.
+
+    Args:
+        complex_types: The structs, besides the root
+        root_element: The root struct, e.g. the IDS's
+        structs_prefix: What each struct's name is prefixed with to reach it: the module it is in, e.g. `equilibrium::`, which the
+            caller imports, or "" when the structs are in the same module
+
+    Returns:
+        The lines; they use `PickleState`, `PickleStateError` and `structure_nodes` from `imas_rs::python`, and `PyDict` and pyo3's
+        prelude
+    """
+    lines: list[str] = []
+
+    # The structs a schema refers to but does not define are emitted empty (see `generate_stub_types`), and are pickled too, as
+    # the empty `dict`
+    _, referenced_types = collect_used_types(complex_types, root_element)
+    struct_names: list[str] = []
+    struct_fields: list[list[Field]] = []
+    for type_name in sorted(referenced_types):
+        struct_names.append(type_name)
+        struct_fields.append([])
+    for ct in complex_types + [root_element]:
+        struct_names.append(snake_to_pascal_case(ct.name))
+        struct_fields.append(ct.fields)
+
+    n_struct: int = len(struct_names)
+    for i_struct in range(n_struct):
+        fields: list[Field] = struct_fields[i_struct]
+        lines.append("")
+        lines.append(f"impl PickleState for {structs_prefix}{struct_names[i_struct]} {{")
+
+        # Unset when every node is
+        lines.append("    fn is_unset(&self) -> bool {")
+        if not fields:
+            lines.append("        true")
+        else:
+            unset_conditions: list[str] = []
+            for f in fields:
+                unset_conditions.append(f"self.{sanitize_rust_identifier(f.name)}.is_unset()")
+            lines.append(f"        {' && '.join(unset_conditions)}")
+        lines.append("    }")
+        lines.append("")
+
+        # The `dict` of the nodes which are set
+        lines.append("    fn to_pickle_state<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {")
+        lines.append("        let state: Bound<'py, PyDict> = PyDict::new(py);")
+        for f in fields:
+            field_name: str = sanitize_rust_identifier(f.name)
+            lines.append(f"        if !self.{field_name}.is_unset() {{")
+            lines.append(f"            state.set_item({rust_string_literal(f.name)}, self.{field_name}.to_pickle_state(py)?)?;")
+            lines.append("        }")
+        lines.append("        Ok(state.into_any())")
+        lines.append("    }")
+        lines.append("")
+
+        # Read back onto an unset struct, so that a node left out of the state is unset
+        lines.append("    fn from_pickle_state(state: &Bound<'_, PyAny>) -> Result<Self, PickleStateError> {")
+        lines.append("        let nodes: Vec<(String, Bound<'_, PyAny>)> = structure_nodes(state)?;")
+        if not fields:
+            lines.append("        if !nodes.is_empty() {")
+            lines.append("            return Err(PickleStateError::unknown_node(&nodes[0].0));")
+            lines.append("        }")
+            lines.append("        Ok(Self::default())")
+        else:
+            lines.append("        let mut structure: Self = Self::default();")
+            lines.append("        let n_node: usize = nodes.len();")
+            lines.append("        for i_node in 0..n_node {")
+            lines.append("            let (name, node_state): &(String, Bound<'_, PyAny>) = &nodes[i_node];")
+            lines.append("            match name.as_str() {")
+            for f in fields:
+                field_name = sanitize_rust_identifier(f.name)
+                name_literal: str = rust_string_literal(f.name)
+                lines.append(f"                {name_literal} => {{")
+                lines.append(
+                    f"                    structure.{field_name} = PickleState::from_pickle_state(node_state)"
+                    f".map_err(|error: PickleStateError| error.in_node({name_literal}))?;"
+                )
+                lines.append("                }")
+            lines.append("                _ => return Err(PickleStateError::unknown_node(name)),")
+            lines.append("            }")
+            lines.append("        }")
+            lines.append("        Ok(structure)")
+        lines.append("    }")
+        lines.append("}")
+
+    return lines
+
+
+def generate_python_pickle_rust(complex_types: list[ComplexType], root_element: ComplexType, module_documentation: list[str], ids_name: str) -> str:
+    """Generate the pickling of an IDS's structs, `src/python/<ids>_pickle.rs`: its header, and the body which
+    `generate_python_pickle_body` generates.
+
+    Args:
+        complex_types: The structs, besides the root
+        root_element: The root struct, the IDS's
+        module_documentation: The module's documentation, one line each, an empty one for a blank line
+        ids_name: The IDS's name, e.g. "equilibrium", whose module, `crate::ids::<ids>`, holds the structs
+    """
+    lines: list[str] = []
+    for documentation_line in module_documentation:
+        lines.append(f"//! {documentation_line}" if documentation_line else "//!")
     lines.append("")
-    lines.extend(generate_lengths_functions(lengths_registry, ids_name, ids_pascal))
-    lines.append("// " + "=" * 76)
-    lines.append("// Nodes")
-    lines.append("// " + "=" * 76)
+    lines.append("#![allow(clippy::all)]")
     lines.append("")
-    lines.extend(statics)
-    lines.append(f"/// The root of the {ids_name} data dictionary.")
-    lines.append(f"pub static {ids_name.upper()}_ROOT: Node = Node {{")
-    lines.append(f"    name: {rust_string_literal(ids_name)},")
-    lines.append(f"    documentation: {rust_string_literal(root_ct.documentation)},")
-    lines.append('    units: "",')
-    lines.append(f"    kind: NodeKind::Structure({root_children_name}),")
-    lines.append("};")
+    lines.append("use super::{PickleState, PickleStateError, structure_nodes};")
+    lines.append(f"use crate::ids::{ids_name};")
+    lines.append("use pyo3::prelude::*;")
+    lines.append("use pyo3::types::PyDict;")
+    lines.extend(generate_python_pickle_body(complex_types, root_element, f"{ids_name}::"))
 
     return "\n".join(lines)
 
@@ -2261,7 +2033,7 @@ def generate_python_stub_preamble() -> str:
     lines.append("")
     lines.append("Any number of levels may be sliced. The dimensions are gained from left to right: one")
     lines.append("per sliced level, in the order they appear on the path, then the leaf's own dimensions.")
-    lines.append("So `flux_loop[:].greens.pf_active[:].value` is `(n_flux_loop, n_pf)` and")
+    lines.append("So `coil[:].element[:].turns_with_sign` is `(n_coil, n_element)` and")
     lines.append("`time_slice[:].profiles_2d[0].psi` is `(n_time, n_z, n_r)`.")
     lines.append('"""')
     lines.append("")
@@ -2302,8 +2074,9 @@ def generate_python_stub_section(
     root_ct: ComplexType,
     type_map: dict[str, ComplexType],
     ids_name: str,
+    root_kind: str = "IDS",
 ) -> str:
-    """Generate one IDS's section of the type stub.
+    """Generate one IDS's section of the type stub, or one structure's, see `build_structure`, whose `root_kind` is "structure".
 
     Every IDS shares the one `gsfit_rs.imas` module, so the sections are concatenated
     after `generate_python_stub_preamble`.
@@ -2353,10 +2126,13 @@ def generate_python_stub_section(
 
     lines: list[str] = []
     lines.append(f"class {ids_pascal}:")
-    lines.append(f'    """{root_ct.documentation}"""')
+    if root_kind == "IDS":
+        lines.append(f'    """{root_ct.documentation}"""')
+    else:
+        lines.extend(python_docstring(root_ct.documentation, "", "    "))
     lines.append("")
     lines.append("    def get(self, path: Path[_T]) -> _T:")
-    lines.append('        """Read the data at `path` out of this IDS.')
+    lines.append(f'        """Read the data at `path` out of this {root_kind}.')
     lines.append("")
     lines.append("        The shape of the result follows the shape of the index: an integer index")
     lines.append("        gives one value, a slice gathers. The dimensions are gained from left to right:")
@@ -2367,8 +2143,9 @@ def generate_python_stub_section(
     lines.append("        An unset leaf reads back as the IMAS empty value: NaN for a float,")
     lines.append("        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.")
     lines.append('        """')
-    lines.append("    def __len__(self) -> int:")
-    lines.append('        """The number of time slices held by this IDS."""')
+    if root_kind == "IDS":
+        lines.append("    def __len__(self) -> int:")
+        lines.append('        """The number of time slices held by this IDS."""')
     lines.append("    def __repr__(self) -> str: ...")
     lines.append("")
     lines.append("# " + "=" * 74)
@@ -2423,22 +2200,26 @@ def generate_python_stub_section(
     return "\n".join(lines)
 
 
-def generate_rust_file(complex_types: list[ComplexType], root_element: Optional[ComplexType], ids_name: str) -> str:
-    """Generate complete Rust file content."""
-    lines = []
+def generate_rust_body(
+    complex_types: list[ComplexType],
+    root_element: ComplexType | None,
+    root_section_title: str,
+) -> tuple[list[str], list[str], list[str]]:
+    """Generate the body of a structure's Rust module: its structs, the root's sizing constructors, and the views, accessors and
+    accumulators which gather from them.
 
-    # Module documentation
-    lines.append(f"//! IMAS {ids_name.capitalize()} IDS")
-    lines.append("//!")
-    lines.append("//! **WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.")
-    lines.append("//! Any changes will be overwritten.")
-    lines.append("//!")
-    lines.append(f"//! This module defines the {ids_name} Interface Data Structure (IDS), generated from the")
-    lines.append("//! IMAS Data Dictionary XSD schema.")
-    lines.append("")
-    lines.append("#![allow(dead_code)]")
-    lines.append("#![allow(non_camel_case_types)]")
-    lines.append("")
+    Shared by an IDS's `src/ids/<ids>.rs`, see `generate_rust_file`, and a structure's, see `build_structure`, which differ in their
+    header and in what else the module holds.
+
+    Args:
+        complex_types: The structs, besides the root
+        root_element: The root struct, e.g. the IDS's
+        root_section_title: The title of the comment heading the root struct, e.g. "Root IDS Structure"
+
+    Returns:
+        The lines; the names they use from `dd_base_types.rs`; and those they use from `ndarray`
+    """
+    lines: list[str] = []
 
     # Collect used types
     used_base_types, referenced_types = collect_used_types(complex_types, root_element)
@@ -2465,16 +2246,12 @@ def generate_rust_file(complex_types: list[ComplexType], root_element: Optional[
     # The generated `Default` impls initialise every integer leaf to `EMPTY_INT`
     if "INT_0D" in imported:
         imported.add("EMPTY_INT")
-    if imported:
-        lines.append(f"use crate::dd_base_types::{{{', '.join(sorted(imported))}}};")
     # The views are generic over the rank they gather
+    ndarray_imports: list[str] = []
     if views_code:
-        ndarray_imports: list[str] = ["Dimension"]
+        ndarray_imports.append("Dimension")
         if re.search(r"\bIx1\b", views_code):
             ndarray_imports.append("Ix1")
-        lines.append(f"use ndarray::{{{', '.join(ndarray_imports)}}};")
-    if imported or views_code:
-        lines.append("")
 
     # Generate stub types for undefined references
     stub_code = generate_stub_types(referenced_types)
@@ -2493,7 +2270,7 @@ def generate_rust_file(complex_types: list[ComplexType], root_element: Optional[
     # Generate root element struct
     if root_element:
         lines.append("// " + "=" * 76)
-        lines.append("// Root IDS Structure")
+        lines.append(f"// {root_section_title}")
         lines.append("// " + "=" * 76)
         lines.append("")
         lines.append(generate_rust_struct(root_element))
@@ -2508,6 +2285,43 @@ def generate_rust_file(complex_types: list[ComplexType], root_element: Optional[
         lines.append("")
         lines.append(views_code)
 
+    return lines, sorted(imported), ndarray_imports
+
+
+def generate_rust_file(
+    complex_types: list[ComplexType],
+    root_element: Optional[ComplexType],
+    module_documentation: list[str],
+) -> str:
+    """Generate an IDS's Rust module, `src/ids/<ids>.rs`: its header, and the body which `generate_rust_body` generates.
+
+    Args:
+        complex_types: The structs, besides the root
+        root_element: The root struct, the IDS's
+        module_documentation: The module's documentation, one line each, an empty one for a blank line
+    """
+    body_lines, dd_base_types_imports, ndarray_imports = generate_rust_body(complex_types, root_element, "Root IDS Structure")
+
+    lines: list[str] = []
+
+    # Module documentation
+    for documentation_line in module_documentation:
+        lines.append(f"//! {documentation_line}" if documentation_line else "//!")
+    lines.append("")
+    lines.append("#![allow(dead_code)]")
+    lines.append("#![allow(non_camel_case_types)]")
+    lines.append("")
+
+    # Imports
+    if dd_base_types_imports:
+        lines.append(f"use crate::dd_base_types::{{{', '.join(dd_base_types_imports)}}};")
+    if ndarray_imports:
+        lines.append(f"use ndarray::{{{', '.join(ndarray_imports)}}};")
+    if dd_base_types_imports or ndarray_imports:
+        lines.append("")
+
+    lines.extend(body_lines)
+
     return "\n".join(lines)
 
 
@@ -2515,6 +2329,7 @@ def build_ids(
     path_to_ids_schema: Path,
     path_to_rust_ids_file: Path,
     path_to_rust_paths_file: Optional[Path] = None,
+    path_to_rust_pickle_file: Optional[Path] = None,
     generate_python_stub_for_this_ids: bool = False,
 ) -> Optional[str]:
     """
@@ -2536,6 +2351,8 @@ def build_ids(
         path_to_rust_ids_file: Path where the generated Rust file will be written
         path_to_rust_paths_file: (optional) Path for the static data dictionary description
             used by the Python bindings
+        path_to_rust_pickle_file: (optional) Path for the pickling of the IDS's structs, used by
+            the Python bindings
         generate_python_stub_for_this_ids: whether to return this IDS's section of the
             `.pyi` type stub. Every IDS shares the one `gsfit_rs.imas` module, so the
             caller concatenates the sections rather than each writing its own file.
@@ -2564,31 +2381,31 @@ def build_ids(
     pulled = resolve_supporting_types(complex_types, root_element, supporting_types)
     print(f"Resolved {len(pulled)} supporting types: {', '.join(sorted(pulled))}")
 
-    # Merge in the hand-written, non-IMAS keys before anything is emitted, so that the
+    # Merge in GSFit's custom, non-IMAS keys before anything is emitted, so that the
     # views and accumulators are generated for them too
     add_custom_keys_to_ids(
         complex_types=complex_types,
         root_element=root_element,
-        path_to_custom_keys_file=CUSTOM_KEYS_DIR / f"custom_{ids_name}_keys.rs",
+        supporting_types=supporting_types,
+        ids_name=ids_name,
+        path_to_custom_keys_file=CUSTOM_KEYS_DIR / f"custom_{ids_name}_keys.xsd",
     )
-
-    # `code/parameters_parsed`, generated from the XML schema of the settings the IDS is built with
-    parameters_parsed_structs: list[ParametersParsedStruct] = []
-    settings_root_element_name: str = ""
-    if ids_name in PARAMETERS_PARSED_XSD_FILES:
-        parameters_parsed_structs, settings_root_element_name = add_parameters_parsed_to_ids(
-            complex_types=complex_types,
-            root_element=root_element,
-            ids_name=ids_name,
-            xsd_file_path=PARAMETERS_PARSED_XSD_FILES[ids_name],
-        )
     resolve_supporting_types(complex_types, root_element, supporting_types)
 
     if root_element:
         print(f"Root element: {root_element.name}")
 
     # Generate Rust code
-    rust_code = generate_rust_file(complex_types, root_element, ids_name)
+    module_documentation: list[str] = [
+        f"IMAS {ids_name.capitalize()} IDS",
+        "",
+        "**WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.",
+        "Any changes will be overwritten.",
+        "",
+        f"This module defines the {ids_name} Interface Data Structure (IDS), generated from the",
+        "IMAS Data Dictionary XSD schema.",
+    ]
+    rust_code = generate_rust_file(complex_types, root_element, module_documentation)
 
     # Write to file
     output_path = Path(path_to_rust_ids_file)
@@ -2610,18 +2427,28 @@ def build_ids(
     )
     print(f"Formatted: {output_path}")
 
-    # The code reading `code/parameters`, the settings' XML, into `code/parameters_parsed`
-    if len(parameters_parsed_structs) > 0:
-        reader_path: Path = output_path.with_name(f"{ids_name}_parameters_parsed.rs")
-        reader_path.write_text(
-            generate_parameters_parsed_reader(
-                ids_name=ids_name,
-                settings_root_element_name=settings_root_element_name,
-                xsd_file_path=PARAMETERS_PARSED_XSD_FILES[ids_name],
-                parameters_parsed_structs=parameters_parsed_structs,
-            )
-        )
-        print(f"Generated: {reader_path}")
+    # The Python bindings: a static description of the same schema, plus the type stub
+    # that gives editors their completions. Both come from one walk of the tree, so they
+    # cannot drift apart from each other or from the structs above.
+    if path_to_rust_paths_file is None and path_to_rust_pickle_file is None and not generate_python_stub_for_this_ids:
+        return None
+
+    if root_element is None:
+        raise ValueError("cannot generate the Python bindings without a root element")
+
+    # The pickling, from the same structs as the IDS's file
+    if path_to_rust_pickle_file is not None:
+        pickle_path = Path(path_to_rust_pickle_file)
+        pickle_path.parent.mkdir(parents=True, exist_ok=True)
+        pickle_module_documentation: list[str] = [
+            f"The pickling of the {ids_name} IDS: how each of its structs is converted to and from the Python objects which",
+            "`pickle` stores, see `pickle.rs`.",
+            "",
+            "**WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.",
+            "Any changes will be overwritten.",
+        ]
+        pickle_path.write_text(generate_python_pickle_rust(complex_types, root_element, pickle_module_documentation, ids_name))
+        print(f"Generated: {pickle_path}")
         subprocess.run(
             [
                 "rustfmt",
@@ -2629,20 +2456,11 @@ def build_ids(
                 RUST_EDITION,
                 "--config-path",
                 str(WORKSPACE_DIR),
-                str(reader_path),
+                str(pickle_path),
             ],
             check=True,
         )
-        print(f"Formatted: {reader_path}")
-
-    # The Python bindings: a static description of the same schema, plus the type stub
-    # that gives editors their completions. Both come from one walk of the tree, so they
-    # cannot drift apart from each other or from the structs above.
-    if path_to_rust_paths_file is None and not generate_python_stub_for_this_ids:
-        return None
-
-    if root_element is None:
-        raise ValueError("cannot generate the Python bindings without a root element")
+        print(f"Formatted: {pickle_path}")
 
     all_types = complex_types + [root_element]
     type_map = {snake_to_pascal_case(ct.name): ct for ct in all_types}
@@ -2755,6 +2573,339 @@ def build_dd_support(element_name: str, path_to_dd_support_schema: Path, path_to
     print(f"Formatted: {output_path}")
 
 
+def build_structure(path_to_schema: Path, path_to_rust_file: Path) -> str:
+    """
+    Build the Rust module of a structure of GSFit's own, which is not part of any IDS, from its XSD schema, e.g. the Greens tables:
+    its structs, their Python bindings, and their pickling.
+
+    The structure is generated exactly as an IDS is, so its structs have the same accessors: an array of structures is selected
+    from with a range, e.g. `.flux_loop(..)`, whose leaves then gather one value per element, or, where its elements have a
+    `name`, with a name, e.g. `.flux_loop(name)`; see `dd_base_types.rs`. The generated module is written into the crate which holds
+    the structure, so it reaches `imas_rs` by its name.
+
+    Its Python bindings are an IDS's too: the static description of its paths, `<ROOT>_ROOT`, which the crate mounts as
+    `gsfit_rs.imas.<root>_paths`, and a class, `Py<Root>`, holding a copy of the structure, readable through them, as
+    `imas_rs::python::PyEquilibrium` holds an IDS. It is constructed on the Rust side only, e.g. by a getter of the class holding
+    the structure. Its structs are pickled as an IDS's are, through `imas_rs::python::PickleState`, which the class pickles with.
+
+    An IDS's structs, Python bindings and pickling are generated into three files, `src/ids/<ids>.rs`, `src/python/<ids>_paths.rs`
+    and `src/python/<ids>_pickle.rs`, as `imas_rs` has its Python bindings behind its optional `python` feature. The crate which holds
+    a structure always has its Python bindings, so a structure's are generated into one module.
+
+    The schema is written as the custom keys are (see `add_custom_keys_to_ids`), but declares the whole structure:
+    * the root is the one `xs:element`, holding an inline `xs:complexType`, which names the root struct, e.g. `greens_tables` is
+      `GreensTables`
+    * every other structure is a top-level `xs:complexType`, which an element names in `type`, as can be one of `dd_support.xsd`'s
+    * a leaf holds `<xs:group ref="FLT_2D"/>`, or another of the data dictionary's base types, which `dd_support.xsd` declares, so
+      it is included, once
+    * an array of structures has `minOccurs="0" maxOccurs="unbounded"`, as it can be empty, while a leaf or a single structure,
+      which is always there, has neither
+    * every structure and element is documented, and a leaf's units are in `xs:appinfo/units`
+
+    Args:
+        path_to_schema: The XSD schema of the structure, e.g. `imas_updater/greens_storage.xsd`
+        path_to_rust_file: Where the module is written, e.g. `rust/gsfit_rs/src/greens_storage.rs`
+
+    Returns:
+        The structure's section of the type stub, `python/gsfit_rs/imas.pyi`
+    """
+    file_name: str = path_to_schema.name
+    print(f"Parsing: {path_to_schema}")
+    schema_root: ET.Element = ET.parse(path_to_schema).getroot()
+
+    # The schema's components: the include of `dd_support.xsd`, the structures, and the root
+    n_includes: int = 0
+    root_names: list[str] = []
+    structures: list[tuple[str, ET.Element]] = []
+    structure_names: set[str] = set()
+    for component in schema_root:
+        component_name: str | None = component.get("name")
+        if component.tag == f"{XS_NS}include":
+            included_file_path: Path = (path_to_schema.parent / component.get("schemaLocation", "")).resolve()
+            if included_file_path != DD_SUPPORT_XSD_FILE.resolve():
+                raise ValueError(f"{file_name} includes {included_file_path}, but only the data dictionary's `dd_support.xsd` is included, for its types")
+            n_includes += 1
+        elif component.tag == f"{XS_NS}complexType" and component_name is not None:
+            if extract_documentation(component) == "":
+                raise ValueError(f"{file_name}: the structure `{component_name}` has no `xs:documentation`")
+            structures.append((component_name, component))
+            structure_names.add(component_name)
+        elif component.tag == f"{XS_NS}element" and component_name is not None and component.find(f"{XS_NS}complexType") is not None:
+            if extract_documentation(component) == "":
+                raise ValueError(f"{file_name}: the root `{component_name}` has no `xs:documentation`")
+            structures.append((component_name, component.find(f"{XS_NS}complexType")))
+            root_names.append(component_name)
+        else:
+            raise NotImplementedError(
+                f"{file_name} holds the `{component.tag.removeprefix(XS_NS)}` `{component_name}`, but only the `xs:include` of `dd_support.xsd`, named "
+                "`xs:complexType`s, and one `xs:element`, the root, holding an `xs:complexType`, are handled"
+            )
+    if n_includes != 1:
+        dd_support_relative_path: str = os.path.relpath(DD_SUPPORT_XSD_FILE, path_to_schema.parent)
+        raise ValueError(f'{file_name} must include the data dictionary\'s types, with `<xs:include schemaLocation="{dd_support_relative_path}"/>`, once')
+    if len(root_names) != 1:
+        raise ValueError(f"{file_name} has {len(root_names)} root elements, {root_names}, but a structure has one")
+
+    # The structures of `dd_support.xsd`, which an element can have as its type too
+    supporting_types: dict[str, ComplexType] = parse_supporting_schemas(path_to_schema)
+    support_type_names: set[str] = set()
+    for supporting_type in supporting_types.values():
+        support_type_names.add(supporting_type.name)
+
+    # Each structure's elements, checked as the custom keys are
+    for structure_name, complex_type_element in structures:
+        sequences: list[ET.Element] = []
+        for child in complex_type_element:
+            if child.tag != f"{XS_NS}annotation":
+                sequences.append(child)
+        if len(sequences) != 1 or sequences[0].tag != f"{XS_NS}sequence":
+            raise NotImplementedError(f"{file_name}: `{structure_name}` holds something other than one `xs:sequence` of elements, which is not handled")
+        for element in sequences[0]:
+            element_name: str | None = element.get("name")
+            element_path: str = f"{structure_name}/{element_name}"
+            if element.tag != f"{XS_NS}element" or element_name is None:
+                raise NotImplementedError(f"{file_name}: `{structure_name}` holds an `{element.tag.removeprefix(XS_NS)}` with no `name`, which is not handled")
+            for attribute_name in element.attrib:
+                if attribute_name not in ("name", "type", "minOccurs", "maxOccurs"):
+                    raise NotImplementedError(
+                        f"{file_name}: `{element_path}` has the attribute `{attribute_name}`, but only `name`, `type`, `minOccurs` and `maxOccurs` are handled"
+                    )
+            if extract_documentation(element) == "":
+                raise ValueError(f"{file_name}: `{element_path}` has no `xs:documentation`")
+            type_name: str | None = element.get("type")
+            if type_name is None:
+                # A leaf, written as the data dictionary writes its own: `<xs:complexType><xs:group ref="FLT_2D"/></xs:complexType>`
+                leaf_complex_type: ET.Element | None = element.find(f"{XS_NS}complexType")
+                leaf_components: list[ET.Element] = [] if leaf_complex_type is None else list(leaf_complex_type)
+                if len(leaf_components) != 1 or leaf_components[0].tag != f"{XS_NS}group" or leaf_components[0].get("ref") not in BASE_TYPES:
+                    raise ValueError(
+                        f'{file_name}: `{element_path}` is a leaf, so holds only `<xs:group ref="..."/>`, naming one of the data dictionary\'s base types: '
+                        f"{', '.join(sorted(BASE_TYPES))}. A structure is a top-level `xs:complexType`, which the element names in `type`"
+                    )
+                if "minOccurs" in element.attrib or "maxOccurs" in element.attrib:
+                    raise ValueError(
+                        f"{file_name}: `{element_path}` is a leaf, which is always there and is not repeated, so has no `minOccurs` or `maxOccurs`"
+                    )
+            else:
+                if type_name not in structure_names and type_name not in support_type_names:
+                    raise ValueError(
+                        f"{file_name}: `{element_path}` has the type `{type_name}`, which is neither a structure of {file_name} nor of `dd_support.xsd`"
+                    )
+                is_array: bool = "maxOccurs" in element.attrib
+                if is_array and (element.get("minOccurs") != "0" or element.get("maxOccurs") != "unbounded"):
+                    raise ValueError(
+                        f'{file_name}: `{element_path}` is an array of structures, which can be empty, so has `minOccurs="0" maxOccurs="unbounded"`'
+                    )
+                if not is_array and "minOccurs" in element.attrib:
+                    raise ValueError(f"{file_name}: `{element_path}` is a single structure, which is always there, so has no `minOccurs`")
+
+    complex_types, root_element = parse_xsd(path_to_schema)
+    if root_element is None:
+        raise ValueError(f"{file_name} has no root element")
+    pulled: list[str] = resolve_supporting_types(complex_types, root_element, supporting_types)
+    if pulled:
+        print(f"Found {len(complex_types) - len(pulled)} structures, and {len(pulled)} of `dd_support.xsd`'s: {', '.join(sorted(pulled))}")
+    else:
+        print(f"Found {len(complex_types)} structures, and none of `dd_support.xsd`'s")
+
+    # A type which is not resolved would be emitted as an empty stub, so is refused instead
+    _used_base_types, unresolved_type_names = collect_used_types(complex_types, root_element)
+    if unresolved_type_names:
+        raise ValueError(f"{file_name}: {', '.join(sorted(unresolved_type_names))} cannot be resolved")
+
+    root_struct_name: str = snake_to_pascal_case(root_element.name)
+    root_name: str = root_element.name
+    python_class_name: str = f"Py{root_struct_name}"
+    schema_path_from_repository: str = Path(os.path.relpath(path_to_schema, REPO_ROOT)).as_posix()
+
+    # The structs
+    struct_lines, struct_dd_base_types_imports, struct_ndarray_imports = generate_rust_body(complex_types, root_element, "Root Structure")
+
+    # The Python bindings: the static description of the paths, and the class holding a copy of the structure
+    type_map: dict[str, ComplexType] = {}
+    for ct in complex_types + [root_element]:
+        type_map[snake_to_pascal_case(ct.name)] = ct
+    lengths_registry: dict[tuple[str, ...], str] = {}
+    root_nodes: list[PathNode] = build_path_tree(
+        root_element,
+        type_map,
+        dd_path="",
+        rust_expression=root_name,
+        vec_expressions=[],
+        vec_dd_paths=[],
+        ancestry=(root_struct_name,),
+        lengths_registry=lengths_registry,
+    )
+    paths_lines, paths_python_imports, paths_dd_base_types_imports = generate_python_paths_body(
+        root_nodes, lengths_registry, root_element, root_name, "structure"
+    )
+
+    # `__repr__` gives the length of each array of structures at the root
+    repr_parts: list[str] = []
+    repr_arguments: list[str] = []
+    for f in root_element.fields:
+        if f.is_array:
+            repr_parts.append(f"{f.name}={{}}")
+            repr_arguments.append(f"self.inner.{sanitize_rust_identifier(f.name)}.len()")
+    repr_format: str = f"{root_struct_name}({', '.join(repr_parts)})"
+    repr_expression: str = (
+        rust_string_literal(repr_format) if not repr_arguments else f"format!({rust_string_literal(repr_format)}, {', '.join(repr_arguments)})"
+    )
+    if not repr_arguments:
+        repr_expression = f"{repr_expression}.to_string()"
+
+    class_lines: list[str] = [
+        "// " + "=" * 76,
+        "// The Python class",
+        "// " + "=" * 76,
+        "",
+        f"/// A copy of `{root_struct_name}`, readable from Python through paths from `gsfit_rs.imas.{root_name}_paths`.",
+        "///",
+        "/// It is constructed on the Rust side only, e.g. by a getter of the class holding the structure; Python cannot build one from",
+        "/// scratch. It can be pickled, though, through `__reduce__`, which `_from_pickle_state` reads back.",
+        f'#[pyclass(module = "gsfit_rs.imas", name = "{root_struct_name}")]',
+        f"pub struct {python_class_name} {{",
+        f"    pub inner: {root_struct_name},",
+        "}",
+        "",
+        f"impl {python_class_name} {{",
+        f"    pub fn new(inner: {root_struct_name}) -> Self {{",
+        "        Self { inner }",
+        "    }",
+        "}",
+        "",
+        "#[pymethods]",
+        f"impl {python_class_name} {{",
+        f"    /// Read the data at `path`, a path from `gsfit_rs.imas.{root_name}_paths`, out of this copy.",
+        "    ///",
+        "    /// The shape of the result follows the shape of the index: an integer index gives one value, a slice gathers.",
+        "    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {",
+        f"        read_path(py, &self.inner, {rust_string_literal(root_name)}, path)",
+        "    }",
+        "",
+        "    fn __repr__(&self) -> String {",
+        f"        {repr_expression}",
+        "    }",
+        "",
+        "    /// Pickle this copy. Its state is a `dict` of the version of the crate which pickled it, `version`, when, `pickled_datetime`,",
+        f"    /// in seconds since 1970, and the `dict` of its nodes, `{root_name}`, see `imas_rs::python::PickleState`; `_from_pickle_state`",
+        "    /// reads it back.",
+        "    fn __reduce__<'py>(&self, py: Python<'py>) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyDict>,))> {",
+        "        let state: Bound<'py, PyDict> = PyDict::new(py);",
+        '        state.set_item("version", env!("CARGO_PKG_VERSION"))?;',
+        "        let pickled_datetime: f64 = SystemTime::now()",
+        "            .duration_since(UNIX_EPOCH)",
+        '            .map_err(|error: SystemTimeError| PyValueError::new_err(format!("The system clock is before 1970: {error}")))?',
+        "            .as_secs_f64();",
+        '        state.set_item("pickled_datetime", pickled_datetime)?;',
+        f"        state.set_item({rust_string_literal(root_name)}, self.inner.to_pickle_state(py)?)?;",
+        '        Ok((py.get_type::<Self>().getattr("_from_pickle_state")?, (state,)))',
+        "    }",
+        "",
+        "    /// Unpickle: read back the state which `__reduce__` made.",
+        "    ///",
+        "    /// # Errors",
+        "    /// `ValueError` if the state is not what `__reduce__` makes, e.g. it was pickled by a version of the crate whose structure",
+        "    /// is different. A version whose structure is the same only gives a warning",
+        "    #[staticmethod]",
+        "    fn _from_pickle_state(state: &Bound<'_, PyDict>) -> PyResult<Self> {",
+        "        let version: String = state",
+        '            .get_item("version")?',
+        f'            .ok_or_else(|| PyValueError::new_err("The pickled `{root_struct_name}` has no `version`"))?',
+        "            .extract()?;",
+        '        if version != env!("CARGO_PKG_VERSION") {',
+        "            eprintln!(",
+        f'                "Warning: unpickling `{root_struct_name}` pickled by {{}} v{{version}}, but this is v{{}}",',
+        '                env!("CARGO_PKG_NAME"),',
+        '                env!("CARGO_PKG_VERSION")',
+        "            );",
+        "        }",
+        "        let inner_state: Bound<'_, PyAny> = state",
+        f"            .get_item({rust_string_literal(root_name)})?",
+        f'            .ok_or_else(|| PyValueError::new_err("The pickled `{root_struct_name}` has no `{root_name}`"))?;',
+        f"        let inner: {root_struct_name} =",
+        f'            {root_struct_name}::from_pickle_state(&inner_state).map_err(|error: PickleStateError| error.into_py_err("`{root_struct_name}`"))?;',
+        "        Ok(Self::new(inner))",
+        "    }",
+        "}",
+    ]
+
+    # The pickling of the structs, which are in the same module
+    pickle_lines: list[str] = generate_python_pickle_body(complex_types, root_element, "")
+
+    # The module: its documentation, the imports of all its parts, then the parts: the structs, the paths, the class, and the pickling
+    dd_base_types_imports: list[str] = sorted(set(struct_dd_base_types_imports) | set(paths_dd_base_types_imports))
+    python_imports: list[str] = sorted(set(paths_python_imports) | {"PickleState", "PickleStateError", "PyPath", "read_path", "structure_nodes"})
+    lines: list[str] = [
+        f"//! `{root_struct_name}`, a structure of GSFit's own, which is not part of any IDS: its structs, their Python bindings, and their",
+        "//! pickling",
+        "//!",
+        f"//! **WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`, from the XSD schema `{schema_path_from_repository}`.",
+        "//! Any changes will be overwritten.",
+        "//!",
+        "//! It is generated as an IDS is, so its structs have the same accessors: an array of structures is selected from with a range,",
+        "//! `.<array>(..)`, whose leaves then gather one value per element, or, where its elements have a `name`, with a name,",
+        "//! `.<array>(name)`; see `imas_rs::dd_base_types`.",
+        "//!",
+        f"//! Its Python bindings are an IDS's too: the static description of its paths, `{root_name.upper()}_ROOT`, which",
+        f"//! `gsfit_rs.imas.{root_name}_paths` is, and `{python_class_name}`, the class holding a copy of it, readable through them, as",
+        "//! `imas_rs::python::PyEquilibrium` is. Each leaf carries the function that reads it out of the structure, so the path a reader",
+        "//! follows is written once and checked by the compiler. The structs are pickled as an IDS's are, through",
+        "//! `imas_rs::python::PickleState`, which the class pickles with.",
+        "//!",
+        "//! An IDS's structs, Python bindings and pickling are generated into three files, as `imas_rs` has its Python bindings behind",
+        "//! its optional `python` feature. This crate always has them, so they are in one file.",
+        "",
+        "#![allow(clippy::all)]",
+        "#![allow(dead_code)]",
+        "#![allow(non_camel_case_types)]",
+        "",
+        f"use imas_rs::dd_base_types::{{{', '.join(dd_base_types_imports)}}};",
+        f"use imas_rs::python::{{{', '.join(python_imports)}}};",
+    ]
+    if struct_ndarray_imports:
+        lines.append(f"use ndarray::{{{', '.join(struct_ndarray_imports)}}};")
+    lines += [
+        "use pyo3::exceptions::PyValueError;",
+        "use pyo3::prelude::*;",
+        "use pyo3::types::PyDict;",
+        "use std::any::Any;",
+        "use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};",
+        "",
+    ]
+    lines.extend(struct_lines)
+    lines.append("")
+    lines.extend(paths_lines)
+    lines.append("")
+    lines.extend(class_lines)
+    lines.append("")
+    lines.append("// " + "=" * 76)
+    lines.append("// Pickling")
+    lines.append("// " + "=" * 76)
+    lines.extend(pickle_lines)
+
+    output_path: Path = Path(path_to_rust_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines))
+    print(f"Generated: {output_path}")
+
+    # Format, so that the committed file matches what `cargo fmt` would produce
+    subprocess.run(
+        [
+            "rustfmt",
+            "--edition",
+            RUST_EDITION,
+            "--config-path",
+            str(WORKSPACE_DIR),
+            str(output_path),
+        ],
+        check=True,
+    )
+    print(f"Formatted: {output_path}")
+
+    return generate_python_stub_section(root_nodes, root_element, type_map, root_name, root_kind="structure")
+
+
 def get_imas_dd_version() -> str:
     """
     The version of the local IMAS Data Dictionary clone, as `git describe` reports it,
@@ -2779,11 +2930,41 @@ if __name__ == "__main__":
     # Read before generating anything, so a clone that `git` cannot describe fails immediately
     imas_dd_version: str = get_imas_dd_version()
 
-    ids_names: list[str] = ["equilibrium", "pf_active", "pf_passive", "pulse_schedule", "tf", "wall", "magnetics"]
+    ids_names: list[str] = [
+        "equilibrium",
+        "pf_active",
+        "pf_passive",
+        "pulse_schedule",
+        "tf",
+        "wall",
+        "magnetics",
+        # For the reconstruction consistent with the neoclassical current (paper/gsfit_consistent_with_neoclassical_current):
+        # the kinetic profiles, current sources, conductivity and current diffusion
+        "core_profiles",
+        "core_sources",
+        "core_transport",
+        "transport_solver_numerics",
+        # the neutral beams and their fast ions
+        "nbi",
+        "distribution_sources",
+        "distributions",
+        # the kinetic measurements
+        "thomson_scattering",
+    ]
 
-    # Which IDSs get Python path bindings (`<ids>_paths` and a `get`). Adding one here also
-    # needs a matching `#[pyclass]` wrapper and `mod <ids>_paths;` in `src/python/mod.rs`.
-    ids_names_with_python_paths: set[str] = {"equilibrium", "pf_active", "pf_passive", "pulse_schedule", "tf", "wall", "magnetics"}
+    # Which IDSs get Python path bindings (`<ids>_paths` and a `get`) and pickling. Adding one here also
+    # needs a matching `#[pyclass]` wrapper, and `mod <ids>_paths;` and `mod <ids>_pickle;` in `src/python/mod.rs`.
+    ids_names_with_python_paths: set[str] = {
+        "equilibrium",
+        "pf_active",
+        "pf_passive",
+        "pulse_schedule",
+        "tf",
+        "wall",
+        "magnetics",
+        "core_profiles",
+        "core_sources",
+    }
 
     stub_sections: list[str] = [generate_python_stub_preamble()]
 
@@ -2793,6 +2974,7 @@ if __name__ == "__main__":
             path_to_ids_schema=DATA_DICTIONARY_DIR / "schemas" / ids_name,
             path_to_rust_ids_file=CRATE_DIR / "src" / "ids" / f"{ids_name}.rs",
             path_to_rust_paths_file=(CRATE_DIR / "src" / "python" / f"{ids_name}_paths.rs") if with_paths else None,
+            path_to_rust_pickle_file=(CRATE_DIR / "src" / "python" / f"{ids_name}_pickle.rs") if with_paths else None,
             generate_python_stub_for_this_ids=with_paths,
         )
         if section is not None:
@@ -2805,9 +2987,18 @@ if __name__ == "__main__":
     for dd_support_element_name in dd_support_element_names:
         build_dd_support(
             element_name=dd_support_element_name,
-            path_to_dd_support_schema=DATA_DICTIONARY_DIR / "schemas" / "utilities" / "dd_support.xsd",
+            path_to_dd_support_schema=DD_SUPPORT_XSD_FILE,
             path_to_rust_file=CRATE_DIR / "src" / "dd_support" / f"{dd_support_element_name}.rs",
         )
+
+    # The structures of GSFit's own which are not part of any IDS, each generated into the crate which holds it, with its Python
+    # bindings, whose section of the type stub shares `gsfit_rs.imas`'s, as the crate mounts them in it
+    stub_sections.append(
+        build_structure(
+            path_to_schema=GREENS_STORAGE_XSD_FILE,
+            path_to_rust_file=GREENS_STORAGE_RUST_FILE,
+        )
+    )
 
     PYTHON_STUB_FILE.parent.mkdir(parents=True, exist_ok=True)
     PYTHON_STUB_FILE.write_text("\n".join(stub_sections))

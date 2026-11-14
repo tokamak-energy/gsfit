@@ -7,6 +7,8 @@ Any changes will be overwritten.
 This package holds one module per XML schema in `python/gsfit/settings_schema/xsd/`, laid out as the XML schemas are, each defining the types of one settings XML file.
 """
 
+from . import core_profiles
+from . import core_sources
 from . import database_reader
 from . import database_writer
 from . import equilibrium
@@ -19,11 +21,12 @@ from . import rtgsfit_code_settings
 from . import rtgsfit_initial_conditions
 from . import sensor_replacement
 from . import tf
-from . import thomson_scattering
 from . import wall
 from . import workflow
 
 __all__ = [
+    "core_profiles",
+    "core_sources",
     "database_reader",
     "database_writer",
     "equilibrium",
@@ -36,7 +39,6 @@ __all__ = [
     "rtgsfit_initial_conditions",
     "sensor_replacement",
     "tf",
-    "thomson_scattering",
     "wall",
     "workflow",
 ]

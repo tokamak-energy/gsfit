@@ -1,14 +1,17 @@
 use super::chi_sq_mag::epp_chi_sq_mag;
 use super::equilibrium_solve::{EquilibriumSolver, GradShafranovInputs, PsiAndDerivativesGreens};
-use super::fitted_magnetic_sensors::FittedMagneticSensors;
 use super::initial_current_seed::quadratic_current_density_seed;
+use super::nonlinear_solvers::SharedNonlinearSolver;
 use super::output_flag;
+use super::point_constraints::PointConstraints;
 use crate::equilibrium::Equilibrium;
 use crate::equilibrium_post_processor::equilibrium_post_processor;
-use crate::limiter::{limiter_points, vacuum_vessel_outline};
-use crate::sensors::{Isoflux, IsofluxBoundary, Pressure, SensorsDynamic, SensorsStatic, StationaryPoint};
+use crate::greens_storage::GreensTables;
+use crate::settings::settings_equilibrium::SettingsEquilibrium;
 use crate::source_functions::SourceFunctionTraits;
-use imas_rs::{Code, Equilibrium as EquilibriumIds, EquilibriumConstraints0d, EquilibriumGreens, EquilibriumLimiter, EquilibriumTimeSlice};
+use imas_rs::{
+    Equilibrium as EquilibriumIds, EquilibriumConstraints, EquilibriumConstraints0d, EquilibriumLimiter, EquilibriumLimiterUnitOutline, EquilibriumTimeSlice,
+};
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2};
 use pyo3::prelude::*;
@@ -17,14 +20,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 #[pyfunction]
-#[pyo3(signature = (equilibrium, isoflux, isoflux_boundary, pressure_sensors, stationary_point))]
-pub fn solve_grad_shafranov(
-    mut equilibrium: PyRefMut<Equilibrium>,
-    mut isoflux: PyRefMut<Isoflux>,
-    mut isoflux_boundary: PyRefMut<IsofluxBoundary>,
-    mut pressure_sensors: PyRefMut<Pressure>,
-    mut stationary_point: PyRefMut<StationaryPoint>,
-) {
+#[pyo3(signature = (equilibrium))]
+pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
     println!("solve_grad_shafranov starting");
     let timing_start_serial_setup: Instant = Instant::now();
 
@@ -49,20 +46,18 @@ pub fn solve_grad_shafranov(
         );
     }
 
-    // The limiter, from the equilibrium IDS, which `Equilibrium.copy_from_wall_ids` copied it into from the
-    // `wall` IDS. `limiter_points` gathers every limiter unit, `vacuum_vessel_outline` is `unit(0)`
-    // alone. Read here, before anything is solved, so that a missing limiter stops the solve with one
-    // message rather than failing every time-slice
-    let (limiter_r, limiter_z): (Array1<f64>, Array1<f64>) =
-        limiter_points(&equilibrium.equilibrium_ids.limiter).unwrap_or_else(|reason: String| panic!("solve_grad_shafranov: {reason}"));
-    let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) =
-        vacuum_vessel_outline(&equilibrium.equilibrium_ids.limiter).unwrap_or_else(|reason: String| panic!("solve_grad_shafranov: {reason}"));
+    // The limiter, from the equilibrium IDS, which `Equilibrium.copy_from_wall_ids` copied it into from the `wall` IDS, where
+    // `Wall.add_limiter_unit` checked the outline of each unit. Checked here, before anything is solved, so that a missing limiter
+    // stops the solve with one message rather than failing every time-slice
+    if equilibrium.equilibrium_ids.limiter.unit.is_empty() {
+        panic!("solve_grad_shafranov: `equilibrium/limiter/unit` is empty: copy the limiter in from the `wall` IDS with `Equilibrium.copy_from_wall_ids`");
+    }
 
     // The PF coil currents, from the equilibrium IDS, which `Equilibrium.copy_from_pf_active_ids` copied onto every
-    // time-slice from the `pf_active` IDS. The solver multiplies them by the Greens tables, `greens/grid/pf_active`, so both
+    // time-slice from the `pf_active` IDS. The solver multiplies them by the Greens tables, `greens_tables/grid/pf_active`, so both
     // must list the same coils in the same order, which `pf_active/coil` sets for both. Checked here, before anything
     // is solved. The sensors find their Greens with each coil by name, in this order
-    let greens_pf_active_names: Vec<String> = equilibrium.equilibrium_ids.greens.grid.pf_active(..).name.to_vec();
+    let greens_pf_active_names: Vec<String> = equilibrium.greens_tables.grid.pf_active(..).name.to_vec();
     for i_time in 0..n_time {
         let pf_current_names: Vec<String> = equilibrium.equilibrium_ids.time_slice[i_time].constraints.pf_current(..).name.to_vec();
         if pf_current_names.is_empty() {
@@ -72,26 +67,26 @@ pub fn solve_grad_shafranov(
         }
         if pf_current_names != greens_pf_active_names {
             panic!(
-                "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_current(:)/name` is {pf_current_names:?}, but the Greens tables, `greens/grid/pf_active(:)/name`, are for {greens_pf_active_names:?}; the two must list the same PF coils, in the same order"
+                "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_current(:)/name` is {pf_current_names:?}, but the Greens tables, `greens_tables/grid/pf_active(:)/name`, are for {greens_pf_active_names:?}; the two must list the same PF coils, in the same order"
             );
         }
     }
 
-    // The passive loops, from the equilibrium IDS, which `Equilibrium.copy_from_pf_passive_ids` copied onto every time-slice from the
-    // `pf_passive` IDS: the degrees of freedom each loop's current is fitted with, and their regularisations. The solver fits an
-    // amplitude for each degree of freedom with the Greens tables, `greens/grid/pf_passive`, so both must list the same loops and degrees of
-    // freedom in the same order, which `pf_passive/loop`, and then `loop(i1)/dof`, sets for both. Checked here, before anything is
-    // solved. This is the order the reconstruction fits them in: the sensors gather their Greens with each degree of freedom by name in
-    // it, and every time-slice's `passive_dof_values` follows it
-    let greens_pf_passive_names: Vec<String> = equilibrium.equilibrium_ids.greens.grid.pf_passive(..).name.to_vec();
+    // The passive loops, from the equilibrium IDS, which `Equilibrium.copy_from_pf_passive_ids` made from the fit settings and the
+    // `pf_passive` IDS, and copied onto every time-slice: the degrees of freedom each loop's current is fitted with, and their
+    // regularisations. The solver fits an amplitude for each degree of freedom with the Greens tables, `greens_tables/grid/pf_passive`, so both must
+    // list the same loops and degrees of freedom in the same order, which is the order of the fit settings, `equilibrium_settings/pf_passive_dof`,
+    // and then of each loop's degrees of freedom. Checked here, before anything is solved. This is the order the reconstruction fits them in:
+    // the sensors gather their Greens with each degree of freedom by name in it, and every time-slice's `passive_dof_values` follows it
+    let greens_pf_passive_names: Vec<String> = equilibrium.greens_tables.grid.pf_passive(..).name.to_vec();
     let mut greens_pf_passive_dof_names: Vec<(String, String)> = Vec::new();
-    let n_greens_pf_passive: usize = equilibrium.equilibrium_ids.greens.grid.pf_passive.len();
+    let n_greens_pf_passive: usize = equilibrium.greens_tables.grid.pf_passive.len();
     for i_greens_pf_passive in 0..n_greens_pf_passive {
-        let n_dof: usize = equilibrium.equilibrium_ids.greens.grid.pf_passive[i_greens_pf_passive].dof.len();
+        let n_dof: usize = equilibrium.greens_tables.grid.pf_passive[i_greens_pf_passive].dof.len();
         for i_dof in 0..n_dof {
             greens_pf_passive_dof_names.push((
-                equilibrium.equilibrium_ids.greens.grid.pf_passive[i_greens_pf_passive].name.clone(),
-                equilibrium.equilibrium_ids.greens.grid.pf_passive[i_greens_pf_passive].dof[i_dof].name.clone(),
+                equilibrium.greens_tables.grid.pf_passive[i_greens_pf_passive].name.clone(),
+                equilibrium.greens_tables.grid.pf_passive[i_greens_pf_passive].dof[i_dof].name.clone(),
             ));
         }
     }
@@ -107,7 +102,7 @@ pub fn solve_grad_shafranov(
         let pf_passive_current_names: Vec<String> = equilibrium.equilibrium_ids.time_slice[i_time].constraints.pf_passive_current(..).name.to_vec();
         if pf_passive_current_names != greens_pf_passive_names {
             panic!(
-                "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_passive_current(:)/name` is {pf_passive_current_names:?}, but the Greens tables, `greens/grid/pf_passive(:)/name`, are for {greens_pf_passive_names:?}; the two must list the same passive loops, in the same order"
+                "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_passive_current(:)/name` is {pf_passive_current_names:?}, but the Greens tables, `greens_tables/grid/pf_passive(:)/name`, are for {greens_pf_passive_names:?}; the two must list the same passive loops, in the same order"
             );
         }
         let mut pf_passive_current_dof_names: Vec<(String, String)> = Vec::new();
@@ -119,99 +114,216 @@ pub fn solve_grad_shafranov(
         }
         if pf_passive_current_dof_names != greens_pf_passive_dof_names {
             panic!(
-                "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_passive_current(:)/dof(:)/name` is {pf_passive_current_dof_names:?}, but the Greens tables, `greens/grid/pf_passive(:)/dof(:)/name`, are for {greens_pf_passive_dof_names:?}; the two must list the same degrees of freedom, in the same order"
+                "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_passive_current(:)/dof(:)/name` is {pf_passive_current_dof_names:?}, but the Greens tables, `greens_tables/grid/pf_passive(:)/dof(:)/name`, are for {greens_pf_passive_dof_names:?}; the two must list the same degrees of freedom, in the same order"
             );
         }
     }
 
-    let (isoflux_statics, isoflux_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        isoflux.split_into_static_and_dynamic(&times_to_reconstruct, &greens_pf_active_names, &greens_pf_passive_dof_names);
-    let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct, &greens_pf_active_names, &greens_pf_passive_dof_names);
-    let (pressure_statics, pressure_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct, &greens_pf_active_names, &greens_pf_passive_dof_names);
-    let (stationary_point_statics, stationary_point_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        stationary_point.split_into_static_and_dynamic(&times_to_reconstruct, &greens_pf_active_names, &greens_pf_passive_dof_names);
-
-    // The magnetic sensors fitted on each time-slice, read from the equilibrium IDS: those whose fit settings, `code/parameters_parsed/constraints`,
-    // include them, with their constraints' measurement and `weight`, which `Equilibrium.copy_from_magnetics_ids` and `Equilibrium::new` set
-    let mut fitted_magnetic_sensors: Vec<FittedMagneticSensors> = Vec::with_capacity(n_time);
+    // The pressure constraints, which `Equilibrium.copy_from_core_profiles_ids` makes when the fit settings, `equilibrium_settings/constraints/pressure`,
+    // include pressure. Without any, while the fit settings include pressure, they were not copied in, which is checked here, before anything
+    // is solved
     for i_time in 0..n_time {
-        fitted_magnetic_sensors.push(FittedMagneticSensors::new(
-            &equilibrium.equilibrium_ids.time_slice[i_time],
-            &equilibrium.equilibrium_ids.code.parameters_parsed,
-        ));
+        if equilibrium.settings_equilibrium.constraints.pressure.include && equilibrium.equilibrium_ids.time_slice[i_time].constraints.pressure.is_empty() {
+            panic!(
+                "solve_grad_shafranov: the fit settings, `equilibrium_settings/constraints/pressure`, include pressure, but `time_slice({i_time})/constraints/pressure` is empty: make the pressure constraints from the `core_profiles` IDS with `Equilibrium.copy_from_core_profiles_ids`"
+            );
+        }
     }
 
-    // Each fitted sensor needs its measurement, which `Equilibrium.copy_from_magnetics_ids` copies in, recording where from in `source`, and
-    // its Greens tables, which `Equilibrium.greens_with_magnetics` calculates; the diamagnetic flux has none. Checked here, before anything
-    // is solved
-    let greens_b_field_pol_probe_names: Vec<String> = equilibrium.equilibrium_ids.greens.b_field_pol_probe(..).name.to_vec();
-    let greens_flux_loop_names: Vec<String> = equilibrium.equilibrium_ids.greens.flux_loop(..).name.to_vec();
-    let greens_rogowski_coil_names: Vec<String> = equilibrium.equilibrium_ids.greens.rogowski_coil(..).name.to_vec();
+    // Every magnetic constraint, fitted or not, needs its measurement, which `Equilibrium.copy_from_magnetics_ids` copies in, recording where
+    // from in `source`, and its Greens tables, which `Equilibrium.greens_with_magnetics` calculates, as the solver fits it with them, and the
+    // post-processor reconstructs it with them. The diamagnetic flux, which is there when it has fit settings, needs no Greens tables. Checked
+    // here, before anything is solved
+    let greens_b_field_pol_probe_names: Vec<String> = equilibrium.greens_tables.b_field_pol_probe(..).name.to_vec();
+    let greens_flux_loop_names: Vec<String> = equilibrium.greens_tables.flux_loop(..).name.to_vec();
+    let greens_rogowski_coil_names: Vec<String> = equilibrium.greens_tables.rogowski_coil(..).name.to_vec();
     for i_time in 0..n_time {
-        for (sensor, fitted, greens_names) in [
+        let constraints: &EquilibriumConstraints = &equilibrium.equilibrium_ids.time_slice[i_time].constraints;
+        for (sensor, names, sources, greens_names) in [
             (
                 "b_field_pol_probe",
-                &fitted_magnetic_sensors[i_time].b_field_pol_probe,
-                Some(&greens_b_field_pol_probe_names),
+                constraints.b_field_pol_probe(..).name.to_vec(),
+                constraints.b_field_pol_probe(..).source.to_vec(),
+                &greens_b_field_pol_probe_names,
             ),
-            ("flux_loop", &fitted_magnetic_sensors[i_time].flux_loop, Some(&greens_flux_loop_names)),
+            (
+                "flux_loop",
+                constraints.flux_loop(..).name.to_vec(),
+                constraints.flux_loop(..).source.to_vec(),
+                &greens_flux_loop_names,
+            ),
             (
                 "rogowski_coil",
-                &fitted_magnetic_sensors[i_time].rogowski_coil,
-                Some(&greens_rogowski_coil_names),
+                constraints.rogowski_coil(..).name.to_vec(),
+                constraints.rogowski_coil(..).source.to_vec(),
+                &greens_rogowski_coil_names,
             ),
-            ("diamagnetic_flux", &fitted_magnetic_sensors[i_time].diamagnetic_flux, None),
         ] {
-            let n_fitted: usize = fitted.names.len();
-            for i_fitted in 0..n_fitted {
-                if fitted.sources[i_fitted].is_empty() {
+            let n_constraint: usize = names.len();
+            for i_constraint in 0..n_constraint {
+                if sources[i_constraint].is_empty() {
                     panic!(
-                        "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{sensor}`, is fitted, but has no measurement: copy the magnetic sensors in from the `magnetics` IDS with `Equilibrium.copy_from_magnetics_ids`",
-                        fitted.names[i_fitted]
+                        "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{sensor}`, has no measurement: copy the magnetic sensors in from the `magnetics` IDS with `Equilibrium.copy_from_magnetics_ids`",
+                        names[i_constraint]
                     );
                 }
-                if let Some(greens_names) = greens_names
-                    && !greens_names.contains(&fitted.names[i_fitted])
-                {
+                if !greens_names.contains(&names[i_constraint]) {
                     panic!(
-                        "solve_grad_shafranov: `{}` is fitted, but `greens/{sensor}` has no Greens tables for it: calculate them with `Equilibrium.greens_with_magnetics`",
-                        fitted.names[i_fitted]
+                        "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{sensor}`, has no Greens tables in `greens_tables/{sensor}`: calculate them with `Equilibrium.greens_with_magnetics`",
+                        names[i_constraint]
+                    );
+                }
+            }
+        }
+        if equilibrium.settings_equilibrium.constraints.diamagnetic_flux.is_some() && constraints.diamagnetic_flux.source.is_empty() {
+            panic!(
+                "solve_grad_shafranov: `time_slice({i_time})/constraints/diamagnetic_flux` has no measurement: copy the magnetic sensors in from the `magnetics` IDS with `Equilibrium.copy_from_magnetics_ids`"
+            );
+        }
+    }
+
+    // The constraints at points which can move, the isoflux, isoflux boundary and stationary point constraints, need their points, which
+    // `Equilibrium.copy_from_magnetics_ids` copies in, recording where from in `source`, and their Greens tables, which
+    // `Equilibrium.greens_with_magnetics` calculates, with a table for each time-slice, as their points can move. Checked here, before
+    // anything is solved
+    let greens_isoflux_names: Vec<String> = equilibrium.greens_tables.isoflux(..).name.to_vec();
+    let greens_isoflux_boundary_names: Vec<String> = equilibrium.greens_tables.isoflux_boundary(..).name.to_vec();
+    let greens_stationary_point_names: Vec<String> = equilibrium.greens_tables.stationary_point(..).name.to_vec();
+    let mut n_time_greens_tables: Vec<(&str, String, usize)> = Vec::new();
+    for greens in &equilibrium.greens_tables.isoflux {
+        n_time_greens_tables.push(("isoflux", greens.name.clone(), greens.plasma.dim().0));
+    }
+    for greens in &equilibrium.greens_tables.isoflux_boundary {
+        n_time_greens_tables.push(("isoflux_boundary", greens.name.clone(), greens.plasma.dim().0));
+    }
+    for greens in &equilibrium.greens_tables.stationary_point {
+        n_time_greens_tables.push(("stationary_point", greens.name.clone(), greens.d_psi_d_r.plasma.dim().0));
+    }
+    for (constraint_kind, name, n_time_greens) in &n_time_greens_tables {
+        if *n_time_greens != n_time {
+            panic!(
+                "solve_grad_shafranov: `greens_tables/{constraint_kind}` has tables for {n_time_greens} time-slice(s) for `{name}`, but there are {n_time}: calculate them with `Equilibrium.greens_with_magnetics` after the time-slices are allocated"
+            );
+        }
+    }
+    for i_time in 0..n_time {
+        let constraints: &EquilibriumConstraints = &equilibrium.equilibrium_ids.time_slice[i_time].constraints;
+        for (constraint_kind, names, sources, greens_names) in [
+            (
+                "isoflux",
+                constraints.isoflux(..).name.to_vec(),
+                constraints.isoflux(..).source.to_vec(),
+                &greens_isoflux_names,
+            ),
+            (
+                "isoflux_boundary",
+                constraints.isoflux_boundary(..).name.to_vec(),
+                constraints.isoflux_boundary(..).source.to_vec(),
+                &greens_isoflux_boundary_names,
+            ),
+            (
+                "stationary_point",
+                constraints.stationary_point(..).name.to_vec(),
+                constraints.stationary_point(..).source.to_vec(),
+                &greens_stationary_point_names,
+            ),
+        ] {
+            let n_constraint: usize = names.len();
+            for i_constraint in 0..n_constraint {
+                if sources[i_constraint].is_empty() {
+                    panic!(
+                        "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{constraint_kind}`, has no points: copy them in from the `magnetics` IDS with `Equilibrium.copy_from_magnetics_ids`",
+                        names[i_constraint]
+                    );
+                }
+                if !greens_names.contains(&names[i_constraint]) {
+                    panic!(
+                        "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{constraint_kind}`, has no Greens tables in `greens_tables/{constraint_kind}`: calculate them with `Equilibrium.greens_with_magnetics`",
+                        names[i_constraint]
                     );
                 }
             }
         }
     }
 
-    // TODO: might be better to combine all sensors here, before passing to the solver
+    // Gathered for each time-slice, those fitted there with their Greens tables at it, so that each time-slice's solver, which does not know
+    // which time-slice it is solving, is handed its own
+    let mut isoflux_constraints: Vec<PointConstraints> = Vec::with_capacity(n_time);
+    let mut isoflux_boundary_constraints: Vec<PointConstraints> = Vec::with_capacity(n_time);
+    let mut stationary_point_constraints: Vec<PointConstraints> = Vec::with_capacity(n_time);
+    {
+        let equilibrium_ref: &Equilibrium = &equilibrium;
+        for i_time in 0..n_time {
+            let time_slice: &EquilibriumTimeSlice = &equilibrium_ref.equilibrium_ids.time_slice[i_time];
+            isoflux_constraints.push(PointConstraints::isoflux(
+                time_slice,
+                i_time,
+                &equilibrium_ref.greens_tables,
+                &equilibrium_ref.settings_equilibrium.constraints,
+            ));
+            isoflux_boundary_constraints.push(PointConstraints::isoflux_boundary(
+                time_slice,
+                i_time,
+                &equilibrium_ref.greens_tables,
+                &equilibrium_ref.settings_equilibrium.constraints,
+            ));
+            stationary_point_constraints.push(PointConstraints::stationary_point(
+                time_slice,
+                i_time,
+                &equilibrium_ref.greens_tables,
+                &equilibrium_ref.settings_equilibrium.constraints,
+            ));
+        }
+    }
 
     // Deref the `PyRefMut` once. Every field access on it calls `deref_mut`, which borrows the
-    // whole of it, so `&code` and `&greens` could not be held while `time_slice` is mutated;
+    // whole of it, so `&settings_equilibrium` and `&greens` could not be held while `time_slice` is mutated;
     // off one `&mut Equilibrium` they are disjoint fields and borrow independently
     let equilibrium: &mut Equilibrium = &mut equilibrium;
     let equilibrium_ids: &mut EquilibriumIds = &mut equilibrium.equilibrium_ids;
 
     let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = equilibrium.p_prime_source_function.clone();
     let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = equilibrium.ff_prime_source_function.clone();
+    let nonlinear_solver: SharedNonlinearSolver = equilibrium.nonlinear_solver.clone();
 
     // Loop over time in parallel and store in "results"
 
-    let equilibrium_code: &Code = &equilibrium_ids.code;
+    let settings_equilibrium: &SettingsEquilibrium = &equilibrium.settings_equilibrium;
     // `vacuum_toroidal_field/b0` is indexed by time, so each time-slice's solve is handed its own value
     let vacuum_toroidal_field_b0: &Array1<f64> = &equilibrium_ids.vacuum_toroidal_field.b0;
     // Geometry only, so the same tables serve every time-slice. Borrowed from a different field
-    // of the IDS than `time_slice`, so the parallel solve can hold both at once
-    let equilibrium_greens_tables: &EquilibriumGreens = &equilibrium_ids.greens;
-    // Geometry only too, and borrowed in the same way
+    // of the equilibrium than the IDS, whose `time_slice` the parallel solve mutates, so it can hold both at once
+    let equilibrium_greens_tables: &GreensTables = &equilibrium.greens_tables;
+    // Geometry only too, and borrowed in the same way. Its `unit(0)` is the vacuum vessel
     let equilibrium_limiter: &EquilibriumLimiter = &equilibrium_ids.limiter;
+    let vessel_r: &Array1<f64> = &equilibrium_limiter.unit[0].outline.r;
+    let vessel_z: &Array1<f64> = &equilibrium_limiter.unit[0].outline.z;
+    // The candidate limit points: every point of every limiter unit, in unit order, as a plasma can be limited on any plasma facing
+    // component. Gathered once here, for the initial current density and for every time-slice's boundary search
+    let n_unit: usize = equilibrium_limiter.unit.len();
+    let mut n_limit_pt: usize = 0;
+    for i_unit in 0..n_unit {
+        n_limit_pt += equilibrium_limiter.unit[i_unit].outline.r.len();
+    }
+    let mut limit_pts_r: Array1<f64> = Array1::from_elem(n_limit_pt, f64::NAN);
+    let mut limit_pts_z: Array1<f64> = Array1::from_elem(n_limit_pt, f64::NAN);
+    let mut i_limit_pt: usize = 0;
+    for i_unit in 0..n_unit {
+        let unit_outline: &EquilibriumLimiterUnitOutline = &equilibrium_limiter.unit[i_unit].outline;
+        let n_point_this_unit: usize = unit_outline.r.len();
+        for i_point in 0..n_point_this_unit {
+            limit_pts_r[i_limit_pt] = unit_outline.r[i_point];
+            limit_pts_z[i_limit_pt] = unit_outline.z[i_point];
+            i_limit_pt += 1;
+        }
+    }
     // The same tables, reorganised into the matrix shapes the per-iteration GEMMs want. This
     // depends only on the geometry, so it is built once here and shared by every time-slice;
     // it used to be rebuilt inside each of the 480 parallel solves
     let psi_and_derivatives_greens: PsiAndDerivativesGreens = PsiAndDerivativesGreens::new(equilibrium_greens_tables);
 
     // The initial current-density guess. Every input to it is shared between time-slices - the
-    // grid, the limiter, and `code/parameters_parsed/initial_guess` - so it is built once here. It used to be rebuilt
+    // grid, the limiter, and `equilibrium_settings/initial_guess` - so it is built once here. It used to be rebuilt
     // inside each of the parallel solves, which put 7% of the whole run inside `geo`, testing a
     // 4097-point ellipse against the vessel polygon once per slice.
     // The `Result` is carried into the solve rather than unwrapped here, so that a bad initial
@@ -223,19 +335,19 @@ pub fn solve_grad_shafranov(
         if grid_r.is_empty() || grid_z.is_empty() || d_area.is_nan() {
             panic!("solve_grad_shafranov: `profiles_2d(0)/grid` is unset");
         }
-        let initial_guess_ip: f64 = equilibrium_ids.code.parameters_parsed.initial_guess.ip;
-        let initial_guess_cur_r: f64 = equilibrium_ids.code.parameters_parsed.initial_guess.cur_r;
-        let initial_guess_cur_z: f64 = equilibrium_ids.code.parameters_parsed.initial_guess.cur_z;
-        let initial_guess_minor_radius: f64 = equilibrium_ids.code.parameters_parsed.initial_guess.minor_radius;
-        let initial_guess_elongation: f64 = equilibrium_ids.code.parameters_parsed.initial_guess.elongation;
+        let initial_guess_ip: f64 = settings_equilibrium.initial_guess.ip;
+        let initial_guess_cur_r: f64 = settings_equilibrium.initial_guess.cur_r;
+        let initial_guess_cur_z: f64 = settings_equilibrium.initial_guess.cur_z;
+        let initial_guess_minor_radius: f64 = settings_equilibrium.initial_guess.minor_radius;
+        let initial_guess_elongation: f64 = settings_equilibrium.initial_guess.elongation;
 
         quadratic_current_density_seed(
             &grid_r,
             &grid_z,
-            &limiter_r,
-            &limiter_z,
-            &vessel_r,
-            &vessel_z,
+            &limit_pts_r,
+            &limit_pts_z,
+            vessel_r,
+            vessel_z,
             d_area,
             initial_guess_ip,
             initial_guess_cur_r,
@@ -245,8 +357,8 @@ pub fn solve_grad_shafranov(
         )
     };
 
-    // Everything above this point is serial: splitting the sensors into static and dynamic,
-    // building the IDS, the shared Greens tables and the initial current seed. Timed separately
+    // Everything above this point is serial: checking the inputs, gathering the constraints at
+    // points which can move for each time-slice, the shared Greens tables and the initial current seed. Timed separately
     // because it is a single-core stretch at the head of the solve stage, and without a number
     // for it the only way to size it is to read it off a CPU-utilisation plot
     println!(
@@ -267,23 +379,20 @@ pub fn solve_grad_shafranov(
             let grad_shafranov_inputs: GradShafranovInputs = GradShafranovInputs {
                 psi_and_derivatives_greens: &psi_and_derivatives_greens,
                 initial_j_2d: &initial_j_2d,
-                fitted_magnetic_sensors: &fitted_magnetic_sensors[i_time],
-                isoflux_static: &isoflux_statics[i_time],
-                isoflux_dynamic: &isoflux_dynamic[i_time],
-                isoflux_boundary_static: &isoflux_boundary_statics[i_time],
-                isoflux_boundary_dynamic: &isoflux_boundary_dynamic[i_time],
-                pressure_sensors_static: &pressure_statics[i_time],
-                pressure_sensors_dynamic: &pressure_dynamic[i_time],
-                magnetic_axis_static: &stationary_point_statics[i_time],
-                magnetic_axis_dynamic: &stationary_point_dynamic[i_time],
+                limit_pts_r: &limit_pts_r,
+                limit_pts_z: &limit_pts_z,
+                isoflux: &isoflux_constraints[i_time],
+                isoflux_boundary: &isoflux_boundary_constraints[i_time],
+                stationary_point: &stationary_point_constraints[i_time],
                 p_prime_source_function: &p_prime_source_function,
                 ff_prime_source_function: &ff_prime_source_function,
+                nonlinear_solver: &nonlinear_solver,
             };
 
             // Solve
             let mut solver: EquilibriumSolver = EquilibriumSolver::new(
                 time_slice,
-                equilibrium_code,
+                settings_equilibrium,
                 equilibrium_greens_tables,
                 equilibrium_limiter,
                 vacuum_toroidal_field_r0,
@@ -320,19 +429,13 @@ pub fn solve_grad_shafranov(
 
     // Post-process. This also measures the gaps which `Equilibrium.copy_from_pulse_schedule_ids` copied onto
     // the time-slices, where the pulse schedule defines any
-    equilibrium_post_processor(equilibrium_ids, &p_prime_source_function, &ff_prime_source_function);
+    equilibrium_post_processor(equilibrium_ids, equilibrium_greens_tables, &p_prime_source_function, &ff_prime_source_function);
 
     // Get error codes for failed time-slices
 
-    // The magnetic sensors' calculated values are their constraints' `reconstructed`, which the post-processor calculated from
-    // their Greens tables, `greens/<sensor>(i1)`; the pressure sensors' are calculated here
-    if pressure_sensors.results.data.len() > 0 {
-        pressure_sensors.calculate_sensor_values_rust(equilibrium);
-    }
-
-    // The fitted magnetic sensors' chi squared, from their constraints' `measured` and `reconstructed`, for the sensors, and with the weights,
-    // the solver fitted with
-    epp_chi_sq_mag(&mut equilibrium.equilibrium_ids.time_slice, &fitted_magnetic_sensors);
+    // The fitted magnetic sensors' chi squared, from their constraints' `measured`, `reconstructed`, `weight` and `expected_value`, for the
+    // sensors the solver fitted
+    epp_chi_sq_mag(&mut equilibrium.equilibrium_ids.time_slice, settings_equilibrium);
 
     // Everything after the parallel loop: the per-slice report lines, the post-processors, and
     // recalculating the sensor values. Mostly serial, and it is the second single-core stretch on

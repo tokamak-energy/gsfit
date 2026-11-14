@@ -7,18 +7,21 @@ use crate::equilibrium_post_processor::equilibrium_post_processor;
 use crate::grad_shafranov::CONVERGENCE_STATUS_CONVERGED;
 use crate::grad_shafranov::contour_tree_nodes as grad_shafranov_contour_tree_nodes;
 use crate::greens::Greens;
-use crate::limiter::{limiter_points, vacuum_vessel_outline};
+use crate::greens_storage::GreensTables;
 use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::plasma_geometry::{BoundaryContour, MagneticAxis, StationaryPoint, find_boundary, find_magnetic_axis, find_stationary_points_using_winding_number};
+use crate::settings::settings_pf_active::SettingsPfActive;
 use crate::source_functions::{EfitPolynomial, SharedSourceFunction};
 use crate::wall::Wall;
-use imas_rs::dd_support::parameters_input::ParametersInput;
 use imas_rs::ids::magnetics::SignalFlt1dValidity;
-use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::pf_active::{PfActive as PfActiveIds, PfCoils};
 use imas_rs::ids::wall::{Wall as WallIds, Wall2dLimiterUnit};
-use imas_rs::python::{PyEquilibrium, PyParametersInput};
-use imas_rs::{Equilibrium, EquilibriumContourTreeNode, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline, EquilibriumProfiles2d, EquilibriumTimeSlice};
+use imas_rs::python::PyEquilibrium;
+use imas_rs::{
+    Equilibrium, EquilibriumContourTreeNode, EquilibriumLimiter, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline, EquilibriumProfiles2d,
+    EquilibriumTimeSlice,
+};
 use ndarray::{Array1, Array2, array};
 use numpy::borrow::PyReadonlyArray2;
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyArrayMethods};
@@ -28,7 +31,7 @@ use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
-/// Number of points in `profiles_1d/psi_norm`, evenly spaced from the magnetic axis to the boundary
+/// Number of points in `profiles_1d/psi_norm`, equally spaced from the magnetic axis to the boundary
 const N_PSI_NORM: usize = 65;
 
 /// Maximum number of Newton iterations when locating the magnetic axis
@@ -310,20 +313,14 @@ impl GuazzottoFreidberg {
 
         // Fit the boundary coil currents and recompute the total flux (plasma + coils).
         let j_phi_2d: Array2<f64> = self.plasma_current_density();
-        let fit: BoundaryCoilFit = fit_boundary_coils(
-            &r,
-            &z,
-            &j_phi_2d,
-            &self.mask,
-            &control_r,
-            &control_z,
-            &psi_control,
-            coil_regularisation_weight,
-        );
+        let fit: BoundaryCoilFit = fit_boundary_coils(&r, &z, &j_phi_2d, &self.mask, &control_r, &control_z, &psi_control, coil_regularisation_weight);
 
         // Assemble the PF coils: one single-filament coil per boundary node. The analytic equilibrium has no settings to
         // record in `pf_active/code/parameters`
-        let mut pf_active: PfActive = PfActive::new(&PyParametersInput::new(ParametersInput::default()));
+        let mut pf_active: PfActive = PfActive {
+            pf_active_ids: PfActiveIds::default(),
+            settings_pf_active: SettingsPfActive { workflow: None },
+        };
         let n_coil: usize = fit.coil_r.len();
         let time_single: Array1<f64> = Array1::from_elem(1, 0.0);
         for i_coil in 0..n_coil {
@@ -341,7 +338,13 @@ impl GuazzottoFreidberg {
         // Store the free-boundary equilibrium, and post-process it exactly as a reconstruction is
         self.equilibrium_ids = self.build_equilibrium_ids(&flux, &geom, &r, &z, fit, j_phi_2d, &wall.wall_ids);
         let (p_prime_source_function, ff_prime_source_function): (SharedSourceFunction, SharedSourceFunction) = source_functions();
-        equilibrium_post_processor(&mut self.equilibrium_ids, &p_prime_source_function, &ff_prime_source_function);
+        // It has no magnetic sensors to reconstruct, and so no Greens tables
+        equilibrium_post_processor(
+            &mut self.equilibrium_ids,
+            &GreensTables::default(),
+            &p_prime_source_function,
+            &ff_prime_source_function,
+        );
 
         pf_active
     }
@@ -614,8 +617,10 @@ impl GuazzottoFreidberg {
             let derivatives: FluxDerivatives = flux.eval_all(x, y);
             let hessian_determinant: f64 =
                 derivatives.d2_psi_hat_d_x2 * derivatives.d2_psi_hat_d_y2 - derivatives.d2_psi_hat_d_x_d_y * derivatives.d2_psi_hat_d_x_d_y;
-            let step_x: f64 = (derivatives.d2_psi_hat_d_y2 * derivatives.d_psi_hat_d_x - derivatives.d2_psi_hat_d_x_d_y * derivatives.d_psi_hat_d_y) / hessian_determinant;
-            let step_y: f64 = (derivatives.d2_psi_hat_d_x2 * derivatives.d_psi_hat_d_y - derivatives.d2_psi_hat_d_x_d_y * derivatives.d_psi_hat_d_x) / hessian_determinant;
+            let step_x: f64 =
+                (derivatives.d2_psi_hat_d_y2 * derivatives.d_psi_hat_d_x - derivatives.d2_psi_hat_d_x_d_y * derivatives.d_psi_hat_d_y) / hessian_determinant;
+            let step_y: f64 =
+                (derivatives.d2_psi_hat_d_x2 * derivatives.d_psi_hat_d_y - derivatives.d2_psi_hat_d_x_d_y * derivatives.d_psi_hat_d_x) / hessian_determinant;
             x -= step_x;
             y -= step_y;
             if step_x.hypot(step_y) < MAGNETIC_AXIS_TOLERANCE {
@@ -694,9 +699,31 @@ impl GuazzottoFreidberg {
         let mask_2d: Array2<f64>;
         let contour_tree_nodes: Vec<EquilibriumContourTreeNode>;
         if !geom.xpts().0.is_empty() {
-            // Diverted: found in the total flux, as `EquilibriumSolver::update_psi_and_geometry` finds them
-            let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(&equilibrium_ids.limiter).expect("GuazzottoFreidberg: limiter points");
-            let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(&equilibrium_ids.limiter).expect("GuazzottoFreidberg: vacuum vessel");
+            // Diverted: found in the total flux, as `EquilibriumSolver::update_psi_and_geometry` finds them, inside the limiter just
+            // copied in. Its `unit(0)` is the vacuum vessel, and the candidate limit points are every point of every unit, in unit order
+            let limiter: &EquilibriumLimiter = &equilibrium_ids.limiter;
+            if limiter.unit.is_empty() {
+                panic!("GuazzottoFreidberg: `wall/description_2d(0)/limiter/unit` is empty, so there is no vacuum vessel to find the boundary inside");
+            }
+            let vessel_r: &Array1<f64> = &limiter.unit[0].outline.r;
+            let vessel_z: &Array1<f64> = &limiter.unit[0].outline.z;
+            let n_unit: usize = limiter.unit.len();
+            let mut n_limit_pt: usize = 0;
+            for i_unit in 0..n_unit {
+                n_limit_pt += limiter.unit[i_unit].outline.r.len();
+            }
+            let mut limit_pts_r: Array1<f64> = Array1::from_elem(n_limit_pt, f64::NAN);
+            let mut limit_pts_z: Array1<f64> = Array1::from_elem(n_limit_pt, f64::NAN);
+            let mut i_limit_pt: usize = 0;
+            for i_unit in 0..n_unit {
+                let unit_outline: &EquilibriumLimiterUnitOutline = &limiter.unit[i_unit].outline;
+                let n_point_this_unit: usize = unit_outline.r.len();
+                for i_point in 0..n_point_this_unit {
+                    limit_pts_r[i_limit_pt] = unit_outline.r[i_point];
+                    limit_pts_z[i_limit_pt] = unit_outline.z[i_point];
+                    i_limit_pt += 1;
+                }
+            }
             let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
                 r.view(),
                 z.view(),
@@ -708,7 +735,7 @@ impl GuazzottoFreidberg {
                 fit.flux_total.d2_psi_d_z2.view(),
             );
             // The search for the magnetic axis starts from the analytic one
-            let magnetic_axis: MagneticAxis = find_magnetic_axis(&stationary_points, mag_r_analytic, mag_z_analytic, &vessel_r, &vessel_z)
+            let magnetic_axis: MagneticAxis = find_magnetic_axis(&stationary_points, mag_r_analytic, mag_z_analytic, vessel_r, vessel_z)
                 .expect("GuazzottoFreidberg: no magnetic axis found in the total flux");
             let plasma_boundary: BoundaryContour = find_boundary(
                 r,
@@ -720,8 +747,8 @@ impl GuazzottoFreidberg {
                 &stationary_points,
                 &limit_pts_r,
                 &limit_pts_z,
-                &vessel_r,
-                &vessel_z,
+                vessel_r,
+                vessel_z,
                 magnetic_axis.r,
                 magnetic_axis.z,
             )
@@ -756,12 +783,6 @@ impl GuazzottoFreidberg {
 
         // The IDS layout, the same as a reconstruction's: one time-slice, holding one rectangular grid
         equilibrium_ids.allocate_time_slices(&array![0.0]);
-        equilibrium_ids.code.parameters_parsed.grid.n_r = n_r as i32;
-        equilibrium_ids.code.parameters_parsed.grid.n_z = n_z as i32;
-        equilibrium_ids.code.parameters_parsed.grid.r_min = self.r_min;
-        equilibrium_ids.code.parameters_parsed.grid.r_max = self.r_max;
-        equilibrium_ids.code.parameters_parsed.grid.z_min = self.z_min;
-        equilibrium_ids.code.parameters_parsed.grid.z_max = self.z_max;
         // An analytic solution is always usable
         equilibrium_ids.code.output_flag = array![0];
         // `r0 * b0` is the vacuum `f`, which is what the post-processor recovers the rod current from

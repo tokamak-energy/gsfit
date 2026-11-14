@@ -17,9 +17,8 @@
         set once, in workflow.xml, the central list of the trees which the database reader reads from. Each
         IDS's file links to it, in `workflow`, e.g. `<workflow href="../workflow.xml"/>` in
         pf_active/pf_active.xml, and the reader selects the trees it needs from it by their `tree_name`. So far only the
-        st40_mdsplus_with_digital_filter reader reads every IDS's file; the st40_mdsplus reader reads only
-        thomson_scattering.xml. An IDS's file holds only its link to workflow.xml, and the settings which
-        do not come from a tree, such as tf's reference radius, which every reader needs.
+        st40_mdsplus_with_digital_filter reader reads every IDS's file. An IDS's file holds only its link to workflow.xml,
+        and the settings which do not come from a tree, such as tf's reference radius, which every reader needs.
       * The IDS GSFit writes, equilibrium, is built by GSFit itself. equilibrium/equilibrium.xml links to
         GSFit's own settings, e.g. the grid and the constraints, in the same directory.
     * A link's path is relative to the file holding the link, so a settings directory can use a file
@@ -34,13 +33,14 @@
       name followed by `_settings`, e.g. `wall_settings`. So its Python class, `WallSettings`, is not
       mistaken for the IDS, or for GSFit's object holding it, `gsfit_rs.Wall`.
     * A link to a file whose root element holds only one element, named as the link, is collapsed in the
-      Python classes and in an IDS's code/parameters_parsed: the link's field holds that element. E.g.
+      Python classes and in the Rust structs, `gsfit_rs::settings`: the link's field holds that element. E.g.
       `constraints.b_field_pol_probe` holds the probes listed in constraints_b_field_pol_probe.xml, rather
       than `constraints.b_field_pol_probe.b_field_pol_probe`. The files, and code/parameters, keep the
       linked file's root element, `constraints__b_field_pol_probe`.
     * The constraints are named as in the IMAS Data Dictionary, e.g. `b_field_pol_probe` and
       `diamagnetic_flux` as in the equilibrium IDS's time_slice[:]/constraints, and `rogowski_coil` as in
-      the magnetics IDS. `isoflux` is not in the Data Dictionary, so keeps GSFit's name.
+      the magnetics IDS. `isoflux`, `isoflux_boundary` and `stationary_point` are not in the Data Dictionary,
+      so keep GSFit's names.
     * Each schema stands alone, with no `xs:include` or `xs:import`, because the XML Form Editor does not
       follow them. Types used by several schemas are repeated in each, and must be the same in each: when
       the settings are recorded in an IDS's code/parameters, each linked file is written in its link's
@@ -121,6 +121,16 @@
             </xs:element>
 
             <!-- The IDSs GSFit reads, built by the database reader -->
+            <xs:element name="core_profiles" type="Link" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Settings needed to build `core_profiles` IDS; e.g. where to read data from, and how the measurements are turned into the profiles. Needed when the equilibrium fits pressure, see equilibrium/constraints_pressure.xml.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <schema>core_profiles/core_profiles.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
             <xs:element name="magnetics" type="Link">
                 <xs:annotation>
                     <xs:documentation>
@@ -168,16 +178,6 @@
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>tf/tf.xsd</schema>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:element>
-            <xs:element name="thomson_scattering" type="Link" minOccurs="0">
-                <xs:annotation>
-                    <xs:documentation>
-                        Settings needed to build `thomson_scattering` IDS; e.g. where to read data from, and which time-sices/channels have trustworthy data.
-                    </xs:documentation>
-                    <xs:appinfo>
-                        <schema>thomson_scattering/thomson_scattering.xsd</schema>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>

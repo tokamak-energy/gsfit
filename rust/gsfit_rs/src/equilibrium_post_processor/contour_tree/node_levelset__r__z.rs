@@ -22,7 +22,6 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
-use crate::limiter::vacuum_vessel_outline;
 use crate::plasma_geometry::MarchingContour;
 use crate::plasma_geometry::cubic_interpolation::cubic_interpolation;
 use crate::plasma_geometry::marching_squares_for_sol::sort_boundary_points_version_4;
@@ -95,10 +94,11 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     // 2. The limiter: `equilibrium/limiter/unit(0)/outline`, the closed contour which bounds the
     //    plasma
-    let (limiter_r, limiter_z): (Array1<f64>, Array1<f64>) = match vacuum_vessel_outline(constant_values.limiter) {
-        Ok(limiter) => limiter,
-        Err(_) => return,
-    };
+    if constant_values.limiter.unit.is_empty() {
+        return;
+    }
+    let limiter_r: &Array1<f64> = &constant_values.limiter.unit[0].outline.r;
+    let limiter_z: &Array1<f64> = &constant_values.limiter.unit[0].outline.z;
     let n_limiter: usize = limiter_r.len();
     if n_limiter < 3 {
         return;
@@ -515,8 +515,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
             secondary_xpt_r,
             secondary_xpt_z,
             start_points_cell[i_start_point],
-            &limiter_r,
-            &limiter_z,
+            limiter_r,
+            limiter_z,
             n_r,
             n_z,
         );

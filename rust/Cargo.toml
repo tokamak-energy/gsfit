@@ -1,7 +1,5 @@
 [workspace]
 members = [
-    "data_tree",
-    "data_tree/data_tree_derive",
     "gsfit_rs",
     "imas_rs",
     "interpolation",

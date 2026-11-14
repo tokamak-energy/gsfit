@@ -31,7 +31,7 @@ def setup_tf(
     **This method is specific to ST40's experimental MDSplus database, with a digital filter.**
 
     Two nodes are filled:
-    1. `tf/r0`, the reference major radius the vacuum toroidal field is quoted at
+    1. `tf/r0`, the reference major radius the vacuum toroidal field is quoted at, which `Tf` sets from the settings
     2. `tf/b_field_phi_vacuum_r`, the vacuum field times major radius, on the **experimental**
        timebase. `Equilibrium.copy_from_tf_ids` interpolates it onto the reconstruction times itself, so
        do not interpolate it here.
@@ -52,22 +52,18 @@ def setup_tf(
         psu2coil_pulseNo = pulseNo
     else:
         psu2coil_pulseNo = psu2coil_settings.pulseNo
-    vacuum_toroidal_field_reference_radius = settings.vacuum_toroidal_field_reference_radius
 
     # Serialise the settings to be stored inside the IDS: `tf.xml` holding only the settings which built the toroidal field
     settings_xml = serialise_python_dataclass_to_imas_parameters_input(
         settings=TfSettings(
-            vacuum_toroidal_field_reference_radius=vacuum_toroidal_field_reference_radius,
+            vacuum_toroidal_field_reference_radius=settings.vacuum_toroidal_field_reference_radius,
             workflow=Workflow(tree=KeyedList([psu2coil_settings])),
         ),
         xsd_directory_path=XSD_DIRECTORY_PATH,
     )
 
-    # Initialise the Tf Rust class
+    # Initialise the Tf Rust class, which sets the reference major radius for the vacuum toroidal field from the settings
     tf = Tf(settings_xml)
-
-    # Set the reference major radius for the vacuum toroidal field
-    tf.set_r0(vacuum_toroidal_field_reference_radius)
 
     # Store the TF `f_vac`
     psu2coil = GetData(psu2coil_pulseNo, f"PSU2COIL#{psu2coil_settings.run_name}", is_fail_quiet=False, use_redis=False)

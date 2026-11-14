@@ -1,14 +1,16 @@
 use crate::greens::Greens;
-use imas_rs::dd_support::parameters_input::ParametersInput;
-use imas_rs::ids::pf_active::{
-    Code, IdentifierStatic, Outline2dGeometryStatic, PfActive as PfActiveIds, PfCoils, PfCoilsElements, RectangleStatic, SignalFlt1d,
-};
-use imas_rs::python::{PyParametersInput, PyPath, PyPfActive, read_path};
+use crate::settings::settings_pf_active::SettingsPfActive;
+use imas_rs::ids::pf_active::{Code, Outline2dGeometryStatic, PfActive as PfActiveIds, PfCoils, PfCoilsElements, RectangleStatic, SignalFlt1d};
+use imas_rs::python::{PickleState, PickleStateError, PyParametersInput, PyPath, PyPfActive, read_path};
 use ndarray::Array1;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
+use oxml::Document;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
+use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
+use xmlschema::{Report, Schema, SchemaError};
 
 /// The machine's active poloidal field (PF) coils, stored as an IMAS `pf_active` IDS.
 ///
@@ -20,7 +22,6 @@ use pyo3::prelude::*;
 /// * `inductance` - the self-inductance, calculated from the filaments
 /// * `current` - the current per turn, on the experimental timebase
 /// * `voltage` - only when the coil's voltage is prescribed
-/// * `prescribed` - a custom key, saying whether the coil's current or its voltage is prescribed
 ///
 /// # Turns
 ///
@@ -35,10 +36,10 @@ use pyo3::prelude::*;
 ///
 /// # Prescribed current or voltage
 ///
-/// `coil(i1)/prescribed` is an identifier, saying which of the coil's signals is given:
-/// * `current` (`index` 1), set by `add_pf_coil`: `coil(i1)/current` is given
-/// * `voltage` (`index` 2), set by `set_pf_voltage_prescribed`: `coil(i1)/voltage` is given, and
-///   the current is calculated
+/// A coil's current is prescribed, unless the coil has a voltage:
+/// * `add_pf_coil` gives the coil its `coil(i1)/current`
+/// * `set_pf_voltage_prescribed` gives the coil its `coil(i1)/voltage`, and `solve_circuit_equations`
+///   then calculates its current
 ///
 /// `Equilibrium.copy_from_pf_active_ids` copies each coil's current onto every time-slice of the
 /// equilibrium IDS, as `constraints/pf_current(i1)`, interpolated onto the reconstruction times.
@@ -52,26 +53,64 @@ use pyo3::prelude::*;
 /// # Settings
 ///
 /// The PF coils are constructed with the settings they are built from, e.g. which run of which
-/// database the coils are read from, as an IMAS `parameters_input`. They are kept in
-/// `parameters_input`, and their XML is also written to `pf_active/code/parameters`, where IMAS
-/// records the parameters of the code which made an IDS.
+/// database the coils are read from, as an IMAS `parameters_input`. They are validated against the
+/// XML schema in `parameters_input`, and only their XML is kept: it is written to
+/// `pf_active/code/parameters`, where IMAS records the parameters of the code which made an IDS.
+///
+/// They are also read into `settings_pf_active`, whose structs are generated from the XML schema
+/// `pf_active.xsd`. They are kept here, not in the IDS, as the pf_active IDS can also be made by
+/// another code, whose `pf_active/code/parameters` would not hold GSFit's settings.
 #[pyclass(module = "gsfit_rs")]
 pub struct PfActive {
     pub pf_active_ids: PfActiveIds,
-    /// The settings the PF coils are built from: their XML, the XML schema they follow, and the defaults
-    pub parameters_input: ParametersInput,
+    pub settings_pf_active: SettingsPfActive,
 }
 
 /// Python accessible methods
 #[pymethods]
 impl PfActive {
-    /// Construct empty PF coils, ready for `add_pf_coil` to be called.
+    /// Construct a mostly empty PF active IDS from its settings.
+    /// Later it will be fully populated by reading from a database, with `add_pf_coil`.
     ///
     /// # Arguments
-    /// * `parameters_input` - the settings the PF coils are built from, as a
-    ///   `gsfit_rs.dd_support.ParametersInput`; their XML is written to `pf_active/code/parameters`
+    /// * `parameters_input` - the settings the PF active IDS is built from:
+    ///   - `parameters_input.parameters_value` = XML data as a string
+    ///   - `parameters_input.schema` = XML schema as a string
+    ///   - `parameters_input.parameters_default` = default XML values as a string
+    ///
+    /// # Errors:
+    /// * `ValueError` if:
+    ///   - there is no XSD schema, or it cannot be read
+    ///   - there is no XML, or it is not well-formed
+    ///   - the XML does not follow the XSD schema
+    ///   - the XML cannot be read into `settings_pf_active` data types, e.g. a `pulseNo` too large for an `i64`
     #[new]
-    pub fn new(parameters_input: &PyParametersInput) -> Self {
+    pub fn new(parameters_input: &PyParametersInput) -> PyResult<Self> {
+        // Create schema from the XSD string
+        let schema: Schema = xmlschema::parse_schema(&parameters_input.inner.schema).map_err(|error: SchemaError| {
+            PyValueError::new_err(format!(
+                "`parameters_input.schema`, the XML schema of the PF coils' settings, cannot be read: {error}"
+            ))
+        })?;
+        // Create XML document from the XML string
+        let settings_document: Document = oxml::parse(&parameters_input.inner.parameters_value).map_err(|error: oxml::Error| {
+            PyValueError::new_err(format!(
+                "`parameters_input.parameters_value`, the PF coils' settings, is not well-formed XML: {error}"
+            ))
+        })?;
+        // Validate the XML document against the schema
+        let report: Report = xmlschema::validate(&settings_document, &schema);
+        if !report.is_valid() {
+            return Err(PyValueError::new_err(format!(
+                "The PF coils' settings do not follow their XML schema:\n{report}"
+            )));
+        }
+
+        // Parse the XML string settings into a typed `SettingsPfActive` struct
+        let settings_pf_active: SettingsPfActive = SettingsPfActive::from_xml(&parameters_input.inner.parameters_value)
+            .map_err(|error: String| PyValueError::new_err(format!("The PF coils' settings cannot be read into `SettingsPfActive`: {error}")))?;
+
+        // Construct the PF active IDS from the parsed settings
         let pf_active_ids: PfActiveIds = PfActiveIds {
             code: Code {
                 parameters: parameters_input.inner.parameters_value.clone(),
@@ -80,18 +119,10 @@ impl PfActive {
             ..Default::default()
         };
 
-        Self {
+        Ok(Self {
             pf_active_ids,
-            parameters_input: parameters_input.inner.clone(),
-        }
-    }
-
-    /// The settings the PF coils were built from, as a `gsfit_rs.dd_support.ParametersInput`.
-    ///
-    /// This is a copy: changing it does not change the PF coils.
-    #[getter]
-    fn parameters_input(&self) -> PyParametersInput {
-        PyParametersInput::new(self.parameters_input.clone())
+            settings_pf_active,
+        })
     }
 
     /// Append a coil to `pf_active/coil`, with its current prescribed.
@@ -142,7 +173,7 @@ impl PfActive {
     /// * `time` - the experimental timebase (1d array), [second]
     /// * `voltage` - voltage on the coil terminals (1d array), [volt]
     ///
-    /// Writes `coil(i1)/voltage`, and sets `coil(i1)/prescribed` to `voltage`. The coil's
+    /// Writes `coil(i1)/voltage`, which is what makes the coil's voltage prescribed. The coil's
     /// `current` is kept.
     pub fn set_pf_voltage_prescribed(&mut self, name: &str, time: PyReadonlyArray1<f64>, voltage: PyReadonlyArray1<f64>) -> PyResult<()> {
         // Change Python types into Rust types
@@ -169,11 +200,6 @@ impl PfActive {
                 self.pf_active_ids.coil[i_coil].voltage = SignalFlt1d {
                     data: voltage_data,
                     time: voltage_time,
-                };
-                self.pf_active_ids.coil[i_coil].prescribed = IdentifierStatic {
-                    name: "voltage".to_string(),
-                    index: 2,
-                    description: "The coil's voltage is prescribed, and its current is calculated".to_string(),
                 };
 
                 return Ok(());
@@ -219,18 +245,67 @@ impl PfActive {
         }
         for i_coil in 0..n_coil {
             let n_element: usize = coils[i_coil].element.len();
+            let prescribed: &str = if coils[i_coil].voltage.data.is_empty() { "current" } else { "voltage" };
             string_output += &format!(
                 "║  {:<74} ║\n",
-                format!(
-                    " coil({i_coil}) = {}; elements = {n_element}; prescribed = {}",
-                    coils[i_coil].name, coils[i_coil].prescribed.name
-                )
+                format!(" coil({i_coil}) = {}; elements = {n_element}; prescribed = {prescribed}", coils[i_coil].name)
             );
         }
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         string_output
+    }
+
+    /// Pickle this. Its state is a `dict` of the version of `gsfit_rs` which pickled it, `version`, when, `pickled_datetime`, in
+    /// seconds since 1970, and its data: `pf_active_ids`, the `dict` of the IDS's nodes, see `imas_rs::python::PickleState`.
+    /// `_from_pickle_state` reads it back.
+    ///
+    /// The settings, `settings_pf_active`, are not pickled: they are read again from the XML which `pf_active_ids` holds in
+    /// `code/parameters`, which they were read from.
+    fn __reduce__<'py>(&self, py: Python<'py>) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyDict>,))> {
+        let state: Bound<'py, PyDict> = PyDict::new(py);
+        state.set_item("version", env!("CARGO_PKG_VERSION"))?;
+        let pickled_datetime: f64 = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|error: SystemTimeError| PyValueError::new_err(format!("The system clock is before 1970: {error}")))?
+            .as_secs_f64();
+        state.set_item("pickled_datetime", pickled_datetime)?;
+        state.set_item("pf_active_ids", self.pf_active_ids.to_pickle_state(py)?)?;
+        Ok((py.get_type::<Self>().getattr("_from_pickle_state")?, (state,)))
+    }
+
+    /// Unpickle: read back the state which `__reduce__` made.
+    ///
+    /// # Errors
+    /// `ValueError` if the state is not what `__reduce__` makes, e.g. it was pickled by a version of `gsfit_rs` with a different
+    /// data dictionary, or its settings cannot be read into `settings_pf_active`. A different version of `gsfit_rs` whose state is
+    /// the same only gives a warning
+    #[staticmethod]
+    fn _from_pickle_state(state: &Bound<'_, PyDict>) -> PyResult<Self> {
+        let version: String = state
+            .get_item("version")?
+            .ok_or_else(|| PyValueError::new_err("The pickled `PfActive` has no `version`"))?
+            .extract()?;
+        if version != env!("CARGO_PKG_VERSION") {
+            eprintln!(
+                "Warning: the `PfActive` being unpickled was pickled by gsfit_rs v{version}, but this is v{}",
+                env!("CARGO_PKG_VERSION")
+            );
+        }
+        let pf_active_ids_state: Bound<'_, PyAny> = state
+            .get_item("pf_active_ids")?
+            .ok_or_else(|| PyValueError::new_err("The pickled `PfActive` has no `pf_active_ids`"))?;
+        let pf_active_ids: PfActiveIds =
+            PickleState::from_pickle_state(&pf_active_ids_state).map_err(|error: PickleStateError| error.into_py_err("`PfActive.pf_active_ids`"))?;
+        // The settings are read from the XML which they were read from by `new`, which the IDS holds in `code/parameters`
+        let settings_pf_active: SettingsPfActive = SettingsPfActive::from_xml(&pf_active_ids.code.parameters)
+            .map_err(|error: String| PyValueError::new_err(format!("The pickled `PfActive`'s settings cannot be read into `SettingsPfActive`: {error}")))?;
+
+        Ok(Self {
+            pf_active_ids,
+            settings_pf_active,
+        })
     }
 }
 
@@ -348,11 +423,6 @@ impl PfActive {
                 data: current_data,
                 time: current_time,
             },
-            prescribed: IdentifierStatic {
-                name: "current".to_string(),
-                index: 1,
-                description: "The coil's current is prescribed".to_string(),
-            },
             ..Default::default()
         });
 
@@ -363,19 +433,109 @@ impl PfActive {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::settings::settings_pf_active::SettingsPfActiveWorkflow;
+    use imas_rs::dd_support::parameters_input::ParametersInput;
+
+    /// The XML schema the settings' structs are generated from
+    const SCHEMA_XSD: &str = include_str!("../../../python/gsfit/settings_schema/xsd/pf_active/pf_active.xsd");
+
+    /// `pf_active.xml` without its optional link to `workflow.xml`, so it follows `pf_active.xsd`, in which `workflow` is still a link
+    const SETTINGS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<pf_active_settings/>
+"#;
+
+    /// `pf_active.xml`, with `workflow.xml` written in its link's place, as `serialise_python_dataclass_to_imas_parameters_input` writes it
+    const SETTINGS_WITH_WORKFLOW_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<pf_active_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <workflow>
+        <tree>
+            <tree_name>ELMAG</tree_name>
+            <pulseNo>-1</pulseNo>
+            <run_name>RUN01</run_name>
+            <usage>The geometry</usage>
+        </tree>
+        <tree>
+            <tree_name>PSU2COIL</tree_name>
+            <pulseNo xsi:nil="true" />
+            <run_name>BEST</run_name>
+            <usage>The currents</usage>
+        </tree>
+    </workflow>
+</pf_active_settings>
+"#;
+
+    fn parameters_input_with_xml(parameters_value: &str) -> PyParametersInput {
+        PyParametersInput::new(ParametersInput {
+            parameters_value: parameters_value.to_string(),
+            parameters_default: String::new(),
+            schema: SCHEMA_XSD.to_string(),
+        })
+    }
 
     #[test]
-    fn the_settings_are_kept_and_their_xml_written_to_code_parameters() {
-        let parameters_input: ParametersInput = ParametersInput {
-            parameters_value: "<pf_active_settings/>".to_string(),
+    fn the_settings_xml_is_written_to_code_parameters() {
+        let pf_active: PfActive = PfActive::new(&parameters_input_with_xml(SETTINGS_XML)).expect("the settings follow their XML schema");
+
+        assert_eq!(pf_active.pf_active_ids.code.parameters, SETTINGS_XML);
+    }
+
+    #[test]
+    fn the_settings_are_read_into_structs() {
+        let settings_pf_active: SettingsPfActive = SettingsPfActive::from_xml(SETTINGS_WITH_WORKFLOW_XML).expect("the settings can be read");
+
+        let workflow: &SettingsPfActiveWorkflow = settings_pf_active.workflow.as_ref().expect("the settings link to workflow.xml");
+        assert_eq!(workflow.tree.len(), 2);
+        assert_eq!(workflow.tree[0].tree_name, "ELMAG");
+        assert_eq!(workflow.tree[0].pulseNo, Some(-1));
+        assert_eq!(workflow.tree[1].tree_name, "PSU2COIL");
+        assert_eq!(workflow.tree[1].pulseNo, None);
+        assert_eq!(workflow.tree[1].run_name, "BEST");
+    }
+
+    #[test]
+    fn the_settings_are_read_without_the_optional_link_to_the_workflow() {
+        let pf_active: PfActive = PfActive::new(&parameters_input_with_xml(SETTINGS_XML)).expect("the settings follow their XML schema");
+
+        assert_eq!(pf_active.settings_pf_active.workflow, None);
+    }
+
+    #[test]
+    fn settings_which_do_not_follow_their_xml_schema_are_an_error() {
+        // Not XML at all, which is what an empty `ParametersInput()` holds
+        assert!(PfActive::new(&parameters_input_with_xml("")).is_err());
+        // Another IDS's settings
+        assert!(PfActive::new(&parameters_input_with_xml("<pf_passive_settings/>")).is_err());
+        // An element which is not in the XML schema
+        assert!(PfActive::new(&parameters_input_with_xml("<pf_active_settings><extra/></pf_active_settings>")).is_err());
+    }
+
+    #[test]
+    fn settings_without_their_xml_schema_are_an_error() {
+        let parameters_input: PyParametersInput = PyParametersInput::new(ParametersInput {
+            parameters_value: SETTINGS_XML.to_string(),
             parameters_default: String::new(),
-            schema: "<xs:schema/>".to_string(),
-        };
+            schema: String::new(),
+        });
 
-        let pf_active: PfActive = PfActive::new(&PyParametersInput::new(parameters_input));
+        assert!(PfActive::new(&parameters_input).is_err());
+    }
 
-        assert_eq!(pf_active.pf_active_ids.code.parameters, "<pf_active_settings/>");
-        assert_eq!(pf_active.parameters_input.parameters_value, "<pf_active_settings/>");
-        assert_eq!(pf_active.parameters_input.schema, "<xs:schema/>");
+    #[test]
+    fn a_new_coil_has_no_voltage_so_its_current_is_prescribed() {
+        let mut pf_active: PfActive = PfActive::new(&parameters_input_with_xml(SETTINGS_XML)).expect("the settings follow their XML schema");
+
+        pf_active
+            .add_pf_coil_rs(
+                "BVL",
+                Array1::from_elem(1, 0.9),
+                Array1::from_elem(1, 0.8),
+                Array1::from_elem(1, 0.03),
+                Array1::from_elem(1, 0.03),
+                Array1::from_vec(vec![0.0, 1.0]),
+                Array1::from_vec(vec![1.0e3, 1.0e3]),
+            )
+            .expect("the coil is valid");
+
+        assert!(pf_active.pf_active_ids.coil[0].voltage.data.is_empty());
     }
 }

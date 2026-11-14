@@ -237,7 +237,7 @@ impl PyPath {
 pub fn read_path<'py, I: Any>(py: Python<'py>, ids: &I, ids_name: &str, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
     if path.root != ids_name {
         return Err(PyTypeError::new_err(format!(
-            "this is a `{ids_name}` IDS but `{}` starts at `{}`; use `{ids_name}_paths`",
+            "this reads `{ids_name}`, but `{}` starts at `{}`; use `{ids_name}_paths`",
             path.__repr__(),
             path.root
         )));

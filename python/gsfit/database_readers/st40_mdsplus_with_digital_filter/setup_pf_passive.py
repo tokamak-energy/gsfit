@@ -9,7 +9,6 @@ from gsfit_rs import PfPassive
 from st40_database import GetData
 
 from ...settings_schema import XSD_DIRECTORY_PATH
-from ...settings_schema.python.equilibrium.equilibrium import EquilibriumSettings
 from ...settings_schema.python.pf_passive.pf_passive import PfPassiveSettings
 from ...settings_schema.python.workflow import Workflow
 
@@ -21,19 +20,17 @@ def setup_pf_passive(
     self: "DatabaseReader",
     pulseNo: int,
     settings: PfPassiveSettings,
-    settings_equilibrium: EquilibriumSettings,
 ) -> PfPassive:
     """
     This method initialises the Rust `PfPassive` class, which holds an IMAS `pf_passive` IDS.
 
     :param pulseNo: Pulse number, used to read from the database
     :param settings: `PfPassiveSettings` object containing the XML settings read from the `settings` directory, whose `workflow` says which ELMAG run to read
-    :param settings_equilibrium: `EquilibriumSettings` object, read from `equilibrium/equilibrium.xml`, whose `pf_passive_dof` says which
-        passive structures to fit, and how
 
     **This method is specific to ST40's experimental MDSplus database, with a digital filter.**
 
-    One `loop(i1)` is added for each passive structure listed in `pf_passive_dof`, in that order, with one `element(i2)` per filament.
+    One `loop(i1)` is added for each passive structure in ELMAG, in its order, with one `element(i2)` per filament. These are machine data only:
+    which of them to fit, and how, is the equilibrium's, `equilibrium/pf_passive_dof.xml`, which `Equilibrium.copy_from_pf_passive_ids` reads.
 
     ELMAG describes each filament as EFIT does: by its centre, its radial width and vertical height, and the angles of its sides from the R axis,
     where an angle of zero means that pair of sides is not sheared (see `python/gsfit/plotting/filament_corners.py`). The data dictionary describes
@@ -57,8 +54,7 @@ def setup_pf_passive(
         elmag_pulseNo = elmag_settings.pulseNo
 
     # Serialise the settings, which the passive structures record in `pf_passive/code/parameters`: `pf_passive.xml` holding only the run which
-    # built the passive structures. The equilibrium's `pf_passive_dof` is not recorded there; what it sets is stored in the IDS itself,
-    # as each loop's `current_distribution_type`, `dof`, `regularisations` and `regularisations_weight`
+    # built the passive structures
     settings_xml = serialise_python_dataclass_to_imas_parameters_input(
         settings=PfPassiveSettings(workflow=Workflow(tree=KeyedList([elmag_settings]))),
         xsd_directory_path=XSD_DIRECTORY_PATH,
@@ -121,32 +117,20 @@ def setup_pf_passive(
         else:
             oblique_beta[i_filament] = np.arctan2(-side_beta_r, vessel_d_z[i_filament])
 
-    for pf_passive_to_fit in settings_equilibrium.pf_passive_dof.passive:
-        passive_name = pf_passive_to_fit.name
-        current_distribution_type = pf_passive_to_fit.current_distribution_type
-        n_dof = pf_passive_to_fit.n_dof
-        regularisations = np.array(pf_passive_to_fit.regularisations).astype(np.float64)
-        regularisations_weight = np.array(pf_passive_to_fit.regularisations_weight).astype(np.float64)
-
-        # Find where this passive is in the vessel_filaments_to_passives matrix
-        i_passive_in_vessel = passive_names.index(passive_name)
-
-        # Extract the filaments corresponding to this passive
-        i_filaments = vessel_filaments_to_passives[:, i_passive_in_vessel].astype(bool)
+    # One loop for each passive structure, with the filaments `VESSEL.FILS2PASSIVE` assigns to it
+    n_passive: int = len(passive_names)
+    for i_passive in range(n_passive):
+        i_filaments = vessel_filaments_to_passives[:, i_passive].astype(bool)
 
         pf_passive.add_loop(
-            name=passive_name,
+            name=passive_names[i_passive],
             r=oblique_r[i_filaments],
             z=oblique_z[i_filaments],
             length_alpha=oblique_length_alpha[i_filaments],
             length_beta=oblique_length_beta[i_filaments],
             alpha=oblique_alpha[i_filaments],
             beta=oblique_beta[i_filaments],
-            resistivity=vessel_resistivity[i_passive_in_vessel],
-            current_distribution_type=current_distribution_type,
-            n_dof=n_dof,
-            regularisations=regularisations,
-            regularisations_weight=regularisations_weight,
+            resistivity=vessel_resistivity[i_passive],
         )
 
     return pf_passive

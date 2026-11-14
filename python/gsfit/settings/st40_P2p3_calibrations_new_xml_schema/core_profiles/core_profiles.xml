@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<core_profiles_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/core_profiles/core_profiles.xsd">
+    <workflow href="../workflow.xml"/>
+    <thomson_scattering>
+        <pressure_multiplier>2.0</pressure_multiplier>
+        <minimum_pressure>500.0</minimum_pressure>
+    </thomson_scattering>
+</core_profiles_settings>

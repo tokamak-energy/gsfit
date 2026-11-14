@@ -14,20 +14,45 @@
 # One Rust file per IDS. Listed rather than globbed, because `src/ids/mod.rs` sits beside
 # them and is hand-maintained (it carries a `pub mod` line per IDS). Adding an IDS means
 # adding a line here too.
-rust/imas_rs/src/ids/equilibrium.rs        linguist-generated=true
-rust/imas_rs/src/ids/magnetics.rs          linguist-generated=true
-rust/imas_rs/src/ids/pf_active.rs          linguist-generated=true
-rust/imas_rs/src/ids/pf_passive.rs         linguist-generated=true
-rust/imas_rs/src/ids/pulse_schedule.rs     linguist-generated=true
-rust/imas_rs/src/ids/tf.rs                 linguist-generated=true
-rust/imas_rs/src/ids/wall.rs               linguist-generated=true
+rust/imas_rs/src/ids/core_profiles.rs             linguist-generated=true
+rust/imas_rs/src/ids/core_sources.rs              linguist-generated=true
+rust/imas_rs/src/ids/core_transport.rs            linguist-generated=true
+rust/imas_rs/src/ids/distribution_sources.rs      linguist-generated=true
+rust/imas_rs/src/ids/distributions.rs             linguist-generated=true
+rust/imas_rs/src/ids/equilibrium.rs               linguist-generated=true
+rust/imas_rs/src/ids/magnetics.rs                 linguist-generated=true
+rust/imas_rs/src/ids/nbi.rs                       linguist-generated=true
+rust/imas_rs/src/ids/pf_active.rs                 linguist-generated=true
+rust/imas_rs/src/ids/pf_passive.rs                linguist-generated=true
+rust/imas_rs/src/ids/pulse_schedule.rs            linguist-generated=true
+rust/imas_rs/src/ids/tf.rs                        linguist-generated=true
+rust/imas_rs/src/ids/thomson_scattering.rs        linguist-generated=true
+rust/imas_rs/src/ids/transport_solver_numerics.rs linguist-generated=true
+rust/imas_rs/src/ids/wall.rs                      linguist-generated=true
 
-# The static path tables the Python bindings navigate. Everything else in `src/python/`
-# is hand-written, so this is matched on the `_paths.rs` suffix rather than the directory.
+# The static path tables the Python bindings navigate, and the pickling of each IDS's structs.
+# Everything else in `src/python/` is hand-written, so these are matched on their suffixes
+# rather than the directory.
 rust/imas_rs/src/python/*_paths.rs         linguist-generated=true
+rust/imas_rs/src/python/*_pickle.rs        linguist-generated=true
 
 # The Data Dictionary version the files above were generated from, written in the same run.
 rust/imas_rs/src/imas_dd_version.txt       linguist-generated=true
 
 # The type stub for the Python path API.
 python/gsfit_rs/imas.pyi                   linguist-generated=true
+
+# The Greens tables, a structure of GSFit's own, generated from `rust/imas_rs/imas_updater/greens_storage.xsd`: their structs,
+# Python bindings and pickling, in one file.
+rust/gsfit_rs/src/greens_storage.rs        linguist-generated=true
+
+# The settings' structs, generated from the XML schemas by `python/gsfit/settings_schema/_generate_rust_schema.py`.
+rust/gsfit_rs/src/settings/settings_core_profiles.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_core_sources.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_equilibrium.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_magnetics.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_pf_active.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_pf_passive.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_pulse_schedule.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_tf.rs  linguist-generated=true
+rust/gsfit_rs/src/settings/settings_wall.rs  linguist-generated=true

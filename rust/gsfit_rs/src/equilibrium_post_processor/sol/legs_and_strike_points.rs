@@ -3,7 +3,6 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
-use crate::limiter::vacuum_vessel_outline;
 use crate::plasma_geometry::marching_squares_for_sol::marching_squares_for_sol;
 use imas_rs::EquilibriumTimeSlice;
 use ndarray::{Array1, Array2};
@@ -53,7 +52,9 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let xpt_r: f64 = time_slice.boundary.bounding.r;
     let xpt_z: f64 = time_slice.boundary.bounding.z;
 
-    let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(constant_values.limiter).unwrap();
+    // The vacuum vessel, `equilibrium/limiter/unit(0)/outline`
+    let vessel_r: &Array1<f64> = &constant_values.limiter.unit[0].outline.r;
+    let vessel_z: &Array1<f64> = &constant_values.limiter.unit[0].outline.z;
 
     let n_r: usize = r.len();
     let n_z: usize = z.len();
@@ -85,8 +86,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         Some(xpt_z),
         mag_r,
         mag_z,
-        &vessel_r,
-        &vessel_z,
+        vessel_r,
+        vessel_z,
     );
 
     match (hfs_leg, lfs_leg) {

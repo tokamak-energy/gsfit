@@ -22,7 +22,7 @@ class TfSettings:
     """
     How the database reader builds the tf IDS: the toroidal field. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`.
 
-    :param vacuum_toroidal_field_reference_radius: Reference major radius at which the vacuum toroidal field is quoted, for every reader. Sets `tf/r0`, which is copied to equilibrium/vacuum_toroidal_field/r0. Must be greater than 0, which `Tf::set_r0` checks too. [metre]
+    :param vacuum_toroidal_field_reference_radius: Reference major radius at which the vacuum toroidal field is quoted, for every reader. Sets `tf/r0`, which is copied to equilibrium/vacuum_toroidal_field/r0. Must be greater than 0. [metre]
     :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the current in the TF rod from its PSU2COIL tree, TF.I_ROD.
     """
 

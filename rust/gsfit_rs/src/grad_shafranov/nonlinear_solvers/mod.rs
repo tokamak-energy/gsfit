@@ -6,9 +6,17 @@
 //! * `fit_and_update_current`: the fit of the source functions, passive currents and `delta_z` to
 //!   the constraints, and from it the new current density
 //!
-//! Which one is used is chosen by `code/parameters_parsed/numerics/nonlinear_solver/method`; see
-//! `EquilibriumSolver::solve`.
+//! Which one is used is chosen by `equilibrium_settings/numerics/nonlinear_solver/method`. `Equilibrium::new` makes it, with its
+//! settings, and `EquilibriumSolver` only ever calls it through `NonlinearSolverTraits`.
 
-pub(super) mod newton_krylov;
-pub(super) mod newton_picard;
-pub(super) mod picard;
+// Load modules
+mod newton_krylov;
+mod newton_picard;
+mod nonlinear_solver_generics;
+mod picard;
+
+// Expose to the crate
+pub(crate) use newton_krylov::NewtonKrylov;
+pub(crate) use newton_picard::NewtonPicard;
+pub(crate) use nonlinear_solver_generics::{NonlinearSolverTraits, SharedNonlinearSolver};
+pub(crate) use picard::Picard;

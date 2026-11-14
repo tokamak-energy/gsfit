@@ -59,15 +59,6 @@ fn lengths_flux_loop(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Opti
     }
 }
 
-/// Length of each array-of-structures level along `flux_loop_greens_pf_active`.
-fn lengths_flux_loop_greens_pf_active(magnetics: &Magnetics, level: usize, at: &[usize]) -> Option<usize> {
-    match level {
-        0 => return Some(magnetics.flux_loop.len()),
-        1 => return Some(magnetics.flux_loop[at[0]].greens.pf_active.len()),
-        _ => return None,
-    }
-}
-
 /// Length of each array-of-structures level along `flux_loop_position`.
 fn lengths_flux_loop_position(magnetics: &Magnetics, level: usize, at: &[usize]) -> Option<usize> {
     match level {
@@ -85,19 +76,26 @@ fn lengths_ip(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Option<usiz
     }
 }
 
-/// Length of each array-of-structures level along `rogowski_coil`.
-fn lengths_rogowski_coil(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Option<usize> {
+/// Length of each array-of-structures level along `isoflux`.
+fn lengths_isoflux(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
-        0 => return Some(magnetics.rogowski_coil.len()),
+        0 => return Some(magnetics.isoflux.len()),
         _ => return None,
     }
 }
 
-/// Length of each array-of-structures level along `rogowski_coil_gaps`.
-fn lengths_rogowski_coil_gaps(magnetics: &Magnetics, level: usize, at: &[usize]) -> Option<usize> {
+/// Length of each array-of-structures level along `isoflux_boundary`.
+fn lengths_isoflux_boundary(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(magnetics.isoflux_boundary.len()),
+        _ => return None,
+    }
+}
+
+/// Length of each array-of-structures level along `rogowski_coil`.
+fn lengths_rogowski_coil(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(magnetics.rogowski_coil.len()),
-        1 => return Some(magnetics.rogowski_coil[at[0]].gaps.len()),
         _ => return None,
     }
 }
@@ -115,6 +113,14 @@ fn lengths_rogowski_coil_position(magnetics: &Magnetics, level: usize, at: &[usi
 fn lengths_shunt(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(magnetics.shunt.len()),
+        _ => return None,
+    }
+}
+
+/// Length of each array-of-structures level along `stationary_point`.
+fn lengths_stationary_point(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(magnetics.stationary_point.len()),
         _ => return None,
     }
 }
@@ -343,53 +349,6 @@ static NODES_FLUX_LOOP_VOLTAGE: &[Node] = &[
     },
 ];
 
-static NODES_FLUX_LOOP_GREENS_PF_ACTIVE: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Name of the coil, matching `pf_active/coil/name`, e.g. `\"BVL\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(
-                    magnetics,
-                    indices,
-                    2,
-                    lengths_flux_loop_greens_pf_active,
-                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.flux_loop[at[0]].greens.pf_active[at[1]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "value",
-        documentation: "Poloidal flux at the flux loop, per ampere in the coil",
-        units: "Wb.A^-1",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(
-                    magnetics,
-                    indices,
-                    2,
-                    lengths_flux_loop_greens_pf_active,
-                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.flux_loop[at[0]].greens.pf_active[at[1]].value.clone() },
-                )
-            },
-        }),
-    },
-];
-
-static NODES_FLUX_LOOP_GREENS: &[Node] = &[Node {
-    name: "pf_active",
-    documentation: "Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
-`coil` array of structures",
-    units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_FLUX_LOOP_GREENS_PF_ACTIVE),
-}];
-
 static NODES_FLUX_LOOP: &[Node] = &[
     Node {
         name: "name",
@@ -484,12 +443,6 @@ static NODES_FLUX_LOOP: &[Node] = &[
         documentation: "Measured voltage between the loop terminals",
         units: "V",
         kind: NodeKind::Structure(NODES_FLUX_LOOP_VOLTAGE),
-    },
-    Node {
-        name: "greens",
-        documentation: "Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source",
-        units: "",
-        kind: NodeKind::Structure(NODES_FLUX_LOOP_GREENS),
     },
 ];
 
@@ -1650,101 +1603,6 @@ static NODES_ROGOWSKI_COIL_CURRENT: &[Node] = &[
     },
 ];
 
-static NODES_ROGOWSKI_COIL_GAPS: &[Node] = &[
-    Node {
-        name: "name",
-        documentation: "Short string identifier for the gap, unique within the Rogowski coil",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(
-                    magnetics,
-                    indices,
-                    2,
-                    lengths_rogowski_coil_gaps,
-                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "r_start",
-        documentation: "Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
-line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
-line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`",
-        units: "m",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(
-                    magnetics,
-                    indices,
-                    2,
-                    lengths_rogowski_coil_gaps,
-                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].r_start.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "r_end",
-        documentation: "Major radius of the end of the gap",
-        units: "m",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(
-                    magnetics,
-                    indices,
-                    2,
-                    lengths_rogowski_coil_gaps,
-                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].r_end.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "z_start",
-        documentation: "Height of the start of the gap",
-        units: "m",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(
-                    magnetics,
-                    indices,
-                    2,
-                    lengths_rogowski_coil_gaps,
-                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].z_start.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "z_end",
-        documentation: "Height of the end of the gap",
-        units: "m",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(
-                    magnetics,
-                    indices,
-                    2,
-                    lengths_rogowski_coil_gaps,
-                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].z_end.clone() },
-                )
-            },
-        }),
-    },
-];
-
 static NODES_ROGOWSKI_COIL: &[Node] = &[
     Node {
         name: "name",
@@ -1833,14 +1691,6 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
         documentation: "Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.",
         units: "A",
         kind: NodeKind::Structure(NODES_ROGOWSKI_COIL_CURRENT),
-    },
-    Node {
-        name: "gaps",
-        documentation: "The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
-integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
-divided by MU_0",
-        units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_ROGOWSKI_COIL_GAPS),
     },
 ];
 
@@ -2375,6 +2225,429 @@ static NODES_CODE: &[Node] = &[
     },
 ];
 
+static NODES_ISOFLUX_POSITION_1: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
+                    magnetics.isoflux[at[0]].position_1.r.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
+                    magnetics.isoflux[at[0]].position_1.z.clone()
+                })
+            },
+        }),
+    },
+];
+
+static NODES_ISOFLUX_POSITION_2: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
+                    magnetics.isoflux[at[0]].position_2.r.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
+                    magnetics.isoflux[at[0]].position_2.z.clone()
+                })
+            },
+        }),
+    },
+];
+
+static NODES_ISOFLUX: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier, unique within the isoflux constraints, matching its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/name`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
+                    magnetics.isoflux[at[0]].name.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "description",
+        documentation: "Description, e.g. where the two points are read from",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
+                    magnetics.isoflux[at[0]].description.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "position_1",
+        documentation: "The first point, at each `time`",
+        units: "",
+        kind: NodeKind::Structure(NODES_ISOFLUX_POSITION_1),
+    },
+    Node {
+        name: "position_2",
+        documentation: "The second point, at each `time`",
+        units: "",
+        kind: NodeKind::Structure(NODES_ISOFLUX_POSITION_2),
+    },
+    Node {
+        name: "validity_timed",
+        documentation: "Indicator of the validity of the points at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).\nA time with a negative value is not fitted. Empty when every time is valid",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
+                    magnetics.isoflux[at[0]].validity_timed.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "validity",
+        documentation: "Indicator of the validity of the points for the whole acquisition period, with the values of `validity_timed`.\nA negative value means the constraint is not fitted at all. Unset when the points are valid",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
+                    magnetics.isoflux[at[0]].validity.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "time",
+        documentation: "The constraint's timebase, which `position_1`, `position_2` and `validity_timed` are on",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
+                    magnetics.isoflux[at[0]].time.clone()
+                })
+            },
+        }),
+    },
+];
+
+static NODES_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux_boundary,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux_boundary[at[0]].position.r.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux_boundary,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux_boundary[at[0]].position.z.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_ISOFLUX_BOUNDARY: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier, unique within the isoflux boundary constraints, matching its fit settings, `equilibrium_settings/constraints/isoflux_boundary/isoflux_boundary(i1)/name`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux_boundary,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.isoflux_boundary[at[0]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "description",
+        documentation: "Description, e.g. where the point is read from",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux_boundary,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.isoflux_boundary[at[0]].description.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "position",
+        documentation: "The point, at each `time`",
+        units: "",
+        kind: NodeKind::Structure(NODES_ISOFLUX_BOUNDARY_POSITION),
+    },
+    Node {
+        name: "validity_timed",
+        documentation: "Indicator of the validity of the point at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).\nA time with a negative value is not fitted. Empty when every time is valid",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux_boundary,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.isoflux_boundary[at[0]].validity_timed.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "validity",
+        documentation: "Indicator of the validity of the point for the whole acquisition period, with the values of `validity_timed`.\nA negative value means the constraint is not fitted at all. Unset when the point is valid",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux_boundary,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.isoflux_boundary[at[0]].validity.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time",
+        documentation: "The constraint's timebase, which `position` and `validity_timed` are on",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux_boundary,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux_boundary[at[0]].time.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_STATIONARY_POINT_POSITION: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_stationary_point,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.stationary_point[at[0]].position.r.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z",
+        documentation: "Height, at each `../time`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_stationary_point,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.stationary_point[at[0]].position.z.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_STATIONARY_POINT: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier, unique within the stationary point constraints, e.g. `\"MAGNETIC_AXIS\"` or `\"X_POINT_LOWER\"`, matching its fit settings, `equilibrium_settings/constraints/stationary_point/stationary_point(i1)/name`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_stationary_point,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.stationary_point[at[0]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "description",
+        documentation: "Description, e.g. whether the point is the magnetic axis or an X-point, and where it is read from",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_stationary_point,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.stationary_point[at[0]].description.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "position",
+        documentation: "The point, at each `time`",
+        units: "",
+        kind: NodeKind::Structure(NODES_STATIONARY_POINT_POSITION),
+    },
+    Node {
+        name: "validity_timed",
+        documentation: "Indicator of the validity of the point at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).\nA time with a negative value is not fitted. Empty when every time is valid",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_stationary_point,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.stationary_point[at[0]].validity_timed.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "validity",
+        documentation: "Indicator of the validity of the point for the whole acquisition period, with the values of `validity_timed`.\nA negative value means the constraint is not fitted at all. Unset when the point is valid",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_stationary_point,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.stationary_point[at[0]].validity.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "time",
+        documentation: "The constraint's timebase, which `position` and `validity_timed` are on",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_stationary_point,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.stationary_point[at[0]].time.clone() },
+                )
+            },
+        }),
+    },
+];
+
 static NODES_ROOT: &[Node] = &[
     Node {
         name: "flux_loop",
@@ -2451,6 +2724,24 @@ static NODES_ROOT: &[Node] = &[
         documentation: "",
         units: "",
         kind: NodeKind::Structure(NODES_CODE),
+    },
+    Node {
+        name: "isoflux",
+        documentation: "Set of isoflux constraints, each a pair of points which lie on the same flux surface.\nThe data dictionary has no node for them",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_ISOFLUX),
+    },
+    Node {
+        name: "isoflux_boundary",
+        documentation: "Set of isoflux boundary constraints, each a point which lies on the plasma boundary.\nThe data dictionary has no node for them",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_ISOFLUX_BOUNDARY),
+    },
+    Node {
+        name: "stationary_point",
+        documentation: "Set of stationary point constraints, each a point where both derivatives of the poloidal flux are zero: an X-point or the magnetic axis.\nThe data dictionary has no node for them",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_STATIONARY_POINT),
     },
 ];
 

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for core_profiles.xml: how the database reader builds the core_profiles IDS, the kinetic profiles which the pressure
+    constraints are made from.
+    The root element is `core_profiles_settings`, the IDS's name followed by `_settings`.
+    Only the st40_mdsplus_with_digital_filter reader builds core_profiles, from ST40's Thomson scattering: in
+    core_profiles/profiles_2d(itime), at each channel's position, on the irregular (R, Z) grid `irregular_rz_na`, one time per good
+    time-slice. How the equilibrium fits it is in equilibrium/constraints_pressure.xml.
+    `workflow` links to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each.
+    The reader reads the good time-slices from its PPTS, and the electron pressure from its TS.
+    XmlPath and Link are the same in each IDS's schema, so change them all together.
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+    <!-- ================================= Link to workflow.xml ================================= -->
+    <xs:simpleType name="XmlPath">
+        <xs:annotation>
+            <xs:documentation>
+                Path of an XML file, relative to the file holding the link.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:anyURI">
+            <xs:pattern value="\S+\.xml"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="Link">
+        <xs:annotation>
+            <xs:documentation>
+                A link to the file holding these settings.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="href" type="XmlPath" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    Path of the linked file, relative to the file holding the link, e.g. "../workflow.xml".
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <!-- ================================= The settings file ================================= -->
+    <xs:element name="core_profiles_settings">
+        <xs:annotation>
+            <xs:documentation>
+                How the database reader builds the core_profiles IDS: from which runs, and how the measurements are turned into the profiles. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="workflow" type="Link" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>
+                            A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the good time-slices from its PPTS tree, GLOBAL:BAD_MA, and each channel's position and electron pressure from its TS tree.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <schema>../workflow.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="thomson_scattering" type="ThomsonScattering" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>
+                            How the Thomson scattering's electron pressure is turned into the thermal pressure, core_profiles/profiles_2d(itime)/pressure_thermal. Needed by the st40_mdsplus_with_digital_filter reader.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Complex types ================================= -->
+
+    <xs:complexType name="ThomsonScattering">
+        <xs:annotation>
+            <xs:documentation>
+                How ST40's Thomson scattering is turned into core_profiles/profiles_2d(itime), one point per channel, one time per good time-slice. The PPTS and TS runs read are in the workflow.xml linked in `workflow`. Read by the st40_mdsplus_with_digital_filter reader.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="pressure_multiplier" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Multiplies the measured electron pressure, electrons/pressure, to estimate the thermal pressure, pressure_thermal; 2 when the ions have the electrons' density and temperature.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="minimum_pressure" type="FiniteNonNegativeDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Thermal pressures at or below this are not physical, so are stored as NaN, which the equilibrium does not fit.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>pascal</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+</xs:schema>

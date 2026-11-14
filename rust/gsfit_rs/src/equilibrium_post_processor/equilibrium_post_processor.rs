@@ -21,9 +21,9 @@ use super::profiles_1d_r_midplane;
 use super::profiles_1d_r_midplane_h;
 use super::profiles_2d;
 use super::sol;
+use crate::greens_storage::GreensTables;
 use crate::source_functions::SharedSourceFunction;
 use imas_rs::Equilibrium;
-use imas_rs::EquilibriumGreens;
 use imas_rs::EquilibriumLimiter;
 use imas_rs::EquilibriumTimeSlice;
 use ndarray::Array1;
@@ -62,10 +62,13 @@ fn entry(identifier: CI, calculator_function: CalculatorFunction, dependencies: 
 /// * `equilibrium_ids` - the solved equilibrium IDS, one time-slice per reconstruction time.
 ///   Taken mutably: the derived quantities are written back into it. Its `limiter` supplies the
 ///   vacuum vessel the scrape-off layer legs are traced up to
+/// * `greens_tables` - the Greens tables, which the magnetic sensors' `reconstructed` values are calculated with, each sensor's found
+///   by the name of its constraint; empty without magnetic sensors
 /// * `p_prime_source_function` - the p' source function the reconstruction was run with
 /// * `ff_prime_source_function` - the FF' source function the reconstruction was run with
 pub fn equilibrium_post_processor(
     equilibrium_ids: &mut Equilibrium,
+    greens_tables: &GreensTables,
     p_prime_source_function: &SharedSourceFunction,
     ff_prime_source_function: &SharedSourceFunction,
 ) {
@@ -85,8 +88,6 @@ pub fn equilibrium_post_processor(
     let b0: &Array1<f64> = &equilibrium_ids.vacuum_toroidal_field.b0;
     // The limiter, which is the same for every time-slice
     let limiter: &EquilibriumLimiter = &equilibrium_ids.limiter;
-    // The Greens tables, which are the same for every time-slice
-    let greens: &EquilibriumGreens = &equilibrium_ids.greens;
 
     // The calculator table: one row per calculator, in whatever order reads best. The order they
     // run in comes from the `dependencies` column, via `dependency_sorter::sort` below
@@ -100,7 +101,11 @@ pub fn equilibrium_post_processor(
         entry(CI::constraints__b_field_pol_probe_reconstructed,                                constraints::b_field_pol_probe_reconstructed::calculate,                                &[]                                                                                                                                                 ),
         entry(CI::constraints__diamagnetic_flux_reconstructed,                                 constraints::diamagnetic_flux_reconstructed::calculate,                                 &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__f, CI::profiles_1d__phi, CI::profiles_1d__psi]                                           ),
         entry(CI::constraints__flux_loop_reconstructed,                                        constraints::flux_loop_reconstructed::calculate,                                        &[]                                                                                                                                                 ),
+        entry(CI::constraints__isoflux_boundary_reconstructed,                                 constraints::isoflux_boundary_reconstructed::calculate,                                 &[]                                                                                                                                                 ),
+        entry(CI::constraints__isoflux_reconstructed,                                          constraints::isoflux_reconstructed::calculate,                                          &[]                                                                                                                                                 ),
+        entry(CI::constraints__pressure_reconstructed,                                         constraints::pressure_reconstructed::calculate,                                         &[CI::contour_tree__node_levelset__r__z]                                                                                                            ),
         entry(CI::constraints__rogowski_coil_reconstructed,                                    constraints::rogowski_coil_reconstructed::calculate,                                    &[]                                                                                                                                                 ),
+        entry(CI::constraints__stationary_point_reconstructed,                                 constraints::stationary_point_reconstructed::calculate,                                 &[]                                                                                                                                                 ),
         entry(CI::contour_tree__node_levelset__r__z,                                           contour_tree::node_levelset__r__z::calculate,                                           &[]                                                                                                                                                 ),
         entry(CI::convergence__grad_shafranov_deviation_expression__description__index__name,  convergence::grad_shafranov_deviation_expression__description__index__name::calculate,  &[]                                                                                                                                                 ),
         entry(CI::global_quantities__area__length_pol__surface__volume,                        global_quantities::area__length_pol__surface__volume::calculate,                        &[CI::boundary__outline__r__z, CI::profiles_1d__area__volume__derivatives]                                                                          ),
@@ -180,7 +185,7 @@ pub fn equilibrium_post_processor(
         let constant_values: ConstantValues = ConstantValues {
             b0: b0[i_time],
             ff_prime_source_function,
-            greens,
+            greens: greens_tables,
             i_rod: 2.0 * PI * r0 * b0[i_time] / MU_0,
             limiter,
             p_prime_source_function,

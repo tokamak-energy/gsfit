@@ -38,10 +38,6 @@ pub struct MagneticsRogowski {
     /// Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.
     /// Units: A
     pub current: SignalFlt1dValidity,
-    /// The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
-    /// integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
-    /// divided by MU_0
-    pub gaps: Vec<MagneticsRogowskiGaps>,
 }
 
 impl Default for MagneticsRogowski {
@@ -55,7 +51,6 @@ impl Default for MagneticsRogowski {
             area: f64::NAN,
             turns_per_metre: f64::NAN,
             current: SignalFlt1dValidity::default(),
-            gaps: Vec::new(),
         }
     }
 }
@@ -85,8 +80,6 @@ pub struct MagneticsFluxLoop {
     /// Measured voltage between the loop terminals
     /// Units: V
     pub voltage: SignalFlt1dValidity,
-    /// Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source
-    pub greens: MagneticsFluxLoopGreens,
 }
 
 impl Default for MagneticsFluxLoop {
@@ -101,7 +94,6 @@ impl Default for MagneticsFluxLoop {
             gm9: f64::NAN,
             flux: SignalFlt1dValidity::default(),
             voltage: SignalFlt1dValidity::default(),
-            greens: MagneticsFluxLoopGreens::default(),
         }
     }
 }
@@ -385,64 +377,124 @@ pub struct Library {
     pub parameters: STR_0D,
 }
 
-/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+/// An isoflux constraint: two points, `position_1` and `position_2`, which lie on the same flux surface, so that the poloidal flux at the first minus the poloidal flux at the second is zero.
+/// The points can move, so each is a time trace, on the constraint's own timebase, `time`; a time where either point is NaN is not fitted
+/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.xsd
 #[derive(Debug, Clone)]
-pub struct MagneticsRogowskiGaps {
-    /// Short string identifier for the gap, unique within the Rogowski coil
+pub struct MagneticsIsoflux {
+    /// Short string identifier, unique within the isoflux constraints, matching its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/name`
     pub name: STR_0D,
-    /// Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
-    /// line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
-    /// line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
-    /// Units: m
-    pub r_start: FLT_0D,
-    /// Major radius of the end of the gap
-    /// Units: m
-    pub r_end: FLT_0D,
-    /// Height of the start of the gap
-    /// Units: m
-    pub z_start: FLT_0D,
-    /// Height of the end of the gap
-    /// Units: m
-    pub z_end: FLT_0D,
+    /// Description, e.g. where the two points are read from
+    pub description: STR_0D,
+    /// The first point, at each `time`
+    pub position_1: MagneticsPositionDynamic,
+    /// The second point, at each `time`
+    pub position_2: MagneticsPositionDynamic,
+    /// Indicator of the validity of the points at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).
+    /// A time with a negative value is not fitted. Empty when every time is valid
+    pub validity_timed: INT_1D,
+    /// Indicator of the validity of the points for the whole acquisition period, with the values of `validity_timed`.
+    /// A negative value means the constraint is not fitted at all. Unset when the points are valid
+    pub validity: INT_0D,
+    /// The constraint's timebase, which `position_1`, `position_2` and `validity_timed` are on
+    /// Units: s
+    pub time: FLT_1D,
 }
 
-impl Default for MagneticsRogowskiGaps {
+impl Default for MagneticsIsoflux {
     fn default() -> Self {
         Self {
             name: String::new(),
-            r_start: f64::NAN,
-            r_end: f64::NAN,
-            z_start: f64::NAN,
-            z_end: f64::NAN,
+            description: String::new(),
+            position_1: MagneticsPositionDynamic::default(),
+            position_2: MagneticsPositionDynamic::default(),
+            validity_timed: Default::default(),
+            validity: EMPTY_INT,
+            time: Default::default(),
         }
     }
 }
 
-/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+/// An isoflux boundary constraint: a point, `position`, which lies on the plasma boundary, so that the poloidal flux there minus the poloidal flux at the boundary is zero.
+/// The point can move, so it is a time trace, on the constraint's own timebase, `time`; a time where it is NaN is not fitted
+/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.xsd
+#[derive(Debug, Clone)]
+pub struct MagneticsIsofluxBoundary {
+    /// Short string identifier, unique within the isoflux boundary constraints, matching its fit settings, `equilibrium_settings/constraints/isoflux_boundary/isoflux_boundary(i1)/name`
+    pub name: STR_0D,
+    /// Description, e.g. where the point is read from
+    pub description: STR_0D,
+    /// The point, at each `time`
+    pub position: MagneticsPositionDynamic,
+    /// Indicator of the validity of the point at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).
+    /// A time with a negative value is not fitted. Empty when every time is valid
+    pub validity_timed: INT_1D,
+    /// Indicator of the validity of the point for the whole acquisition period, with the values of `validity_timed`.
+    /// A negative value means the constraint is not fitted at all. Unset when the point is valid
+    pub validity: INT_0D,
+    /// The constraint's timebase, which `position` and `validity_timed` are on
+    /// Units: s
+    pub time: FLT_1D,
+}
+
+impl Default for MagneticsIsofluxBoundary {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            position: MagneticsPositionDynamic::default(),
+            validity_timed: Default::default(),
+            validity: EMPTY_INT,
+            time: Default::default(),
+        }
+    }
+}
+
+/// A stationary point constraint: a point, `position`, where both derivatives of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, are zero, either an X-point or the magnetic axis.
+/// The point can move, so it is a time trace, on the constraint's own timebase, `time`; a time where it is NaN is not fitted
+/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.xsd
+#[derive(Debug, Clone)]
+pub struct MagneticsStationaryPoint {
+    /// Short string identifier, unique within the stationary point constraints, e.g. `"MAGNETIC_AXIS"` or `"X_POINT_LOWER"`, matching its fit settings, `equilibrium_settings/constraints/stationary_point/stationary_point(i1)/name`
+    pub name: STR_0D,
+    /// Description, e.g. whether the point is the magnetic axis or an X-point, and where it is read from
+    pub description: STR_0D,
+    /// The point, at each `time`
+    pub position: MagneticsPositionDynamic,
+    /// Indicator of the validity of the point at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).
+    /// A time with a negative value is not fitted. Empty when every time is valid
+    pub validity_timed: INT_1D,
+    /// Indicator of the validity of the point for the whole acquisition period, with the values of `validity_timed`.
+    /// A negative value means the constraint is not fitted at all. Unset when the point is valid
+    pub validity: INT_0D,
+    /// The constraint's timebase, which `position` and `validity_timed` are on
+    /// Units: s
+    pub time: FLT_1D,
+}
+
+impl Default for MagneticsStationaryPoint {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            position: MagneticsPositionDynamic::default(),
+            validity_timed: Default::default(),
+            validity: EMPTY_INT,
+            time: Default::default(),
+        }
+    }
+}
+
+/// A point in the poloidal plane which can move: its major radius and height at each time of the structure holding it, `../time`
+/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.xsd
 #[derive(Debug, Clone, Default)]
-pub struct MagneticsFluxLoopGreens {
-    /// Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
-    /// `coil` array of structures
-    pub pf_active: Vec<MagneticsFluxLoopGreensPfActive>,
-}
-
-/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
-#[derive(Debug, Clone)]
-pub struct MagneticsFluxLoopGreensPfActive {
-    /// Name of the coil, matching `pf_active/coil/name`, e.g. `"BVL"`
-    pub name: STR_0D,
-    /// Poloidal flux at the flux loop, per ampere in the coil
-    /// Units: Wb.A^-1
-    pub value: FLT_0D,
-}
-
-impl Default for MagneticsFluxLoopGreensPfActive {
-    fn default() -> Self {
-        Self {
-            name: String::new(),
-            value: f64::NAN,
-        }
-    }
+pub struct MagneticsPositionDynamic {
+    /// Major radius, at each `../time`
+    /// Units: m
+    pub r: FLT_1D,
+    /// Height, at each `../time`
+    /// Units: m
+    pub z: FLT_1D,
 }
 
 // ============================================================================
@@ -474,6 +526,15 @@ pub struct Magnetics {
     /// Units: s
     pub latency: FLT_0D,
     pub code: Code,
+    /// Set of isoflux constraints, each a pair of points which lie on the same flux surface.
+    /// The data dictionary has no node for them
+    pub isoflux: Vec<MagneticsIsoflux>,
+    /// Set of isoflux boundary constraints, each a point which lies on the plasma boundary.
+    /// The data dictionary has no node for them
+    pub isoflux_boundary: Vec<MagneticsIsofluxBoundary>,
+    /// Set of stationary point constraints, each a point where both derivatives of the poloidal flux are zero: an X-point or the magnetic axis.
+    /// The data dictionary has no node for them
+    pub stationary_point: Vec<MagneticsStationaryPoint>,
 }
 
 impl Default for Magnetics {
@@ -489,6 +550,9 @@ impl Default for Magnetics {
             diamagnetic_flux: Vec::new(),
             latency: f64::NAN,
             code: Code::default(),
+            isoflux: Vec::new(),
+            isoflux_boundary: Vec::new(),
+            stationary_point: Vec::new(),
         }
     }
 }
@@ -548,70 +612,6 @@ impl ArrayOfStructuresElement for Rphiz0dStatic {
         Self: 'a,
     {
         Rphiz0dStaticSliceView::new(elements)
-    }
-}
-
-// --- MagneticsRogowskiGaps View Types ---
-
-/// View over multiple MagneticsRogowskiGaps with field accumulation
-pub struct MagneticsRogowskiGapsSliceView<'a, D> {
-    pub name: Accumulator<'a, MagneticsRogowskiGaps, STR_0D, D>,
-    pub r_start: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
-    pub r_end: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
-    pub z_start: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
-    pub z_end: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
-    slice_elements: Elements<'a, MagneticsRogowskiGaps, D>,
-}
-
-impl<'a, D: Dimension> MagneticsRogowskiGapsSliceView<'a, D> {
-    pub fn new(elements: Elements<'a, MagneticsRogowskiGaps, D>) -> Self {
-        Self {
-            name: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.name.clone()),
-            r_start: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.r_start),
-            r_end: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.r_end),
-            z_start: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.z_start),
-            z_end: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.z_end),
-            slice_elements: elements,
-        }
-    }
-
-    /// Total number of elements, across every sliced level
-    pub fn len(&self) -> usize {
-        self.slice_elements.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.slice_elements.is_empty()
-    }
-
-    /// The length of each sliced level, in path order like the gathered arrays
-    pub fn shape(&self) -> Vec<usize> {
-        self.slice_elements.shape()
-    }
-
-    /// Every element, in path order: the first array of structures on the path varies slowest
-    pub fn iter(&self) -> impl Iterator<Item = &'a MagneticsRogowskiGaps> + '_ {
-        self.slice_elements.iter()
-    }
-}
-
-impl ArrayOfStructuresElement for MagneticsRogowskiGaps {
-    type SliceView<'a, D>
-        = MagneticsRogowskiGapsSliceView<'a, D>
-    where
-        Self: 'a;
-
-    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
-    where
-        Self: 'a,
-    {
-        MagneticsRogowskiGapsSliceView::new(elements)
-    }
-}
-
-impl Named for MagneticsRogowskiGaps {
-    fn name(&self) -> &str {
-        &self.name
     }
 }
 
@@ -681,64 +681,6 @@ impl Named for Library {
     }
 }
 
-// --- MagneticsFluxLoopGreensPfActive View Types ---
-
-/// View over multiple MagneticsFluxLoopGreensPfActive with field accumulation
-pub struct MagneticsFluxLoopGreensPfActiveSliceView<'a, D> {
-    pub name: Accumulator<'a, MagneticsFluxLoopGreensPfActive, STR_0D, D>,
-    pub value: Accumulator<'a, MagneticsFluxLoopGreensPfActive, FLT_0D, D>,
-    slice_elements: Elements<'a, MagneticsFluxLoopGreensPfActive, D>,
-}
-
-impl<'a, D: Dimension> MagneticsFluxLoopGreensPfActiveSliceView<'a, D> {
-    pub fn new(elements: Elements<'a, MagneticsFluxLoopGreensPfActive, D>) -> Self {
-        Self {
-            name: Accumulator::new(elements.clone(), |item: &MagneticsFluxLoopGreensPfActive| item.name.clone()),
-            value: Accumulator::new(elements.clone(), |item: &MagneticsFluxLoopGreensPfActive| item.value),
-            slice_elements: elements,
-        }
-    }
-
-    /// Total number of elements, across every sliced level
-    pub fn len(&self) -> usize {
-        self.slice_elements.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.slice_elements.is_empty()
-    }
-
-    /// The length of each sliced level, in path order like the gathered arrays
-    pub fn shape(&self) -> Vec<usize> {
-        self.slice_elements.shape()
-    }
-
-    /// Every element, in path order: the first array of structures on the path varies slowest
-    pub fn iter(&self) -> impl Iterator<Item = &'a MagneticsFluxLoopGreensPfActive> + '_ {
-        self.slice_elements.iter()
-    }
-}
-
-impl ArrayOfStructuresElement for MagneticsFluxLoopGreensPfActive {
-    type SliceView<'a, D>
-        = MagneticsFluxLoopGreensPfActiveSliceView<'a, D>
-    where
-        Self: 'a;
-
-    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
-    where
-        Self: 'a,
-    {
-        MagneticsFluxLoopGreensPfActiveSliceView::new(elements)
-    }
-}
-
-impl Named for MagneticsFluxLoopGreensPfActive {
-    fn name(&self) -> &str {
-        &self.name
-    }
-}
-
 // --- MagneticsFluxLoop View Types ---
 
 /// View over `type` (IdentifierStatic) across multiple MagneticsFluxLoop
@@ -790,30 +732,6 @@ impl<'a, D: Dimension> MagneticsFluxLoopVoltageView<'a, D> {
     }
 }
 
-/// View over `greens` (MagneticsFluxLoopGreens) across multiple MagneticsFluxLoop
-pub struct MagneticsFluxLoopGreensView<'a, D> {
-    slice_elements: Elements<'a, MagneticsFluxLoop, D>,
-}
-
-impl<'a, D: Dimension> MagneticsFluxLoopGreensView<'a, D> {
-    pub fn new(elements: Elements<'a, MagneticsFluxLoop, D>) -> Self {
-        Self { slice_elements: elements }
-    }
-
-    /// Select from `greens.pf_active` under every element. A range, e.g. `.pf_active(..)`, adds one dimension,
-    /// after those of the levels sliced above it and before the leaf's own.
-    /// A name, `.pf_active(name)`, takes the one element with that `name` under every element, and adds none.
-    ///
-    /// # Panics
-    /// If a range does not select the same number of elements under every element.
-    /// If, under any element, no element or more than one has the name.
-    pub fn pf_active<S: Selection<'a, MagneticsFluxLoopGreensPfActive>>(&self, selection: S) -> S::NestedOutput<D> {
-        selection.select_nested("greens.pf_active", &self.slice_elements, |item: &MagneticsFluxLoop| {
-            item.greens.pf_active.as_slice()
-        })
-    }
-}
-
 /// View over multiple MagneticsFluxLoop with field accumulation
 pub struct MagneticsFluxLoopSliceView<'a, D> {
     pub name: Accumulator<'a, MagneticsFluxLoop, STR_0D, D>,
@@ -823,7 +741,6 @@ pub struct MagneticsFluxLoopSliceView<'a, D> {
     pub gm9: Accumulator<'a, MagneticsFluxLoop, FLT_0D, D>,
     pub flux: MagneticsFluxLoopFluxView<'a, D>,
     pub voltage: MagneticsFluxLoopVoltageView<'a, D>,
-    pub greens: MagneticsFluxLoopGreensView<'a, D>,
     slice_elements: Elements<'a, MagneticsFluxLoop, D>,
 }
 
@@ -837,7 +754,6 @@ impl<'a, D: Dimension> MagneticsFluxLoopSliceView<'a, D> {
             gm9: Accumulator::new(elements.clone(), |item: &MagneticsFluxLoop| item.gm9),
             flux: MagneticsFluxLoopFluxView::new(elements.clone()),
             voltage: MagneticsFluxLoopVoltageView::new(elements.clone()),
-            greens: MagneticsFluxLoopGreensView::new(elements.clone()),
             slice_elements: elements,
         }
     }
@@ -1135,17 +1051,6 @@ impl<'a, D: Dimension> MagneticsRogowskiSliceView<'a, D> {
     pub fn position<S: Selection<'a, Rphiz0dStatic>>(&self, selection: S) -> S::NestedOutput<D> {
         selection.select_nested("position", &self.slice_elements, |item: &MagneticsRogowski| item.position.as_slice())
     }
-
-    /// Select from `gaps` under every element. A range, e.g. `.gaps(..)`, adds one dimension,
-    /// after those of the levels sliced above it and before the leaf's own.
-    /// A name, `.gaps(name)`, takes the one element with that `name` under every element, and adds none.
-    ///
-    /// # Panics
-    /// If a range does not select the same number of elements under every element.
-    /// If, under any element, no element or more than one has the name.
-    pub fn gaps<S: Selection<'a, MagneticsRogowskiGaps>>(&self, selection: S) -> S::NestedOutput<D> {
-        selection.select_nested("gaps", &self.slice_elements, |item: &MagneticsRogowski| item.gaps.as_slice())
-    }
 }
 
 impl ArrayOfStructuresElement for MagneticsRogowski {
@@ -1354,6 +1259,238 @@ impl ArrayOfStructuresElement for MagneticsMethodDistinct {
     }
 }
 
+// --- MagneticsIsoflux View Types ---
+
+/// View over `position_1` (MagneticsPositionDynamic) across multiple MagneticsIsoflux
+pub struct MagneticsIsofluxPosition1View<'a, D> {
+    slice_elements: Elements<'a, MagneticsIsoflux, D>,
+}
+
+impl<'a, D: Dimension> MagneticsIsofluxPosition1View<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsIsoflux, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+}
+
+/// View over `position_2` (MagneticsPositionDynamic) across multiple MagneticsIsoflux
+pub struct MagneticsIsofluxPosition2View<'a, D> {
+    slice_elements: Elements<'a, MagneticsIsoflux, D>,
+}
+
+impl<'a, D: Dimension> MagneticsIsofluxPosition2View<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsIsoflux, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+}
+
+/// View over multiple MagneticsIsoflux with field accumulation
+pub struct MagneticsIsofluxSliceView<'a, D> {
+    pub name: Accumulator<'a, MagneticsIsoflux, STR_0D, D>,
+    pub description: Accumulator<'a, MagneticsIsoflux, STR_0D, D>,
+    pub position_1: MagneticsIsofluxPosition1View<'a, D>,
+    pub position_2: MagneticsIsofluxPosition2View<'a, D>,
+    pub validity: Accumulator<'a, MagneticsIsoflux, INT_0D, D>,
+    slice_elements: Elements<'a, MagneticsIsoflux, D>,
+}
+
+impl<'a, D: Dimension> MagneticsIsofluxSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsIsoflux, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &MagneticsIsoflux| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &MagneticsIsoflux| item.description.clone()),
+            position_1: MagneticsIsofluxPosition1View::new(elements.clone()),
+            position_2: MagneticsIsofluxPosition2View::new(elements.clone()),
+            validity: Accumulator::new(elements.clone(), |item: &MagneticsIsoflux| item.validity),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a MagneticsIsoflux> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for MagneticsIsoflux {
+    type SliceView<'a, D>
+        = MagneticsIsofluxSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsIsofluxSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsIsoflux {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- MagneticsIsofluxBoundary View Types ---
+
+/// View over `position` (MagneticsPositionDynamic) across multiple MagneticsIsofluxBoundary
+pub struct MagneticsIsofluxBoundaryPositionView<'a, D> {
+    slice_elements: Elements<'a, MagneticsIsofluxBoundary, D>,
+}
+
+impl<'a, D: Dimension> MagneticsIsofluxBoundaryPositionView<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsIsofluxBoundary, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+}
+
+/// View over multiple MagneticsIsofluxBoundary with field accumulation
+pub struct MagneticsIsofluxBoundarySliceView<'a, D> {
+    pub name: Accumulator<'a, MagneticsIsofluxBoundary, STR_0D, D>,
+    pub description: Accumulator<'a, MagneticsIsofluxBoundary, STR_0D, D>,
+    pub position: MagneticsIsofluxBoundaryPositionView<'a, D>,
+    pub validity: Accumulator<'a, MagneticsIsofluxBoundary, INT_0D, D>,
+    slice_elements: Elements<'a, MagneticsIsofluxBoundary, D>,
+}
+
+impl<'a, D: Dimension> MagneticsIsofluxBoundarySliceView<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsIsofluxBoundary, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &MagneticsIsofluxBoundary| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &MagneticsIsofluxBoundary| item.description.clone()),
+            position: MagneticsIsofluxBoundaryPositionView::new(elements.clone()),
+            validity: Accumulator::new(elements.clone(), |item: &MagneticsIsofluxBoundary| item.validity),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a MagneticsIsofluxBoundary> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for MagneticsIsofluxBoundary {
+    type SliceView<'a, D>
+        = MagneticsIsofluxBoundarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsIsofluxBoundarySliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsIsofluxBoundary {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- MagneticsStationaryPoint View Types ---
+
+/// View over `position` (MagneticsPositionDynamic) across multiple MagneticsStationaryPoint
+pub struct MagneticsStationaryPointPositionView<'a, D> {
+    slice_elements: Elements<'a, MagneticsStationaryPoint, D>,
+}
+
+impl<'a, D: Dimension> MagneticsStationaryPointPositionView<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsStationaryPoint, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+}
+
+/// View over multiple MagneticsStationaryPoint with field accumulation
+pub struct MagneticsStationaryPointSliceView<'a, D> {
+    pub name: Accumulator<'a, MagneticsStationaryPoint, STR_0D, D>,
+    pub description: Accumulator<'a, MagneticsStationaryPoint, STR_0D, D>,
+    pub position: MagneticsStationaryPointPositionView<'a, D>,
+    pub validity: Accumulator<'a, MagneticsStationaryPoint, INT_0D, D>,
+    slice_elements: Elements<'a, MagneticsStationaryPoint, D>,
+}
+
+impl<'a, D: Dimension> MagneticsStationaryPointSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsStationaryPoint, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &MagneticsStationaryPoint| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &MagneticsStationaryPoint| item.description.clone()),
+            position: MagneticsStationaryPointPositionView::new(elements.clone()),
+            validity: Accumulator::new(elements.clone(), |item: &MagneticsStationaryPoint| item.validity),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a MagneticsStationaryPoint> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for MagneticsStationaryPoint {
+    type SliceView<'a, D>
+        = MagneticsStationaryPointSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsStationaryPointSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsStationaryPoint {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // ============================================================================
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
@@ -1372,25 +1509,6 @@ impl MagneticsRogowski {
     /// Get the number of position elements
     pub fn position_len(&self) -> usize {
         self.position.len()
-    }
-}
-
-impl MagneticsRogowski {
-    /// Select from `gaps`. A range, e.g. `.gaps(0..2)` or `.gaps(..)`, gives the slice view over
-    /// those elements, whose leaves gather one value per element.
-    /// A name, `.gaps(name)`, gives the one element with that `name`.
-    /// A single element is `.gaps[i]`.
-    ///
-    /// # Panics
-    /// If a range is out of bounds.
-    /// If no element, or more than one, has the name.
-    pub fn gaps<'a, S: Selection<'a, MagneticsRogowskiGaps>>(&'a self, selection: S) -> S::Output {
-        selection.select("gaps", &self.gaps)
-    }
-
-    /// Get the number of gaps elements
-    pub fn gaps_len(&self) -> usize {
-        self.gaps.len()
     }
 }
 
@@ -1427,25 +1545,6 @@ impl Code {
     /// Get the number of library elements
     pub fn library_len(&self) -> usize {
         self.library.len()
-    }
-}
-
-impl MagneticsFluxLoopGreens {
-    /// Select from `pf_active`. A range, e.g. `.pf_active(0..2)` or `.pf_active(..)`, gives the slice view over
-    /// those elements, whose leaves gather one value per element.
-    /// A name, `.pf_active(name)`, gives the one element with that `name`.
-    /// A single element is `.pf_active[i]`.
-    ///
-    /// # Panics
-    /// If a range is out of bounds.
-    /// If no element, or more than one, has the name.
-    pub fn pf_active<'a, S: Selection<'a, MagneticsFluxLoopGreensPfActive>>(&'a self, selection: S) -> S::Output {
-        selection.select("pf_active", &self.pf_active)
-    }
-
-    /// Get the number of pf_active elements
-    pub fn pf_active_len(&self) -> usize {
-        self.pf_active.len()
     }
 }
 
@@ -1575,5 +1674,62 @@ impl Magnetics {
     /// Get the number of diamagnetic_flux elements
     pub fn diamagnetic_flux_len(&self) -> usize {
         self.diamagnetic_flux.len()
+    }
+}
+
+impl Magnetics {
+    /// Select from `isoflux`. A range, e.g. `.isoflux(0..2)` or `.isoflux(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.isoflux(name)`, gives the one element with that `name`.
+    /// A single element is `.isoflux[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn isoflux<'a, S: Selection<'a, MagneticsIsoflux>>(&'a self, selection: S) -> S::Output {
+        selection.select("isoflux", &self.isoflux)
+    }
+
+    /// Get the number of isoflux elements
+    pub fn isoflux_len(&self) -> usize {
+        self.isoflux.len()
+    }
+}
+
+impl Magnetics {
+    /// Select from `isoflux_boundary`. A range, e.g. `.isoflux_boundary(0..2)` or `.isoflux_boundary(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.isoflux_boundary(name)`, gives the one element with that `name`.
+    /// A single element is `.isoflux_boundary[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn isoflux_boundary<'a, S: Selection<'a, MagneticsIsofluxBoundary>>(&'a self, selection: S) -> S::Output {
+        selection.select("isoflux_boundary", &self.isoflux_boundary)
+    }
+
+    /// Get the number of isoflux_boundary elements
+    pub fn isoflux_boundary_len(&self) -> usize {
+        self.isoflux_boundary.len()
+    }
+}
+
+impl Magnetics {
+    /// Select from `stationary_point`. A range, e.g. `.stationary_point(0..2)` or `.stationary_point(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.stationary_point(name)`, gives the one element with that `name`.
+    /// A single element is `.stationary_point[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn stationary_point<'a, S: Selection<'a, MagneticsStationaryPoint>>(&'a self, selection: S) -> S::Output {
+        selection.select("stationary_point", &self.stationary_point)
+    }
+
+    /// Get the number of stationary_point elements
+    pub fn stationary_point_len(&self) -> usize {
+        self.stationary_point.len()
     }
 }

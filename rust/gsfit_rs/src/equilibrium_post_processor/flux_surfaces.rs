@@ -53,7 +53,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 ///
 /// # Returns
 /// One `FluxSurface` per `psi_norm`, in the same order.
-fn calculate_flux_surfaces(time_slice: &EquilibriumTimeSlice) -> Vec<FluxSurface> {
+pub(crate) fn calculate_flux_surfaces(time_slice: &EquilibriumTimeSlice) -> Vec<FluxSurface> {
     let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
 

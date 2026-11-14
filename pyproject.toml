@@ -70,7 +70,7 @@ Repository = "https://github.com/tokamak-energy/gsfit"
 [tool.maturin]
 features = ["pyo3/extension-module"]
 python-source = "python"
-python-packages = ["gsfit", "gsfit_rs", "diagnostic_and_simulation_base"]
+python-packages = ["analytic_grad_shafranov", "gsfit", "gsfit_rs", "diagnostic_and_simulation_base"]
 manifest-path = "rust/gsfit_rs/Cargo.toml"
 gsfit.data = ["gsfit/settings/"]
 

@@ -21,10 +21,10 @@ mod convergence;
 mod dependency_sorter;
 mod equilibrium_post_processor;
 mod flux_surface_average;
-mod flux_surfaces;
+pub(crate) mod flux_surfaces;
 mod global_quantities;
 mod intermediate_values;
-mod interpolate_profile;
+pub(crate) mod interpolate_profile;
 mod profiles_1d;
 mod profiles_1d_r_midplane;
 mod profiles_1d_r_midplane_h;
@@ -49,7 +49,11 @@ pub enum CalculatorIdentifier {
     constraints__b_field_pol_probe_reconstructed,
     constraints__diamagnetic_flux_reconstructed,
     constraints__flux_loop_reconstructed,
+    constraints__isoflux_boundary_reconstructed,
+    constraints__isoflux_reconstructed,
+    constraints__pressure_reconstructed,
     constraints__rogowski_coil_reconstructed,
+    constraints__stationary_point_reconstructed,
     contour_tree__node_levelset__r__z,
     convergence__grad_shafranov_deviation_expression__description__index__name,
     global_quantities__area__length_pol__surface__volume,

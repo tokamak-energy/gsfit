@@ -3,8 +3,10 @@
     Schema for constraints_pressure.xml: whether pressure is fitted, and how the pressure constraints are made.
 
     Named as in the IMAS Data Dictionary: equilibrium time_slice[:]/constraints/pressure[:]. There it is
-    an array, one element per measurement. Here it is a single element, which says how the database
-    reader makes that array: one constraint per measurement channel, all fitted the same way.
+    an array, one element per measurement. Here it is a single element, which says how
+    Equilibrium.copy_from_core_profiles_ids makes that array from the core_profiles IDS: one constraint per point of
+    core_profiles/profiles_2d(itime), all fitted the same way. How core_profiles is made from the measurements is in
+    core_profiles/core_profiles.xml.
     The root element is `constraints__pressure`, the path of this file's link in equilibrium.xml
     with `__` for `/`. Neither it nor the Python class generated from it then clashes with those of the
     other constraints files.
@@ -17,7 +19,7 @@
     <xs:element name="constraints__pressure">
         <xs:annotation>
             <xs:documentation>
-                Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
+                Whether pressure is fitted, and how the pressure constraints are made from the core_profiles IDS, by Equilibrium.copy_from_core_profiles_ids.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -49,22 +51,13 @@
     <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
-        </xs:restriction>
-    </xs:simpleType>
-
-    <xs:simpleType name="FinitePositiveDouble">
-        <xs:annotation>
-            <xs:documentation>
-                A finite number greater than 0.
-            </xs:documentation>
-        </xs:annotation>
-        <xs:restriction base="FiniteDouble">
-            <xs:minExclusive value="0.0"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -91,36 +84,6 @@
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
-
-    <xs:complexType name="PressureThomsonScattering">
-        <xs:annotation>
-            <xs:documentation>
-                Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader.
-            </xs:documentation>
-        </xs:annotation>
-        <xs:all>
-            <xs:element name="pressure_multiplier" type="FinitePositiveDouble">
-                <xs:annotation>
-                    <xs:documentation>
-                        Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature.
-                    </xs:documentation>
-                    <xs:appinfo>
-                        <units>dimensionless</units>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:element>
-            <xs:element name="minimum_pressure" type="FiniteNonNegativeDouble">
-                <xs:annotation>
-                    <xs:documentation>
-                        Total pressures at or below this are ignored. A channel with none above it gets no constraint.
-                    </xs:documentation>
-                    <xs:appinfo>
-                        <units>pascal</units>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:element>
-        </xs:all>
-    </xs:complexType>
 
     <xs:complexType name="Synthetic">
         <xs:annotation>
@@ -186,14 +149,14 @@
             <xs:element name="sensor_name_prefix" type="Name" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
-                        The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
+                        The pressure constraints are named this followed by the two-digit number of the point of core_profiles/profiles_2d(itime) they were measured at, from 1, e.g. PRESSURE01. Needed when `include` is true.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="expected_value" type="FiniteDouble" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
-                        The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
+                        The typical size of the measured pressure. The fit divides the residual by it. Needed when `include` is true.
                     </xs:documentation>
                     <xs:appinfo>
                         <units>pascal</units>
@@ -213,14 +176,7 @@
             <xs:element name="comment" type="xs:string" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
-                        Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:element>
-            <xs:element name="thomson_scattering" type="PressureThomsonScattering" minOccurs="0">
-                <xs:annotation>
-                    <xs:documentation>
-                        Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
+                        Free text, about the pressure constraints; not used by the fit. Needed when `include` is true.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>

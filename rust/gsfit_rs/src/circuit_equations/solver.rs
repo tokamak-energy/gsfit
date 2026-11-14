@@ -67,15 +67,13 @@ impl CircuitEquationModel {
         let mut pf_voltage_prescribed_names: Vec<String> = Vec::new();
         let mut pf_voltage_prescribed_indices: Vec<usize> = Vec::new();
         for i_pf in 0..n_pf {
-            let prescribed: &str = &pf_active_coils[i_pf].prescribed.name;
-            if prescribed == "current" {
+            // A coil's voltage is prescribed when it has one, which only `PfActive.set_pf_voltage_prescribed` gives it
+            if pf_active_coils[i_pf].voltage.data.is_empty() {
                 pf_current_prescribed_names.push(pf_active_coils[i_pf].name.clone());
                 pf_current_prescribed_indices.push(i_pf);
-            } else if prescribed == "voltage" {
+            } else {
                 pf_voltage_prescribed_names.push(pf_active_coils[i_pf].name.clone());
                 pf_voltage_prescribed_indices.push(i_pf);
-            } else {
-                panic!("Unknown PF coil prescription, `pf_active/coil({i_pf})/prescribed/name` = {prescribed}");
             }
         }
         let n_current_prescribed: usize = pf_current_prescribed_names.len();
@@ -615,14 +613,14 @@ impl CircuitEquationModel {
 /// so `adaptive_time_stepping = false` should be used to avoid unwieldly large outputs
 ///
 /// # Arguments
-/// * `pf_active` - The PF coils, each with its current or its voltage prescribed (`coil(i1)/prescribed`)
+/// * `pf_active` - The PF coils, each with its current prescribed, or its voltage when it has one (`coil(i1)/voltage`)
 /// * `pf_passive` - The passive conductors, whose filaments, `loop(i1)/element(i2)`, carry eddy currents
 /// * `times_to_solve` - Times to solve the circuit equations at, [second]
 /// * `adaptive_time_stepping` - The calculation is always uses adaptive time stepping, this flat interpolates results onto `times_to_solve`
 ///
 /// # Returns
 /// - A copy of `pf_active`, whose `coil(i1)/current` is the simulated current, on the simulated timebase
-/// - A copy of `pf_passive`, whose `loop(i1)/element(i2)/current` is the simulated current, on the simulated timebase, `loop(i1)/time`
+/// - A copy of `pf_passive`, whose `loop_element_currents` is the simulated current in each `loop(i1)/element(i2)`, on the simulated timebase, `loop(i1)/time`
 ///
 #[pyfunction]
 pub fn solve_circuit_equations(
@@ -691,7 +689,7 @@ pub fn solve_circuit_equations(
     // The simulated PF coils: a copy of `pf_active`, whose currents are replaced with the simulated ones below
     let mut pf_active_simulated: PfActive = PfActive {
         pf_active_ids: pf_active.pf_active_ids.clone(),
-        parameters_input: pf_active.parameters_input.clone(),
+        settings_pf_active: pf_active.settings_pf_active.clone(),
     };
     let n_pf: usize = pf_active_simulated.pf_active_ids.coil.len();
     let simulated_time: Array1<f64> = if adaptive_time_stepping {
@@ -704,11 +702,17 @@ pub fn solve_circuit_equations(
     // simulated timebase
     let mut pf_passive_simulated: PfPassive = PfPassive {
         pf_passive_ids: pf_passive.pf_passive_ids.clone(),
-        parameters_input: pf_passive.parameters_input.clone(),
+        settings_pf_passive: pf_passive.settings_pf_passive.clone(),
+        loop_element_currents: Vec::new(),
     };
     let n_loop: usize = pf_passive_simulated.pf_passive_ids.r#loop.len();
+    let n_time_simulated: usize = simulated_time.len();
     for i_loop in 0..n_loop {
         pf_passive_simulated.pf_passive_ids.r#loop[i_loop].time = simulated_time.clone();
+        let n_element: usize = pf_passive_simulated.pf_passive_ids.r#loop[i_loop].element.len();
+        pf_passive_simulated
+            .loop_element_currents
+            .push(Array2::from_elem((n_element, n_time_simulated), f64::NAN));
     }
 
     // Store results into the simulated PF coils and passive conductors
@@ -772,7 +776,7 @@ pub fn solve_circuit_equations(
                 let i_element: usize = state_identifier.passive_filament_index.unwrap();
                 for i_loop in 0..n_loop {
                     if pf_passive_simulated.pf_passive_ids.r#loop[i_loop].name == *circuit_name {
-                        pf_passive_simulated.pf_passive_ids.r#loop[i_loop].element[i_element].current = current_simulated.clone();
+                        pf_passive_simulated.loop_element_currents[i_loop].row_mut(i_element).assign(&current_simulated);
                     }
                 }
             }

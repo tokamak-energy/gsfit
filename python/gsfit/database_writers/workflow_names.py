@@ -21,12 +21,12 @@ def workflow_from_settings(settings: GsfitCodeSettings) -> dict[str, WorkflowTre
 
     # The `workflow.xml` which each IDS's file links to, by IDS; None for an IDS's file which links to none, or an IDS which is not built
     workflows_by_ids_name: dict[str, Workflow | None] = {
+        "core_profiles": settings.ids.core_profiles.workflow if settings.ids.core_profiles is not None else None,
         "magnetics": settings.ids.magnetics.workflow,
         "pf_active": settings.ids.pf_active.workflow,
         "pf_passive": settings.ids.pf_passive.workflow,
         "pulse_schedule": settings.ids.pulse_schedule.workflow if settings.ids.pulse_schedule is not None else None,
         "tf": settings.ids.tf.workflow,
-        "thomson_scattering": settings.ids.thomson_scattering.workflow if settings.ids.thomson_scattering is not None else None,
         "wall": settings.ids.wall.workflow,
     }
 

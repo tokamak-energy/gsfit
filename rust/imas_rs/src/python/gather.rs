@@ -5,7 +5,7 @@
 //!
 //! The gathered dimensions are gained from left to right, exactly as the Rust accumulators do: one
 //! per sliced array of structures, in the order they appear on the path, followed by the leaf's own
-//! dimensions. So `flux_loop[:].greens.pf_active[:].value` is `(n_flux_loop, n_pf)` and
+//! dimensions. So `coil[:].element[:].turns_with_sign` is `(n_coil, n_element)` and
 //! `time_slice[:].profiles_2d[0].psi` is `(n_time, n_z, n_r)`. The rule itself lives in
 //! [`arrange_left_to_right`], which both share.
 

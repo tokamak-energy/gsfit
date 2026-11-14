@@ -84,6 +84,7 @@ class NewtonKrylov:
     """
     Settings for Jacobian-free Newton-Krylov.
 
+    :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback (the fit of delta_z) switched off, which are Picard iterations, before the hand over to Newton.
     :param picard_handover: Grad-Shafranov deviation below which it hands over from Picard to Newton iterations. [dimensionless]
     :param n_krylov_max: Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.
     :param krylov_tolerance: The Krylov solve stops once the linearised residual is this fraction of the residual. [dimensionless]
@@ -91,6 +92,7 @@ class NewtonKrylov:
     :param verbose: Whether to print the progress of each Newton iteration.
     """
 
+    n_iter_no_vertical_feedback: int
     picard_handover: float  # [dimensionless]
     n_krylov_max: int
     krylov_tolerance: float  # [dimensionless]

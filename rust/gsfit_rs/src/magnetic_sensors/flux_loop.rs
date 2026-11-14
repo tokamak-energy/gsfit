@@ -2,13 +2,14 @@
 
 use crate::equilibrium::Equilibrium;
 use crate::greens::Greens;
+use crate::greens_storage::GreensFluxLoop;
 use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
+use crate::settings::settings_equilibrium::SettingsEquilibriumFluxLoop;
+use imas_rs::EquilibriumConstraints0d;
 use imas_rs::ids::magnetics::{IdentifierStatic, MagneticsFluxLoop, Rphiz0dStatic, SignalFlt1dValidity};
 use imas_rs::ids::pf_active::PfCoils;
-use imas_rs::ids::pf_passive::PfPassiveLoops;
-use imas_rs::{EquilibriumConstraints0d, EquilibriumGreensFluxLoop};
 use ndarray::{Array1, Array2, Axis, array, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -115,17 +116,24 @@ impl Equilibrium {
     /// * `magnetics` - the magnetic sensors, holding the flux loops in `magnetics/flux_loop`
     ///
     /// # Errors
-    /// A flux loop in the fit settings, `code/parameters_parsed/constraints/flux_loop`, is not in the magnetics IDS, or a flux loop's
+    /// A flux loop in the fit settings, `equilibrium_settings/constraints/flux_loop`, is not in the magnetics IDS, or a flux loop's
     /// measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_flux_loop(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let flux_loops: &Vec<MagneticsFluxLoop> = &magnetics.magnetics_ids.flux_loop;
         let n_flux_loop: usize = flux_loops.len();
 
-        // Only the flux loops in the fit settings, `code/parameters_parsed/constraints/flux_loop`, are copied, and each of them has to
+        // Only the flux loops in the fit settings, `equilibrium_settings/constraints/flux_loop`, are copied, and each of them has to
         // be in the magnetics IDS. Checked before anything is copied
-        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.flux_loop(..).name.to_vec();
-        let settings_weights: Array1<f64> = self.equilibrium_ids.code.parameters_parsed.constraints.flux_loop(..).weight.to_array();
-        let n_settings: usize = settings_names.len();
+        let settings_sensors: &Vec<SettingsEquilibriumFluxLoop> = &self.settings_equilibrium.constraints.flux_loop;
+        let n_settings: usize = settings_sensors.len();
+        let mut settings_names: Vec<String> = Vec::with_capacity(n_settings);
+        let mut settings_weights: Array1<f64> = Array1::from_elem(n_settings, f64::NAN);
+        let mut settings_expected_values: Array1<f64> = Array1::from_elem(n_settings, f64::NAN);
+        for i_settings in 0..n_settings {
+            settings_names.push(settings_sensors[i_settings].name.clone());
+            settings_weights[i_settings] = settings_sensors[i_settings].weight;
+            settings_expected_values[i_settings] = settings_sensors[i_settings].expected_value;
+        }
         for i_settings in 0..n_settings {
             let settings_name: &str = &settings_names[i_settings];
             if !flux_loops
@@ -133,7 +141,7 @@ impl Equilibrium {
                 .any(|magnetics_sensor: &MagneticsFluxLoop| magnetics_sensor.name == settings_name)
             {
                 return Err(format!(
-                    "`{settings_name}` is in the fit settings, `code/parameters_parsed/constraints/flux_loop`, but not in the magnetics IDS, `magnetics/flux_loop`"
+                    "`{settings_name}` is in the fit settings, `equilibrium_settings/constraints/flux_loop`, but not in the magnetics IDS, `magnetics/flux_loop`"
                 ));
             }
         }
@@ -159,8 +167,8 @@ impl Equilibrium {
         }
 
         // Rebuilt from the flux loops in the fit settings, in the order of the magnetics IDS, so that calling this twice replaces them
-        // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight`, found by
-        // its name
+        // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight` and
+        // `expected_value`, found by its name
         for i_time in 0..n_time {
             let mut settings_constraints: Vec<EquilibriumConstraints0d> = std::mem::take(&mut self.equilibrium_ids.time_slice[i_time].constraints.flux_loop);
             let mut flux_loop_constraints: Vec<EquilibriumConstraints0d> = Vec::with_capacity(n_settings);
@@ -180,6 +188,7 @@ impl Equilibrium {
                     None => EquilibriumConstraints0d {
                         name: flux_loop_name.to_string(),
                         weight: settings_weights[i_settings],
+                        expected_value: settings_expected_values[i_settings],
                         ..Default::default()
                     },
                 };
@@ -197,8 +206,8 @@ impl Equilibrium {
 
 /// Rust only methods, calculating the flux loops' Greens tables
 impl Equilibrium {
-    /// Calculate the flux loops' Greens tables, `equilibrium/greens/flux_loop(i1)`, one for each flux loop in the fit settings,
-    /// `code/parameters_parsed/constraints/flux_loop`, in the order of `magnetics/flux_loop`. This does part of the work of the Python
+    /// Calculate the flux loops' Greens tables, `greens_tables/flux_loop(i1)`, one for each flux loop in the fit settings,
+    /// `equilibrium_settings/constraints/flux_loop`, in the order of `magnetics/flux_loop`. This does part of the work of the Python
     /// method `greens_with_magnetics`; see it for what is stored, and for the checks on `pf_active`, `pf_passive` and the fit settings.
     ///
     /// Each table is the poloidal flux through the loop, GSFit's `psi`. The loop goes all the way around the machine, at its one
@@ -206,21 +215,24 @@ impl Equilibrium {
     ///
     /// # Arguments
     /// * `magnetics` - the magnetic sensors, holding the flux loops in `magnetics/flux_loop`
-    /// * `pf_active` - the PF coils, in the order of `greens/grid/pf_active`
-    /// * `pf_passive` - the passive conductors, in the order of `greens/grid/pf_passive`
+    /// * `pf_active` - the PF coils, in the order of `greens_tables/grid/pf_active`
+    /// * `pf_passive` - the passive conductors, holding the filaments of those the equilibrium fits
     pub fn greens_with_magnetics_flux_loop(&mut self, magnetics: &Magnetics, pf_active: &PfActive, pf_passive: &PfPassive) {
         let flux_loops: &Vec<MagneticsFluxLoop> = &magnetics.magnetics_ids.flux_loop;
         let n_flux_loop: usize = flux_loops.len();
 
-        // Only the flux loops in the fit settings, `code/parameters_parsed/constraints/flux_loop`, which `copy_from_magnetics_ids` copies,
+        // Only the flux loops in the fit settings, `equilibrium_settings/constraints/flux_loop`, which `copy_from_magnetics_ids` copies,
         // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
-        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.flux_loop(..).name.to_vec();
+        let mut settings_names: Vec<String> = Vec::new();
+        for settings_sensor in &self.settings_equilibrium.constraints.flux_loop {
+            settings_names.push(settings_sensor.name.clone());
+        }
 
         // The grid. `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)` because GSFit solves
         // on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives
         // the flattened grid
-        let n_r: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
+        let n_r: usize = self.settings_equilibrium.grid.n_r;
+        let n_z: usize = self.settings_equilibrium.grid.n_z;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let grid_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
@@ -230,17 +242,22 @@ impl Equilibrium {
         let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
         let n_coil: usize = pf_active_coils.len();
 
-        // The passive conductors' filaments, which are the same for every flux loop
-        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
-        let n_loop: usize = pf_passive_loops.len();
+        // The passive conductors the equilibrium fits, with their degrees of freedom, `constraints/pf_passive_current`, in the order of
+        // `greens_tables/grid/pf_passive`, and their filaments, which are the same for every flux loop. `time_slice(0)` because the degrees of
+        // freedom are the same on every time-slice. `greens_with_magnetics` checked that each passive conductor is in `pf_passive`
+        let pf_passive_currents: &Vec<EquilibriumConstraints0d> = &self.equilibrium_ids.time_slice[0].constraints.pf_passive_current;
+        let n_loop: usize = pf_passive_currents.len();
         let mut loop_filaments: Vec<PassiveFilaments> = Vec::with_capacity(n_loop);
         let mut n_dof_total: usize = 0;
         for i_loop in 0..n_loop {
-            loop_filaments.push(passive_filaments(&pf_passive_loops[i_loop].element));
-            n_dof_total += pf_passive_loops[i_loop].dof.len();
+            let i_pf_passive_loop: usize = pf_passive
+                .i_loop_named(&pf_passive_currents[i_loop].name)
+                .expect("`greens_with_magnetics` checked that each passive conductor the equilibrium fits is in `pf_passive`");
+            loop_filaments.push(passive_filaments(&pf_passive.pf_passive_ids.r#loop[i_pf_passive_loop].element));
+            n_dof_total += pf_passive_currents[i_loop].dof.len();
         }
 
-        let mut greens_flux_loops: Vec<EquilibriumGreensFluxLoop> = Vec::with_capacity(n_flux_loop);
+        let mut greens_flux_loops: Vec<GreensFluxLoop> = Vec::with_capacity(n_flux_loop);
         for i_flux_loop in 0..n_flux_loop {
             if !settings_names
                 .iter()
@@ -294,15 +311,15 @@ impl Equilibrium {
                 );
                 let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [1, n_filament]
 
-                let n_dof: usize = pf_passive_loops[i_loop].dof.len();
+                let n_dof: usize = pf_passive_currents[i_loop].dof.len();
                 for i_dof in 0..n_dof {
-                    let current_distribution: &Array1<f64> = &pf_passive_loops[i_loop].dof[i_dof].current_distribution;
+                    let current_distribution: &Array1<f64> = &pf_passive_currents[i_loop].dof[i_dof].current_distribution;
                     g_pf_passive[i_dof_total] = (&g_psi_filaments * current_distribution).sum();
                     i_dof_total += 1;
                 }
             }
 
-            greens_flux_loops.push(EquilibriumGreensFluxLoop {
+            greens_flux_loops.push(GreensFluxLoop {
                 name: flux_loops[i_flux_loop].name.clone(),
                 plasma: g_plasma
                     .into_shape_with_order((n_z, n_r))
@@ -316,6 +333,6 @@ impl Equilibrium {
         }
 
         // Assigned rather than appended, so that calling this twice replaces the flux loops' tables instead of repeating them
-        self.equilibrium_ids.greens.flux_loop = greens_flux_loops;
+        self.greens_tables.flux_loop = greens_flux_loops;
     }
 }

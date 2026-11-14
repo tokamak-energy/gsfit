@@ -32,6 +32,7 @@
 
 use crate::grad_shafranov::Error;
 use crate::grad_shafranov::equilibrium_solve::EquilibriumSolver;
+use crate::grad_shafranov::nonlinear_solvers::NonlinearSolverTraits;
 use ndarray::{Array1, Array2, s};
 use std::collections::VecDeque;
 
@@ -39,95 +40,98 @@ use std::collections::VecDeque;
 /// the Anderson least-squares problem, so that nearly parallel differences do not produce a huge step
 const ANDERSON_SINGULAR_VALUE_CUTOFF: f64 = 1.0e-10;
 
-/// Solve with Picard iterations.
+/// Picard iterations; see the module documentation.
 ///
 /// Converged when the Grad-Shafranov deviation, the change in the flux on the magnetic axis
-/// between iterations, is below `code/parameters_parsed/numerics/grad_shafranov_deviation_tolerance`.
-pub(crate) fn solve(solver: &mut EquilibriumSolver) {
-    // Solver settings, supplied through `equilibrium.code`
-    let n_iter_max: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_max as usize;
-    let n_iter_min: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_min as usize;
-    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.parameters_parsed.numerics.grad_shafranov_deviation_tolerance;
-    let n_iter_no_vertical_feedback: usize = solver
-        .equilibrium_code
-        .parameters_parsed
-        .numerics
-        .nonlinear_solver
-        .picard
-        .n_iter_no_vertical_feedback as usize;
-    // Without Anderson mixing, the state is left exactly as the fit leaves it
-    let use_anderson: bool = solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.picard.apply_anderson_mixing != 0;
-    let anderson_n_history: usize = solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.picard.anderson_n_history as usize;
-    let anderson_mixing: f64 = solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.picard.anderson_mixing;
+/// between iterations, is below `grad_shafranov_deviation_tolerance`.
+///
+/// The settings are those of the same name in `equilibrium_settings/numerics` and
+/// `equilibrium_settings/numerics/nonlinear_solver/picard`, which their XML schema has checked.
+pub struct Picard {
+    pub n_iter_max: usize,
+    pub n_iter_min: usize,
+    /// [dimensionless]
+    pub grad_shafranov_deviation_tolerance: f64,
+    pub n_iter_no_vertical_feedback: usize,
+    /// Without Anderson mixing, the state is left exactly as the fit leaves it
+    pub apply_anderson_mixing: bool,
+    pub anderson_n_history: usize,
+    /// [dimensionless]
+    pub anderson_mixing: f64,
+}
 
-    // The passive currents and the initial current density
-    if let Err(error) = solver.initialise() {
-        solver.set_to_failed_time_slice(error);
-        return;
-    }
+impl NonlinearSolverTraits for Picard {
+    fn solve(&self, solver: &mut EquilibriumSolver) {
+        // The passive currents and the initial current density
+        if let Err(error) = solver.initialise() {
+            solver.set_to_failed_time_slice(error);
+            return;
+        }
 
-    let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
-    let mut anderson: Option<Anderson> = None; // set up on the first iteration, from the initial state
-    let mut picard_update: Option<Array1<f64>> = None; // `G(x)`, to fall back on if the accelerated state fails
-    let mut vertical_feedback_previous: bool = false; // needed to clear the Anderson history when `G` changes
+        let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
+        let mut anderson: Option<Anderson> = None; // set up on the first iteration, from the initial state
+        let mut picard_update: Option<Array1<f64>> = None; // `G(x)`, to fall back on if the accelerated state fails
+        let mut vertical_feedback_previous: bool = false; // needed to clear the Anderson history when `G` changes
 
-    // Iteration loop
-    for i_iter in 0..n_iter_max {
-        // The flux from the current density, and from it the magnetic axis and the boundary. If
-        // that fails from an accelerated state, fall back on the plain Picard update
-        if let Err(error) = solver.update_psi_and_geometry() {
-            let Some(picard_update) = picard_update.take() else {
-                solver.set_to_failed_time_slice(error);
+        // Iteration loop
+        for i_iter in 0..self.n_iter_max {
+            // The flux from the current density, and from it the magnetic axis and the boundary. If
+            // that fails from an accelerated state, fall back on the plain Picard update
+            if let Err(error) = solver.update_psi_and_geometry() {
+                let Some(picard_update) = picard_update.take() else {
+                    solver.set_to_failed_time_slice(error);
+                    return;
+                };
+                set_state(solver, &picard_update);
+                if let Some(anderson) = anderson.as_mut() {
+                    anderson.clear();
+                }
+                if let Err(error) = solver.update_psi_and_geometry() {
+                    solver.set_to_failed_time_slice(error);
+                    return;
+                }
+            }
+            let psi_a: f64 = solver.time_slice.global_quantities.psi_magnetic_axis;
+            let psi_b: f64 = solver.time_slice.boundary.psi;
+
+            // Calculate the Grad-Shafranov deviation
+            let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_previous);
+            solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
+            psi_a_previous = psi_a; // needed to calculate the Grad-Shafranov deviation in the next iteration
+
+            // Check for convergence
+            if grad_shafranov_deviation_value < self.grad_shafranov_deviation_tolerance && i_iter > self.n_iter_min {
+                solver.set_to_converged_time_slice(i_iter);
                 return;
-            };
-            set_state(solver, &picard_update);
-            if let Some(anderson) = anderson.as_mut() {
+            }
+
+            // Check if we have reached the maximum number of iterations
+            if i_iter == self.n_iter_max - 1 {
+                solver.set_to_failed_time_slice(Error::MaxIterReached);
+                return;
+            }
+
+            // Fit the constraints, and calculate the new current density from the fitted source functions
+            let vertical_feedback: bool = i_iter > self.n_iter_no_vertical_feedback;
+            if !self.apply_anderson_mixing {
+                solver.fit_and_update_current(vertical_feedback);
+                continue;
+            }
+            let x: Array1<f64> = get_state(solver);
+            solver.fit_and_update_current(vertical_feedback);
+            let g_x: Array1<f64> = get_state(solver);
+
+            // Anderson acceleration: replace `G(x)` by the combination of the recent iterates
+            let anderson: &mut Anderson =
+                anderson.get_or_insert_with(|| Anderson::new(self.anderson_n_history, self.anderson_mixing, scale_for_state(solver, &x)));
+            if vertical_feedback != vertical_feedback_previous {
                 anderson.clear();
             }
-            if let Err(error) = solver.update_psi_and_geometry() {
-                solver.set_to_failed_time_slice(error);
-                return;
-            }
+            vertical_feedback_previous = vertical_feedback;
+            let x_new: Array1<f64> = anderson.next_state(&x, &g_x);
+            set_state(solver, &x_new);
+            picard_update = Some(g_x);
         }
-        let psi_a: f64 = solver.time_slice.global_quantities.psi_magnetic_axis;
-        let psi_b: f64 = solver.time_slice.boundary.psi;
-
-        // Calculate the Grad-Shafranov deviation
-        let grad_shafranov_deviation_value: f64 = EquilibriumSolver::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_previous);
-        solver.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
-        psi_a_previous = psi_a; // needed to calculate the Grad-Shafranov deviation in the next iteration
-
-        // Check for convergence
-        if grad_shafranov_deviation_value < grad_shafranov_deviation_tolerance && i_iter > n_iter_min {
-            solver.set_to_converged_time_slice(i_iter);
-            return;
-        }
-
-        // Check if we have reached the maximum number of iterations
-        if i_iter == n_iter_max - 1 {
-            solver.set_to_failed_time_slice(Error::MaxIterReached);
-            return;
-        }
-
-        // Fit the constraints, and calculate the new current density from the fitted source functions
-        let vertical_feedback: bool = i_iter > n_iter_no_vertical_feedback;
-        if !use_anderson {
-            solver.fit_and_update_current(vertical_feedback);
-            continue;
-        }
-        let x: Array1<f64> = get_state(solver);
-        solver.fit_and_update_current(vertical_feedback);
-        let g_x: Array1<f64> = get_state(solver);
-
-        // Anderson acceleration: replace `G(x)` by the combination of the recent iterates
-        let anderson: &mut Anderson = anderson.get_or_insert_with(|| Anderson::new(anderson_n_history, anderson_mixing, scale_for_state(solver, &x)));
-        if vertical_feedback != vertical_feedback_previous {
-            anderson.clear();
-        }
-        vertical_feedback_previous = vertical_feedback;
-        let x_new: Array1<f64> = anderson.next_state(&x, &g_x);
-        set_state(solver, &x_new);
-        picard_update = Some(g_x);
     }
 }
 
@@ -237,8 +241,8 @@ fn get_state(solver: &EquilibriumSolver) -> Array1<f64> {
 
 /// Put the unscaled state `x` back into the time-slice; the reverse of `get_state`
 fn set_state(solver: &mut EquilibriumSolver, x: &Array1<f64>) {
-    let n_r: usize = solver.equilibrium_code.parameters_parsed.grid.n_r as usize;
-    let n_z: usize = solver.equilibrium_code.parameters_parsed.grid.n_z as usize;
+    let n_r: usize = solver.settings_equilibrium.grid.n_r;
+    let n_z: usize = solver.settings_equilibrium.grid.n_z;
     let n_grid: usize = n_z * n_r;
     let n_passive_dof: usize = solver.passive_dof_values.len();
 

@@ -170,9 +170,6 @@ pub struct PfCoils {
     /// Vertical crushing force applied on this coil (positive when compressive)
     /// Units: N
     pub force_vertical_crushing: SignalFlt1d,
-    /// Which of the coil's signals is prescribed: `current` (`index` 1) when `coil(i1)/current` is given, or `voltage` (`index` 2)
-    /// when `coil(i1)/voltage` is given and the current is calculated
-    pub prescribed: IdentifierStatic,
 }
 
 impl Default for PfCoils {
@@ -199,7 +196,6 @@ impl Default for PfCoils {
             force_vertical: SignalFlt1d::default(),
             force_radial_crushing: SignalFlt1d::default(),
             force_vertical_crushing: SignalFlt1d::default(),
-            prescribed: IdentifierStatic::default(),
         }
     }
 }
@@ -1196,25 +1192,6 @@ impl<'a, D: Dimension> PfCoilsForceVerticalCrushingView<'a, D> {
     }
 }
 
-/// View over `prescribed` (IdentifierStatic) across multiple PfCoils
-pub struct PfCoilsPrescribedView<'a, D> {
-    pub name: Accumulator<'a, PfCoils, STR_0D, D>,
-    pub index: Accumulator<'a, PfCoils, INT_0D, D>,
-    pub description: Accumulator<'a, PfCoils, STR_0D, D>,
-    slice_elements: Elements<'a, PfCoils, D>,
-}
-
-impl<'a, D: Dimension> PfCoilsPrescribedView<'a, D> {
-    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
-        Self {
-            name: Accumulator::new(elements.clone(), |item: &PfCoils| item.prescribed.name.clone()),
-            index: Accumulator::new(elements.clone(), |item: &PfCoils| item.prescribed.index),
-            description: Accumulator::new(elements.clone(), |item: &PfCoils| item.prescribed.description.clone()),
-            slice_elements: elements,
-        }
-    }
-}
-
 /// View over multiple PfCoils with field accumulation
 pub struct PfCoilsSliceView<'a, D> {
     pub name: Accumulator<'a, PfCoils, STR_0D, D>,
@@ -1232,7 +1209,6 @@ pub struct PfCoilsSliceView<'a, D> {
     pub force_vertical: PfCoilsForceVerticalView<'a, D>,
     pub force_radial_crushing: PfCoilsForceRadialCrushingView<'a, D>,
     pub force_vertical_crushing: PfCoilsForceVerticalCrushingView<'a, D>,
-    pub prescribed: PfCoilsPrescribedView<'a, D>,
     slice_elements: Elements<'a, PfCoils, D>,
 }
 
@@ -1254,7 +1230,6 @@ impl<'a, D: Dimension> PfCoilsSliceView<'a, D> {
             force_vertical: PfCoilsForceVerticalView::new(elements.clone()),
             force_radial_crushing: PfCoilsForceRadialCrushingView::new(elements.clone()),
             force_vertical_crushing: PfCoilsForceVerticalCrushingView::new(elements.clone()),
-            prescribed: PfCoilsPrescribedView::new(elements.clone()),
             slice_elements: elements,
         }
     }

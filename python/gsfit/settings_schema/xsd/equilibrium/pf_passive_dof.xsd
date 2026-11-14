@@ -12,7 +12,7 @@
     <xs:simpleType name="CurrentDistributionType">
         <xs:annotation>
             <xs:documentation>
-                How the current is distributed over a passive's filaments, from `PfPassive::add_loop`.
+                How the current is distributed over a passive's filaments, by `Equilibrium.copy_from_pf_passive_ids`.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
@@ -49,11 +49,13 @@
     <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -133,7 +135,7 @@
             <xs:element name="current_distribution_type" type="CurrentDistributionType">
                 <xs:annotation>
                     <xs:documentation>
-                        How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
+                        How the current is distributed over the passive's filaments.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
@@ -176,7 +178,7 @@
     <xs:element name="pf_passive_dof">
         <xs:annotation>
             <xs:documentation>
-                The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it.
+                The passive structures to fit, one `passive` for each, in the order they are fitted, with the degrees of freedom of each one's current, and their regularisation. `Equilibrium.copy_from_pf_passive_ids` reads them, finding each passive structure in the pf_passive IDS by its `name`, and makes the degrees of freedom from its filaments. `include` is not read at present.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>

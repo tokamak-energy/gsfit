@@ -25,9 +25,9 @@ class Workflow:
     * DIALOOP: the diamagnetic flux measurement, GLOBAL.PHI_DIA. Read for magnetics.
     * ELMAG: the machine's geometry: the PF coils, COILS; the passive structures and their resistivity, VESSEL; the limiter, LIMITER.LIMIT_PTS; and the gaps, GAPS. Read for pf_active, pf_passive, pulse_schedule and wall.
     * MAG: the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils, and the geometry of the diamagnetic loop. Read for magnetics.
-    * PPTS: the BAD_MA flag, GLOBAL:BAD_MA, which picks the good time-slices: those the pressure constraints are made at, and the good_pressure_sensors time-slices in timeslices.xml. Read for thomson_scattering.
+    * PPTS: the BAD_MA flag, GLOBAL:BAD_MA, which picks the good time-slices: those the pressure constraints are made at, and the good_pressure_sensors time-slices in timeslices.xml. Read for core_profiles.
     * PSU2COIL: the currents: the PF coils', PF.ALL, and the TF rod's, TF.I_ROD. Read for pf_active and tf.
-    * TS: each channel's position, R and Z, and electron pressure, PROFILES:PE. Read for thomson_scattering.
+    * TS: each channel's position, R and Z, and electron pressure, PROFILES:PE. Read for core_profiles.
 
     :param tree: One MDSplus tree, and which run of it to read. A `KeyedList`, which can be indexed by `tree_name` as well as by position, e.g. `tree[tree_name]`
     """

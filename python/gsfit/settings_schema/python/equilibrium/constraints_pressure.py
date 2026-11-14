@@ -17,7 +17,7 @@ from dataclasses import dataclass
 @dataclass(kw_only=True)
 class ConstraintsPressure:
     """
-    Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
+    Whether pressure is fitted, and how the pressure constraints are made from the core_profiles IDS, by Equilibrium.copy_from_core_profiles_ids.
 
     :param pressure: Whether pressure is fitted, and how the pressure constraints are made.
     """
@@ -34,11 +34,10 @@ class Pressure:
     Whether pressure is fitted, and how the pressure constraints are made.
 
     :param include: Whether to fit pressure. When false, nothing else in this file is read.
-    :param sensor_name_prefix: The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
-    :param expected_value: The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead. [pascal]
+    :param sensor_name_prefix: The pressure constraints are named this followed by the two-digit number of the point of core_profiles/profiles_2d(itime) they were measured at, from 1, e.g. PRESSURE01. Needed when `include` is true.
+    :param expected_value: The typical size of the measured pressure. The fit divides the residual by it. Needed when `include` is true. [pascal]
     :param weight: Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true. [dimensionless]
-    :param comment: Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
-    :param thomson_scattering: Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
+    :param comment: Free text, about the pressure constraints; not used by the fit. Needed when `include` is true.
     :param synthetic: Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
     """
 
@@ -47,21 +46,7 @@ class Pressure:
     expected_value: float | None = None  # [pascal]
     weight: float | None = None  # [dimensionless]
     comment: str | None = None
-    thomson_scattering: PressureThomsonScattering | None = None
     synthetic: Synthetic | None = None
-
-
-@dataclass(kw_only=True)
-class PressureThomsonScattering:
-    """
-    Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader.
-
-    :param pressure_multiplier: Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature. [dimensionless]
-    :param minimum_pressure: Total pressures at or below this are ignored. A channel with none above it gets no constraint. [pascal]
-    """
-
-    pressure_multiplier: float  # [dimensionless]
-    minimum_pressure: float  # [pascal]
 
 
 @dataclass(kw_only=True)

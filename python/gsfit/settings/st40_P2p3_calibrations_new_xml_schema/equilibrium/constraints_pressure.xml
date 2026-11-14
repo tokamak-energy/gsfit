@@ -6,9 +6,5 @@
         <expected_value>2000.0</expected_value>
         <weight>10.0</weight>
         <comment>Thomson scattering electron pressure, scaled to total pressure</comment>
-        <thomson_scattering>
-            <pressure_multiplier>2.0</pressure_multiplier>
-            <minimum_pressure>500.0</minimum_pressure>
-        </thomson_scattering>
     </pressure>
 </constraints__pressure>

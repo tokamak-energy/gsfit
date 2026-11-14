@@ -1,5 +1,5 @@
+use crate::settings::settings_equilibrium::SettingsEquilibriumRegularisationBuilder;
 use crate::source_functions::SourceFunctionTraits;
-use imas_rs::EquilibriumCodeParametersParsedRegularisationBuilder;
 use ndarray::{Array1, Array2, s};
 use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
@@ -272,7 +272,7 @@ impl TensionedCubicBSpline {
     pub fn make_regularisations(
         interior_knots: &Array1<f64>,
         interval_tensions: &Array1<f64>,
-        regularisation_builder: &EquilibriumCodeParametersParsedRegularisationBuilder,
+        regularisation_builder: &SettingsEquilibriumRegularisationBuilder,
     ) -> Result<Array2<f64>, String> {
         // The number of degrees of freedom of a cubic spline is the number of interior knots plus 4
         let n_interior_knots: usize = interior_knots.len();
@@ -322,9 +322,7 @@ impl TensionedCubicBSpline {
                 Some(row)
             }
             left_boundary_condition => {
-                return Err(format!(
-                    "`left_boundary_condition` is \"{left_boundary_condition}\", but it must be \"free\", \"dirichlet\" or \"neumann\""
-                ));
+                return Err(format!("`left_boundary_condition` = \"{left_boundary_condition}\" is not recognized"));
             }
         };
         let right_boundary_weight: f64 = regularisation_builder.right_boundary_weight;
@@ -342,9 +340,7 @@ impl TensionedCubicBSpline {
                 Some(row)
             }
             right_boundary_condition => {
-                return Err(format!(
-                    "`right_boundary_condition` is \"{right_boundary_condition}\", but it must be \"free\", \"dirichlet\" or \"neumann\""
-                ));
+                return Err(format!("`right_boundary_condition` = \"{right_boundary_condition}\" is not recognized"));
             }
         };
 

@@ -16,7 +16,7 @@ def astra_coils_reader() -> dict[str, dict[str, Any]]:
 
     The coil.dat file contains coil data with pairs of lines:
         - Line 1: ndi (number of divisions)
-        - Line 2: rc zc wc hc awc ahc unknown unknown unknown name unknown
+        - Line 2: rc zc wc hc awc ahc unknown turns psu_number name coil_number
 
     Where:
         - rc: radial position of center (m)
@@ -25,6 +25,9 @@ def astra_coils_reader() -> dict[str, dict[str, Any]]:
         - hc: projection of second side on Z (m)
         - awc: angle of first side with R axis (degrees)
         - ahc: angle of second side with R axis (degrees)
+        - turns: the number of turns, negative for a coil wound against its power supply's current
+        - psu_number: the power supply feeding the coil, numbered from 1 in the order of ASTRA's `COILS.PSU2PF:PSU_NAMES`
+          (IPL, MC, PSH, DIV, BVL, BVUT, BVUB, CS, MCVC)
         - ndi: approximate number of cells for dividing
 
     :return: Dictionary mapping coil names to their properties:
@@ -34,6 +37,8 @@ def astra_coils_reader() -> dict[str, dict[str, Any]]:
         - hc: vertical height (float)
         - awc: angle of first side (float, degrees)
         - ahc: angle of second side (float, degrees)
+        - turns: number of turns (float)
+        - psu_number: power supply number, from 1 (int)
         - ndi: number of divisions (int)
     """
     # Get the path to the coil.dat file (in the same directory as this module)
@@ -75,13 +80,15 @@ def astra_coils_reader() -> dict[str, dict[str, Any]]:
             i_line += 1
             continue
 
-        # Parse: rc zc wc hc awc ahc unknown unknown unknown name
+        # Parse: rc zc wc hc awc ahc unknown turns psu_number name
         rc: float = float(parts[0])
         zc: float = float(parts[1])
         wc: float = float(parts[2])
         hc: float = float(parts[3])
         awc: float = float(parts[4])
         ahc: float = float(parts[5])
+        turns: float = float(parts[7])
+        psu_number: int = int(parts[8])
         name: str = parts[9].strip()
 
         # Map CS to SOL (ASTRA uses CS, but we use SOL)
@@ -95,6 +102,8 @@ def astra_coils_reader() -> dict[str, dict[str, Any]]:
             "hc": hc,
             "awc": awc,
             "ahc": ahc,
+            "turns": turns,
+            "psu_number": psu_number,
             "ndi": ndi,
         }
 

@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<thomson_scattering_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/thomson_scattering/thomson_scattering.xsd">
-    <workflow href="../workflow.xml"/>
-</thomson_scattering_settings>

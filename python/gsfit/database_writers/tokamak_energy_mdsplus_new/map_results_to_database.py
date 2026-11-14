@@ -7,6 +7,8 @@ from gsfit_rs.imas import equilibrium_paths as ep
 from gsfit_rs.imas import pf_passive_paths as pp
 from scipy.constants import mu_0
 
+from ...settings_schema.python.equilibrium.constraints_diamagnetic_flux import DiamagneticFlux
+from ...settings_schema.python.equilibrium.equilibrium import EquilibriumConstraints
 from ..workflow_names import workflow_from_settings
 
 if TYPE_CHECKING:
@@ -206,7 +208,6 @@ def map_results_to_database(
     pulseNo = gsfit_controller.pulseNo
     equilibrium = gsfit_controller.equilibrium
     pf_passive = gsfit_controller.pf_passive
-    pressure_sensors = gsfit_controller.pressure_sensors
     results = gsfit_controller.results
 
     # Everything below comes out of the `equilibrium` IDS through the (MDSplus path, IMAS path)
@@ -302,6 +303,23 @@ def map_results_to_database(
                 is_point: npt.NDArray[np.bool_] = np.isfinite(levelset_r[i_levelset, :])
                 secondary_xpt_leg_r[levelset_leg_names[i_levelset]][i_time] = levelset_r[i_levelset, is_point]
                 secondary_xpt_leg_z[levelset_leg_names[i_levelset]][i_time] = levelset_z[i_levelset, is_point]
+    # Each leg's strike point is where it meets the limiter, which is its last point. Not every leg meets it: the two legs of a pair which
+    # closes on itself inside the limiter are both cut, by the post-processor, at the same point inside it (see
+    # `contour_tree/node_levelset__r__z.rs`). So a leg's last point is its strike point only when it is on the limiter which the legs are
+    # traced up to, `limiter/unit(0)/outline`; otherwise, and on a time-slice without the leg, the strike point is NaN.
+    # The limiter is the segment from each of its points to the next, and from the last back to the first. A point repeated, as the first
+    # is at the end of an outline which closes itself, makes a segment of no length, which is left out
+    limiter_r: npt.NDArray[np.float64] = np.asarray(equilibrium.get(ep.limiter.unit[0].outline.r))  # [metre]
+    limiter_z: npt.NDArray[np.float64] = np.asarray(equilibrium.get(ep.limiter.unit[0].outline.z))  # [metre]
+    limiter_delta_r: npt.NDArray[np.float64] = np.roll(limiter_r, -1) - limiter_r  # [metre]
+    limiter_delta_z: npt.NDArray[np.float64] = np.roll(limiter_z, -1) - limiter_z  # [metre]
+    is_limiter_segment: npt.NDArray[np.bool_] = (limiter_delta_r != 0.0) | (limiter_delta_z != 0.0)
+    limiter_segment_r: npt.NDArray[np.float64] = limiter_r[is_limiter_segment]  # [metre]
+    limiter_segment_z: npt.NDArray[np.float64] = limiter_z[is_limiter_segment]  # [metre]
+    limiter_segment_delta_r: npt.NDArray[np.float64] = limiter_delta_r[is_limiter_segment]  # [metre]
+    limiter_segment_delta_z: npt.NDArray[np.float64] = limiter_delta_z[is_limiter_segment]  # [metre]
+    # A last point nearer the limiter than this is on it: far above rounding, and far below the size of a grid cell [metre]
+    strike_point_tolerance: float = 1.0e-6
     for leg_name in secondary_xpt_leg_names:
         leg_n: npt.NDArray[np.int32] = np.zeros(n_time, dtype=np.int32)
         for i_time in range(n_time):
@@ -309,13 +327,36 @@ def map_results_to_database(
         n_point_max: int = int(np.max(leg_n, initial=0))
         leg_r: npt.NDArray[np.float64] = np.full((n_time, n_point_max), np.nan)
         leg_z: npt.NDArray[np.float64] = np.full((n_time, n_point_max), np.nan)
+        leg_strike_point_r: npt.NDArray[np.float64] = np.full(n_time, np.nan)
+        leg_strike_point_z: npt.NDArray[np.float64] = np.full(n_time, np.nan)
         for i_time in range(n_time):
             n_point: int = int(leg_n[i_time])
             leg_r[i_time, :n_point] = secondary_xpt_leg_r[leg_name][i_time]
             leg_z[i_time, :n_point] = secondary_xpt_leg_z[leg_name][i_time]
+            if n_point == 0:
+                continue
+            leg_end_r: float = float(leg_r[i_time, n_point - 1])  # [metre]
+            leg_end_z: float = float(leg_z[i_time, n_point - 1])  # [metre]
+            # The distance from the leg's last point to each limiter segment: to the point on the segment nearest it, which is
+            # `limiter_segment_fraction` of the way along
+            limiter_segment_fraction: npt.NDArray[np.float64] = np.clip(
+                ((leg_end_r - limiter_segment_r) * limiter_segment_delta_r + (leg_end_z - limiter_segment_z) * limiter_segment_delta_z)
+                / (limiter_segment_delta_r**2 + limiter_segment_delta_z**2),
+                0.0,
+                1.0,
+            )
+            limiter_segment_distance: npt.NDArray[np.float64] = np.hypot(
+                limiter_segment_r + limiter_segment_fraction * limiter_segment_delta_r - leg_end_r,
+                limiter_segment_z + limiter_segment_fraction * limiter_segment_delta_z - leg_end_z,
+            )  # [metre]
+            if np.min(limiter_segment_distance) < strike_point_tolerance:
+                leg_strike_point_r[i_time] = leg_end_r
+                leg_strike_point_z[i_time] = leg_end_z
         results["SEC_XPT"][leg_name]["CONTOUR"]["N"] = leg_n  # shape = [n_time]
         results["SEC_XPT"][leg_name]["CONTOUR"]["R"] = leg_r  # shape = [n_time, n_point_max]
         results["SEC_XPT"][leg_name]["CONTOUR"]["Z"] = leg_z  # shape = [n_time, n_point_max]
+        results["SEC_XPT"][leg_name]["STRIKE_POINT"]["R"] = leg_strike_point_r  # shape = [n_time]
+        results["SEC_XPT"][leg_name]["STRIKE_POINT"]["Z"] = leg_strike_point_z  # shape = [n_time]
 
     # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
     # percentage, so the factor of 100 is put back here rather than changing what consumers read
@@ -331,13 +372,11 @@ def map_results_to_database(
     # `Equilibrium.copy_from_magnetics_ids` filled on every time-slice with each sensor in the fit settings, in the order of the magnetics IDS:
     # `measured`, the measurement interpolated onto the time-slice's time, `reconstructed`, the reconstruction's value of it, and `weight`,
     # which `Equilibrium` set from the fit settings. MDSplus holds one weight for each sensor, so the first time-slice's is written.
-    # Whether each sensor is fitted is its fit settings' `include`, in `code/parameters_parsed/constraints`
+    # Whether each sensor is fitted is its fit settings' `include`, in the equilibrium's settings, which the equilibrium was built from
+    constraints_settings: EquilibriumConstraints = gsfit_controller.settings_xml.ids.equilibrium.constraints
     b_field_pol_probe_include: dict[str, np.int32] = {}
-    settings_names: npt.NDArray[np.str_] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe[:].name)
-    settings_include: npt.NDArray[np.int32] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe[:].include)
-    n_settings: int = len(settings_names)
-    for i_settings in range(n_settings):
-        b_field_pol_probe_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
+    for b_field_pol_probe_settings in constraints_settings.b_field_pol_probe:
+        b_field_pol_probe_include[b_field_pol_probe_settings.name] = np.int32(b_field_pol_probe_settings.include)
     b_field_pol_probe_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.b_field_pol_probe[:].name)
     b_field_pol_probe_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.b_field_pol_probe[:].weight)
     # shape = [n_time, n_b_field_pol_probe]
@@ -353,11 +392,8 @@ def map_results_to_database(
         results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["WEIGHT"] = float(b_field_pol_probe_weight[i_b_field_pol_probe])
 
     flux_loop_include: dict[str, np.int32] = {}
-    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop[:].name)
-    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop[:].include)
-    n_settings = len(settings_names)
-    for i_settings in range(n_settings):
-        flux_loop_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
+    for flux_loop_settings in constraints_settings.flux_loop:
+        flux_loop_include[flux_loop_settings.name] = np.int32(flux_loop_settings.include)
     flux_loop_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.flux_loop[:].name)
     flux_loop_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.flux_loop[:].weight)
     # shape = [n_time, n_flux_loop]
@@ -373,11 +409,8 @@ def map_results_to_database(
         results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["WEIGHT"] = float(flux_loop_weight[i_flux_loop])
 
     rogowski_coil_include: dict[str, np.int32] = {}
-    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil[:].name)
-    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil[:].include)
-    n_settings = len(settings_names)
-    for i_settings in range(n_settings):
-        rogowski_coil_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
+    for rogowski_coil_settings in constraints_settings.rogowski_coil:
+        rogowski_coil_include[rogowski_coil_settings.name] = np.int32(rogowski_coil_settings.include)
     rogowski_coil_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.rogowski_coil[:].name)
     rogowski_coil_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.rogowski_coil[:].weight)
     # shape = [n_time, n_rogowski_coil]
@@ -396,9 +429,9 @@ def map_results_to_database(
     # single diamagnetic flux, `magnetics/diamagnetic_flux(0)`, which `Equilibrium.copy_from_magnetics_ids` copies in only when the fit
     # settings have a diamagnetic flux, recording where from in `source`
     diamagnetic_flux_source: str = str(equilibrium.get(ep.time_slice[0].constraints.diamagnetic_flux.source))
-    if diamagnetic_flux_source != "":
-        diamagnetic_flux_include: int = equilibrium.get(ep.code.parameters_parsed.constraints.diamagnetic_flux.include)
-        results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(diamagnetic_flux_include == 1)
+    diamagnetic_flux_settings: DiamagneticFlux | None = constraints_settings.diamagnetic_flux
+    if diamagnetic_flux_source != "" and diamagnetic_flux_settings is not None:
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(diamagnetic_flux_settings.include)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["MEASURED"] = equilibrium.get(ep.time_slice[:].constraints.diamagnetic_flux.measured)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["RECONSTRUCT"] = equilibrium.get(ep.time_slice[:].constraints.diamagnetic_flux.reconstructed)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["WEIGHT"] = float(equilibrium.get(ep.time_slice[0].constraints.diamagnetic_flux.weight))
@@ -417,26 +450,35 @@ def map_results_to_database(
     results["CONSTRAINTS"]["PF_CURRENT"]["DIV"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("DIVT")]
     results["CONSTRAINTS"]["PF_CURRENT"]["PSH"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("PSHT")]
 
-    # Passive conductors: for each loop, its degrees of freedom, which are the amplitudes the reconstruction fitted and their current
-    # distributions, and the geometry of its filaments.
-    # The fitted amplitudes are each time-slice's `passive_dof_values`, NaN on a time-slice which failed. They follow the Greens tables,
-    # `greens/grid/pf_passive`, which are in the order of `pf_passive/loop`, and then of `loop(i1)/dof`
+    # Passive conductors: for each loop the equilibrium fits, its degrees of freedom, which are the amplitudes the reconstruction fitted and
+    # their current distributions, and the geometry of its filaments.
+    # The loops the equilibrium fits, and their degrees of freedom, are `constraints/pf_passive_current(:)/dof(:)`, which
+    # `Equilibrium.copy_from_pf_passive_ids` made, the same on every time-slice. The fitted amplitudes are each time-slice's
+    # `passive_dof_values`, NaN on a time-slice which failed, in that order, which is also the order of the Greens tables, `greens_tables/grid/pf_passive`
     passive_dof_values: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].passive_dof_values)  # shape = [n_time, n_dof_total]
-    n_loop: int = len(pf_passive.get(pp.loop[:].name))
+    # Each name is gathered into a numpy array of strings, which `tolist` turns into a list of `str`
+    loop_names: list[str] = pf_passive.get(pp.loop[:].name).tolist()
+    fitted_loop_names: list[str] = equilibrium.get(ep.time_slice[0].constraints.pf_passive_current[:].name).tolist()
+    n_fitted_loop: int = len(fitted_loop_names)
     i_dof_total: int = 0
-    for i_loop in range(n_loop):
-        passive_name: str = pf_passive.get(pp.loop[i_loop].name)
+    for i_fitted_loop in range(n_fitted_loop):
+        passive_name: str = fitted_loop_names[i_fitted_loop]
+        # The loop, found in the pf_passive IDS by its name, which holds its filaments
+        i_loop: int = loop_names.index(passive_name)
 
-        n_dof: int = len(pf_passive.get(pp.loop[i_loop].dof[:].name))
+        pf_passive_current = ep.time_slice[0].constraints.pf_passive_current[i_fitted_loop]
+        dof_names: list[str] = equilibrium.get(pf_passive_current.dof[:].name).tolist()
+        n_dof: int = len(dof_names)
         for i_dof in range(n_dof):
             # The MDSplus nodes are named `CONSTANT_J`, and `EIG_01`, `EIG_02`, ... for the eigenmodes
-            dof_name: str = pf_passive.get(pp.loop[i_loop].dof[i_dof].name)
-            if dof_name == "constant_current_density":
+            if dof_names[i_dof] == "constant_current_density":
                 dof_node_name: str = "CONSTANT_J"
             else:
-                dof_node_name = dof_name.upper()
+                dof_node_name = dof_names[i_dof].upper()
             results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["DOF"][dof_node_name]["RECONSTRUCT"] = np.ascontiguousarray(passive_dof_values[:, i_dof_total])
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["DOF"][dof_node_name]["I_DIST"] = pf_passive.get(pp.loop[i_loop].dof[i_dof].current_distribution)
+            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["DOF"][dof_node_name]["I_DIST"] = equilibrium.get(
+                pf_passive_current.dof[i_dof].current_distribution
+            )
             i_dof_total += 1
 
         # The filaments, which the pf_passive IDS describes as parallelograms from one corner (`oblique`), converted back into the centre, the
@@ -461,38 +503,38 @@ def map_results_to_database(
         results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["R"] = oblique_r + 0.5 * (side_alpha_r + side_beta_r)
         results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["Z"] = oblique_z + 0.5 * (side_alpha_z + side_beta_z)
 
-    if len(pressure_sensors.keys()) > 0:
-        sensor_names = list(pressure_sensors.keys())
+    # Pressure, from `constraints/pressure`, which `Equilibrium.copy_from_core_profiles_ids` makes from the core_profiles IDS when the fit
+    # settings include pressure, one constraint per point of `core_profiles/profiles_2d`, the same on every time-slice. Their
+    # `reconstructed` and `position/psi` the equilibrium post-processor calculates
+    pressure_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.pressure[:].name)
+    n_pressure: int = len(pressure_names)
+    if n_pressure > 0:
+        pressure_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.pressure[:].weight)  # shape = [n_pressure]
+        pressure_position_r: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.pressure[:].position.r)  # shape = [n_pressure]
+        pressure_position_z: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.pressure[:].position.z)  # shape = [n_pressure]
+        # shape = [n_time, n_pressure]
+        pressure_measured: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.pressure[:].measured)
+        pressure_reconstructed: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.pressure[:].reconstructed)
+        pressure_position_psi: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.pressure[:].position.psi)
 
-        # Per-sensor nodes (keyed by sensor name)
-        for sensor_name in sensor_names:
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["MEASURED"] = pressure_sensors.get_array1(
-                [sensor_name, "pressure", "measured", "value"]
-            )  # shape = [n_time]
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["RECONSTRUCT"] = pressure_sensors.get_array1(
-                [sensor_name, "pressure", "calculated", "value"]
-            )  # shape = [n_time]
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["WEIGHT"] = pressure_sensors.get_f64([sensor_name, "fit_settings", "weight"])  # scalar
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["R"] = pressure_sensors.get_f64([sensor_name, "geometry", "r"])  # scalar
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["Z"] = pressure_sensors.get_f64([sensor_name, "geometry", "z"])  # scalar
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["PSI"] = pressure_sensors.get_array1(
-                [sensor_name, "pressure", "calculated", "psi"]
-            )  # shape = [n_time]
+        # Per-constraint nodes (keyed by constraint name)
+        for i_pressure in range(n_pressure):
+            sensor_name = str(pressure_names[i_pressure])
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["MEASURED"] = pressure_measured[:, i_pressure]  # shape = [n_time]
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["RECONSTRUCT"] = pressure_reconstructed[:, i_pressure]  # shape = [n_time]
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["WEIGHT"] = float(pressure_weight[i_pressure])  # scalar
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["R"] = float(pressure_position_r[i_pressure])  # scalar
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["Z"] = float(pressure_position_z[i_pressure])  # scalar
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["PSI"] = pressure_position_psi[:, i_pressure]  # shape = [n_time]
 
         # ALL aggregate node
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["MEASURED"] = pressure_sensors.get_array2(
-            ["*", "pressure", "measured", "value"]
-        )  # shape = [n_time, n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["RECONSTRUCT"] = pressure_sensors.get_array2(
-            ["*", "pressure", "calculated", "value"]
-        )  # shape = [n_time, n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["WEIGHT"] = pressure_sensors.get_array1(["*", "fit_settings", "weight"])  # shape = [n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["R"] = pressure_sensors.get_array1(["*", "geometry", "r"])  # shape = [n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["Z"] = pressure_sensors.get_array1(["*", "geometry", "z"])  # shape = [n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["PSI"] = pressure_sensors.get_array2(
-            ["*", "pressure", "calculated", "psi"]
-        )  # shape = [n_time, n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["NAMES"] = np.array(sensor_names)
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["MEASURED"] = pressure_measured  # shape = [n_time, n_pressure]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["RECONSTRUCT"] = pressure_reconstructed  # shape = [n_time, n_pressure]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["WEIGHT"] = pressure_weight  # shape = [n_pressure]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["R"] = pressure_position_r  # shape = [n_pressure]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["Z"] = pressure_position_z  # shape = [n_pressure]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["PSI"] = pressure_position_psi  # shape = [n_time, n_pressure]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["NAMES"] = pressure_names
 
     # Store "WORKFLOW": which run of each MDSplus tree the database reader read, from the `workflow.xml` which each IDS's file links to
     for tree_name, workflow_tree in workflow_from_settings(gsfit_controller.settings_xml).items():

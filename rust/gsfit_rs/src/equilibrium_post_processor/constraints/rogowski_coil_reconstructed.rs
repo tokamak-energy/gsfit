@@ -2,14 +2,15 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
-use imas_rs::{EquilibriumGreensRogowskiCoil, EquilibriumTimeSlice};
+use crate::greens_storage::GreensRogowskiCoil;
+use imas_rs::EquilibriumTimeSlice;
 use ndarray::{Array1, Array2};
 
 /// Calculate the current each Rogowski coil measures in the reconstructed equilibrium, and store it as the `reconstructed` of the
 /// coil's constraint.
 ///
 /// Every Rogowski coil in `constraints/rogowski_coil` gets one, whether or not it was fitted. It is the coil's Greens tables,
-/// `greens/rogowski_coil(i1)`, found by the constraint's name, multiplied by the current in each source: the PF coil currents,
+/// `greens_tables/rogowski_coil(i1)`, found by the constraint's name, multiplied by the current in each source: the PF coil currents,
 /// `constraints/pf_current(:)/measured`; the passive degrees of freedom, `passive_dof_values`; and the plasma current density,
 /// `profiles_2d(0)/j_phi`, over the grid cells.
 ///
@@ -28,7 +29,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let n_rogowski_coil: usize = time_slice.constraints.rogowski_coil.len();
     let mut reconstructed: Array1<f64> = Array1::from_elem(n_rogowski_coil, f64::NAN); // shape = [n_rogowski_coil]
     for i_rogowski_coil in 0..n_rogowski_coil {
-        let greens: &EquilibriumGreensRogowskiCoil = constant_values
+        let greens: &GreensRogowskiCoil = constant_values
             .greens
             .rogowski_coil(&time_slice.constraints.rogowski_coil[i_rogowski_coil].name);
 

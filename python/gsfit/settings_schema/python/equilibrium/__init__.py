@@ -11,8 +11,10 @@ from . import constraints_b_field_pol_probe
 from . import constraints_diamagnetic_flux
 from . import constraints_flux_loop
 from . import constraints_isoflux
+from . import constraints_isoflux_boundary
 from . import constraints_pressure
 from . import constraints_rogowski_coil
+from . import constraints_stationary_point
 from . import equilibrium
 from . import grid
 from . import initial_guess
@@ -27,8 +29,10 @@ __all__ = [
     "constraints_diamagnetic_flux",
     "constraints_flux_loop",
     "constraints_isoflux",
+    "constraints_isoflux_boundary",
     "constraints_pressure",
     "constraints_rogowski_coil",
+    "constraints_stationary_point",
     "equilibrium",
     "grid",
     "initial_guess",

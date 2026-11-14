@@ -1,8 +1,8 @@
 """How GSFit's settings, Python database reader and Rust IDSs flow into a reconstructed equilibrium.
 
-Each input IDS (`magnetics`, `pf_active`, `tf` and `wall`, the minimum GSFit needs) has its own XML settings file, which says where its data is
-read from. GSFit makes an empty IDS, and the database reader fills it with the sensors, coils, vacuum toroidal field or limiter.
-Optional IDSs, which GSFit can use but does not need, are read in the same way.
+Each input IDS (`pf_active`, `tf` and `wall`, the minimum GSFit needs) has its own XML settings file, which says where its data is read from.
+GSFit makes an empty IDS, and the database reader fills it with the coils, vacuum toroidal field or limiter.
+Optional IDSs, such as `magnetics`, which GSFit can use but does not need, are read in the same way.
 The `equilibrium` IDS has its own XML settings file too: which magnetic sensors to use, the numerical grid and which time-slices to reconstruct.
 The input IDSs, and any optional IDSs, are added to the `equilibrium` IDS, which is then solved.
 
@@ -147,10 +147,9 @@ EQUILIBRIUM_LANE_HEIGHT = 18.5  # [millimetre]
 
 # --- The IDSs ---
 # The IDSs the database reader fills, which are the minimum GSFit needs, in the order they are drawn, top to bottom
-INPUT_IDS_NAMES: list[str] = ["magnetics", "pf_active", "tf", "wall"]
+INPUT_IDS_NAMES: list[str] = ["pf_active", "tf", "wall"]
 # What each input IDS gives the `equilibrium` IDS
 EQUILIBRIUM_INPUT_LABELS: dict[str, str] = {
-    "magnetics": "sensors",
     "pf_active": "coil currents",
     "tf": "vacuum field",
     "wall": "limiter",
@@ -224,7 +223,6 @@ RUST_BADGE = Badge(text=".rs", face_color=RUST_RED, text_color="#ffffff")
 # The optional IDSs have no colour of their own, so they are in a darker grey, which still shows when faded
 ROLE_STYLES: dict[str, RoleStyle] = {
     "equilibrium": RoleStyle(edge_color="#aa3377", face_color="#f5e1ec", icon_edge_color="#882255", icon_face_color="#d99cc2"),
-    "magnetics": RoleStyle(edge_color="#4477aa", face_color="#e1eaf4", icon_edge_color="#2f5a86", icon_face_color="#8fb0d3"),
     "optional": RoleStyle(edge_color="#777777", face_color="#ececec", icon_edge_color="#555555", icon_face_color="#bbbbbb"),
     "pf_active": RoleStyle(edge_color="#c8465a", face_color="#fbe3e6", icon_edge_color="#a23447", icon_face_color="#ee8e9c"),
     "reader": RoleStyle(edge_color="#b58b00", face_color="#fff4d1", icon_edge_color="#8c6b00", icon_face_color="#f2c94c"),

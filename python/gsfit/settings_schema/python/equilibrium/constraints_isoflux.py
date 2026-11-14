@@ -20,7 +20,7 @@ from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 @dataclass(kw_only=True)
 class ConstraintsIsoflux:
     """
-    The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
+    The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Each is fitted with the two points of the isoflux constraint of the same `name` in the magnetics IDS, `magnetics/isoflux`, a custom key, which the database reader adds, each on its own timebase; listing one which the magnetics IDS does not have is an error.
 
     :param isoflux: One isoflux constraint. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux[name]`
     """
@@ -37,7 +37,7 @@ class Isoflux:
     One isoflux constraint.
 
     :param name: The constraint's name.
-    :param expected_value: The typical size of the flux difference between the two points. The fit divides the residual by it.
+    :param expected_value: The typical size of the flux difference between the two points. The fit divides the residual by it. [weber]
     :param weight: Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value. [dimensionless]
     :param include: Whether the constraint is fitted.
     :param comment: Free text, e.g. why the constraint is not included; not used by the fit.
@@ -47,7 +47,7 @@ class Isoflux:
     KEY: typing.ClassVar[str] = "name"
 
     name: str
-    expected_value: float
+    expected_value: float  # [weber]
     weight: float  # [dimensionless]
     include: bool
     comment: str

@@ -26,6 +26,8 @@
         <rogowski_coil href="constraints_rogowski_coil.xml"/>
         <diamagnetic_flux href="constraints_diamagnetic_flux.xml"/>
         <isoflux href="constraints_isoflux.xml"/>
+        <isoflux_boundary href="constraints_isoflux_boundary.xml"/>
+        <stationary_point href="constraints_stationary_point.xml"/>
         <pressure href="constraints_pressure.xml"/>
     </constraints>
 </equilibrium_settings>

@@ -95,6 +95,26 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
+            <xs:element name="isoflux_boundary" type="Link">
+                <xs:annotation>
+                    <xs:documentation>
+                        The isoflux boundary constraints: points on the plasma boundary.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <schema>constraints_isoflux_boundary.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="stationary_point" type="Link">
+                <xs:annotation>
+                    <xs:documentation>
+                        The stationary point constraints: points where d(psi)/d(r) and d(psi)/d(z) are zero, each an X-point or the magnetic axis.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <schema>constraints_stationary_point.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
             <xs:element name="pressure" type="Link">
                 <xs:annotation>
                     <xs:documentation>

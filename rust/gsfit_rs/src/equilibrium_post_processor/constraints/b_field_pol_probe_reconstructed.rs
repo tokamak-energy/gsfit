@@ -2,14 +2,15 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
-use imas_rs::{EquilibriumGreensBFieldPolProbe, EquilibriumTimeSlice};
+use crate::greens_storage::GreensBFieldPolProbe;
+use imas_rs::EquilibriumTimeSlice;
 use ndarray::{Array1, Array2};
 
 /// Calculate the field each poloidal field probe measures in the reconstructed equilibrium, and store it as the `reconstructed` of
 /// the probe's constraint.
 ///
 /// Every probe in `constraints/b_field_pol_probe` gets one, whether or not it was fitted. It is the probe's Greens tables,
-/// `greens/b_field_pol_probe(i1)`, found by the constraint's name, multiplied by the current in each source: the PF coil currents,
+/// `greens_tables/b_field_pol_probe(i1)`, found by the constraint's name, multiplied by the current in each source: the PF coil currents,
 /// `constraints/pf_current(:)/measured`; the passive degrees of freedom, `passive_dof_values`; and the plasma current density,
 /// `profiles_2d(0)/j_phi`, over the grid cells.
 ///
@@ -28,7 +29,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let n_b_field_pol_probe: usize = time_slice.constraints.b_field_pol_probe.len();
     let mut reconstructed: Array1<f64> = Array1::from_elem(n_b_field_pol_probe, f64::NAN); // shape = [n_b_field_pol_probe]
     for i_b_field_pol_probe in 0..n_b_field_pol_probe {
-        let greens: &EquilibriumGreensBFieldPolProbe = constant_values
+        let greens: &GreensBFieldPolProbe = constant_values
             .greens
             .b_field_pol_probe(&time_slice.constraints.b_field_pol_probe[i_b_field_pol_probe].name);
 

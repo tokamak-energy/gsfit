@@ -39,7 +39,7 @@
             <xs:enumeration value="good_pressure_sensors">
                 <xs:annotation>
                     <xs:documentation>
-                        The times at which the pressure sensors are good (BAD_MA is false in the PPTS tree), for ST40's experimental MDSplus database. It has no settings: the PPTS run is `ppts` in thomson_scattering.xml, in the element of the database reader in use.
+                        The times at which the pressure sensors are good (BAD_MA is false in the PPTS tree), for ST40's experimental MDSplus database. It has no settings: the PPTS run is in the workflow.xml which core_profiles.xml links to.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
@@ -51,11 +51,13 @@
     <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
         </xs:restriction>
     </xs:simpleType>
 

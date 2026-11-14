@@ -9,7 +9,6 @@ from diagnostic_and_simulation_base import DiagnosticAndSimulationBase
 from .database_readers import get_database_reader
 from .database_writers import get_database_writer
 from .settings_schema.python.gsfit_code_settings import GsfitCodeSettings
-from gsfit_rs.imas import equilibrium_paths as ep
 
 if typing.TYPE_CHECKING:
     from imas.ids_toplevel import IDSToplevel
@@ -49,12 +48,12 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
     equilibrium: gsfit_rs.Equilibrium
     pf_active: gsfit_rs.PfActive
     pf_passive: gsfit_rs.PfPassive
-    isoflux: gsfit_rs.Isoflux
-    isoflux_boundary: gsfit_rs.IsofluxBoundary
-    pressure_sensors: gsfit_rs.Pressure
-    stationary_point: gsfit_rs.StationaryPoint
     tf: gsfit_rs.Tf
     wall: gsfit_rs.Wall
+
+    # Optional: only built when the equilibrium fits pressure, from the `core_profiles.xml` which `GSFIT_code_settings.xml` links.
+    # `None` otherwise
+    core_profiles: gsfit_rs.CoreProfiles | None = None
 
     # Optional: only a `database_reader` which reads gap definitions builds one. `None` means
     # the equilibrium has no gaps
@@ -98,7 +97,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         2. Set the environment variables
         3. Setup the timeslices to reconstruct
         4. Read in all the machine settings and initalise the following Rust implementations:
-            `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall`, `magnetics`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+            `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall` and `magnetics`,
             and the optional `pulse_schedule`
         5. Initialise the Greens functions
         6. Solve the GS equation
@@ -108,7 +107,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         Steps 1 and 8 are skipped for the `imas` database_writer, which writes nothing.
         """
 
-        self.logger.info(f"Running Gsfit, for pulseNo={self.pulseNo}")
+        self.logger.info(f"Running Gsfit, for shot={self.pulseNo} run_name={self.run_name}")
 
         # Creating the MDSplus nodes needs nothing but the settings, which have already been read,
         # so start it now and let it run while we read the databases and solve the GS equation.
@@ -122,7 +121,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         self.set_environment_variables()
 
         # Read in all the machine settings and initalise the following Rust implementations:
-        # `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall`, `magnetics`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+        # `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall` and `magnetics`,
         # and the optional `pulse_schedule`
         self.setup_objects(**kwargs)
 
@@ -222,21 +221,12 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
 
         # Extract objects from class
         equilibrium = self.equilibrium
-        isoflux = self.isoflux
-        isoflux_boundary = self.isoflux_boundary
-        pressure_sensors = self.pressure_sensors
-        stationary_point = self.stationary_point
 
         self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
-        # Note: the solution to the GS equation is stored inside `equilibrium`
+        # Note: the solution to the GS equation is stored inside `equilibrium`, which holds every constraint, including the isoflux,
+        # isoflux boundary and stationary point constraints, which `copy_from_magnetics_ids` copied in from the magnetics IDS
         tic = time_py.time()
-        gsfit_rs.solve_grad_shafranov(
-            equilibrium,
-            isoflux,
-            isoflux_boundary,
-            pressure_sensors,
-            stationary_point,
-        )
+        gsfit_rs.solve_grad_shafranov(equilibrium)
         toc = time_py.time()
         self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(toc - tic) * 1e3:,.2f}ms")
 
@@ -250,52 +240,33 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         pf_active = self.pf_active
         pf_passive = self.pf_passive
         equilibrium = self.equilibrium
-        isoflux = self.isoflux
-        isoflux_boundary = self.isoflux_boundary
-        pressure_sensors = self.pressure_sensors
-        stationary_point = self.stationary_point
 
         # Greens with the PF coils
         tic = time_py.time()
         equilibrium.greens_with_pf_active(pf_active)
-        isoflux.greens_with_pf_active(pf_active)
-        isoflux_boundary.greens_with_pf_active(pf_active)
-        pressure_sensors.greens_with_pf_active(pf_active)
-        stationary_point.greens_with_pf_active(pf_active)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with the PF coils;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # Greens with the passive conductors
+        # Greens with the passive conductors the equilibrium fits, with the degrees of freedom `equilibrium.copy_from_pf_passive_ids` made
         tic = time_py.time()
         equilibrium.greens_with_pf_passive(pf_passive)
-        isoflux.greens_with_pf_passive(pf_passive)
-        isoflux_boundary.greens_with_pf_passive(pf_passive)
-        pressure_sensors.greens_with_pf_passive(pf_passive)
-        stationary_point.greens_with_pf_passive(pf_passive)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with the passive conductors;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # Greens of the magnetic sensors, with the plasma, the PF coils and the passive conductors. The PF coils and the passive
-        # conductors are in the order of the Greens tables above, so these come after them
+        # Greens of the magnetic sensors, with the plasma, the PF coils and the passive conductors, and of the isoflux, isoflux boundary
+        # and stationary point constraints, one for each time-slice, as their points can move. The PF coils and the passive conductors
+        # are in the order of the Greens tables above, so these come after them
         tic = time_py.time()
         equilibrium.greens_with_magnetics(magnetics, pf_active, pf_passive)
         toc = time_py.time()
         self.logger.info(f"Finished Greens of the magnetic sensors;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # Greens with plasma
-        tic = time_py.time()
-        isoflux.greens_with_plasma(equilibrium)
-        isoflux_boundary.greens_with_plasma(equilibrium)
-        pressure_sensors.greens_with_plasma(equilibrium)
-        stationary_point.greens_with_plasma(equilibrium)
-        toc = time_py.time()
-        self.logger.info(f"Finished Greens with plasma;  {(toc - tic) * 1e3:,.2f}ms")
-
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
         Initialises the Rust objects needed to run the GSFit inverse solver:
-        `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall`, `magnetics`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
-        and the optional `pulse_schedule`, which is `None` unless the `database_reader` implements `setup_pulse_schedule`
+        `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall` and `magnetics`,
+        the optional `pulse_schedule`, which is `None` unless the `database_reader` implements `setup_pulse_schedule`, and the optional
+        `core_profiles`, which is `None` unless the equilibrium fits pressure
 
         Different machines will use different data stores (e.g. MDSplus, or FreeGNSKE object).
         New readers for different devices / forward GS solvers can be added to:
@@ -348,7 +319,9 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
             settings=settings_xml.ids.pulse_schedule,
             **kwargs,
         )
-        self.equilibrium.copy_from_pulse_schedule_ids(self.pulse_schedule)
+        # A reader which reads no gap definitions returns `None`, and the equilibrium then has no gaps
+        if self.pulse_schedule is not None:
+            self.equilibrium.copy_from_pulse_schedule_ids(self.pulse_schedule)
         toc = time_py.time()
         self.logger.info(msg=f"`pulse_schedule` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
@@ -357,9 +330,9 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         self.pf_passive = database_reader.setup_pf_passive(
             pulseNo=self.pulseNo,
             settings=self.settings_xml.ids.pf_passive,
-            settings_equilibrium=self.settings_xml.ids.equilibrium,
             **kwargs,
         )
+        # The passive conductors the equilibrium's settings fit, with their degrees of freedom
         self.equilibrium.copy_from_pf_passive_ids(self.pf_passive)
         toc = time_py.time()
         self.logger.info(msg=f"`pf_passive` initialised;  {(toc - tic) * 1e3:,.2f}ms")
@@ -375,51 +348,32 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         toc = time_py.time()
         self.logger.info(msg=f"`pf_active` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        
-        times_to_reconstruct = self.equilibrium.get(ep.time_slice[:].time)
-        tic = time_py.time()
-        self.isoflux = database_reader.setup_isoflux_sensors(
-            pulseNo=self.pulseNo,
-            settings=self.settings_xml.ids.magnetics,
-            settings_isoflux_sensors=self.settings_xml.ids.equilibrium.constraints.isoflux,
-            times_to_reconstruct=times_to_reconstruct, # TODO: is this a problem or not??
-            **kwargs,
-        )
-        toc = time_py.time()
-        self.logger.info(msg=f"`isoflux` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+        # `core_profiles` IDS, the kinetic profiles which the pressure constraints are made from. The pressure constraints are its only
+        # use so far, so it is only read, e.g. the Thomson scattering, when the equilibrium fits pressure
+        self.core_profiles = None
+        if settings_xml.ids.equilibrium.constraints.pressure.include:
+            tic = time_py.time()
+            if settings_xml.ids.core_profiles is None:
+                raise ValueError(
+                    "`equilibrium/constraints_pressure.xml` includes pressure, which is made from the `core_profiles` IDS, so `GSFIT_code_settings.xml` "
+                    "must link a `core_profiles.xml`"
+                )
+            self.core_profiles = database_reader.setup_core_profiles(
+                pulseNo=self.pulseNo,
+                settings=settings_xml.ids.core_profiles,
+                **kwargs,
+            )
+            if self.core_profiles is None:
+                raise ValueError(
+                    f"`equilibrium/constraints_pressure.xml` includes pressure, which is made from the `core_profiles` IDS, but the "
+                    f"`{database_reader_method}` database_reader does not read the kinetic profiles"
+                )
+            self.equilibrium.copy_from_core_profiles_ids(self.core_profiles)
+            toc = time_py.time()
+            self.logger.info(msg=f"`core_profiles` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        tic = time_py.time()
-        self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(
-            pulseNo=self.pulseNo,
-            settings=self.settings_xml.ids.magnetics,
-            **kwargs,
-        )
-        toc = time_py.time()
-        self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        tic = time_py.time()
-        self.pressure_sensors = database_reader.setup_pressure_sensors(
-            pulseNo=self.pulseNo,
-            settings=self.settings_xml.ids.thomson_scattering,
-            settings_pressure_sensors=self.settings_xml.ids.equilibrium.constraints.pressure, # TODO: is this a problem or not??
-            **kwargs,
-        )
-        toc = time_py.time()
-        self.logger.info(msg=f"`pressure_sensors` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        # TODO: temporary removal
-        tic = time_py.time()
-        from gsfit_rs import StationaryPoint
-        self.stationary_point = StationaryPoint()
-        # self.stationary_point = database_reader.setup_stationary_point_sensors(
-        #     pulseNo=self.pulseNo,
-        #     settings=self.settings,
-        #     times_to_reconstruct=times_to_reconstruct,
-        #     **kwargs,
-        # )
-        toc = time_py.time()
-        self.logger.info(msg=f"`stationary_point` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
+        # `magnetics` IDS: the magnetic sensors, and the constraints at points which can move, the isoflux, isoflux boundary and stationary
+        # point constraints, custom keys. Each is copied onto the time-slices, interpolated onto their times, for those in the fit settings
         tic = time_py.time()
         self.magnetics = database_reader.setup_magnetics(
             pulseNo=self.pulseNo,

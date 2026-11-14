@@ -14,6 +14,7 @@
             <anderson_mixing>1.0</anderson_mixing>
         </picard>
         <newton_krylov>
+            <n_iter_no_vertical_feedback>1</n_iter_no_vertical_feedback>
             <picard_handover>1.0e-2</picard_handover>
             <n_krylov_max>10</n_krylov_max>
             <krylov_tolerance>0.1</krylov_tolerance>

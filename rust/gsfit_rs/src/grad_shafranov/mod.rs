@@ -1,16 +1,17 @@
 // Load modules
 mod chi_sq_mag;
 mod equilibrium_solve;
-mod fitted_magnetic_sensors;
 mod grad_shafranov_solver;
 mod initial_current_seed;
 mod nonlinear_solvers;
+mod point_constraints;
 
 // Expose functions to public
 pub(crate) use equilibrium_solve::CONVERGENCE_STATUS_CONVERGED;
 pub(crate) use equilibrium_solve::contour_tree_nodes;
 pub use equilibrium_solve::output_flag;
 pub use grad_shafranov_solver::solve_grad_shafranov;
+pub(crate) use nonlinear_solvers::{NewtonKrylov, NewtonPicard, Picard, SharedNonlinearSolver};
 
 // Define the possible **external** failures this module can produce
 #[derive(Debug)]

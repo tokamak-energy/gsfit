@@ -1,113 +1,114 @@
-import typing
 from typing import TYPE_CHECKING
 
+import mdsthin
 import numpy as np
 import numpy.typing as npt
-from gsfit_rs import Passives
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
+from diagnostic_and_simulation_base.xml_reader_and_writer import serialise_python_dataclass_to_imas_parameters_input
+from gsfit_rs import PfPassive
+from gsfit_rs.dd_support import ParametersInput
 
-from .astra_passives_reader import astra_passives_reader
+from ...settings_schema import XSD_DIRECTORY_PATH
+from ...settings_schema.python.pf_passive.pf_passive import PfPassiveSettings
+from ...settings_schema.python.workflow import Workflow
+from ...settings_schema.python.workflow import WorkflowTree
 
 if TYPE_CHECKING:
     from . import DatabaseReader
+
+# ASTRA's passive structures which ST40's own machine description, ELMAG, counts as part of the in-vessel coil, IVC
+PASSIVES_IN_IVC: list[str] = ["GASBFLB", "GASBFLT"]
 
 
 def setup_pf_passive(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
-) -> Passives:
+    settings: PfPassiveSettings,
+) -> PfPassive:
     """
-    This method initialises the Rust `Passives` class.
+    This method initialises the Rust `PfPassive` class, which holds an IMAS `pf_passive` IDS.
 
     :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param settings: `PfPassiveSettings` object containing the XML settings read from the `settings` directory, whose `workflow` says which ASTRA run to read
 
-    **This method is specific to ASTRA simulations using fires.dat.**
+    **This method is specific to ST40's ASTRA runs on MDSplus.**
+
+    The passive structures are ASTRA's filaments, `PASSIVES`, which its equilibrium, SPIDER, ran with, from ASTRA's `exp/equ/MCVC/fires.dat`.
+    One `loop(i1)` is added for each passive structure, in the order its first filament comes in, with one `element(i2)` per filament: these are
+    machine data only, and which of them to fit, and how, is the equilibrium's, `equilibrium/pf_passive_dof.xml`, which
+    `Equilibrium.copy_from_pf_passive_ids` reads.
+
+    The gas baffles, GASBFLB and GASBFLT, are part of the in-vessel coil, IVC, as they are in ST40's ELMAG, which the settings are made for.
+
+    Each filament is a rectangle, from its centre, `RP` and `ZP`, and its full width and height, `DR` and `DZ`, which the data dictionary's `oblique`
+    describes from its bottom left corner, with sides along R and Z. ASTRA stores each filament's resistance, `RESP`, from which its resistivity is
+    `RESP * DR * DZ / (2 pi RP)`; a loop's resistivity is the mean of its filaments', as the IVC's gas baffles may differ from the rest of it.
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
 
-    # Initialise the Passives Rust class
-    passives = Passives()
+    # The ASTRA run to read, from the `workflow.xml` which `pf_passive.xml` links to
+    workflow: Workflow | None = settings.workflow
+    if workflow is None or "ASTRA" not in workflow.tree:
+        raise ValueError(
+            "`pf_passive.xml` must link to a `workflow.xml` holding the ASTRA `tree`, which says which ASTRA run to read the passive structures from"
+        )
+    # A nil `pulseNo` reads the pulse being reconstructed
+    astra_settings: WorkflowTree = workflow.tree["ASTRA"]
+    if astra_settings.pulseNo is None:
+        astra_pulseNo: int = pulseNo
+    else:
+        astra_pulseNo = astra_settings.pulseNo
 
-    # Read passive data from fires.dat
-    passives_data = astra_passives_reader()
+    # Serialise the settings, which the passive structures record in `pf_passive/code/parameters`: `pf_passive.xml` holding only the run which
+    # built the passive structures
+    settings_xml: ParametersInput = serialise_python_dataclass_to_imas_parameters_input(
+        settings=PfPassiveSettings(workflow=Workflow(tree=KeyedList([astra_settings]))),
+        xsd_directory_path=XSD_DIRECTORY_PATH,
+    )
 
-    for passive_name, data in passives_data.items():
-        if passive_name == "ERINGT" or passive_name == "ERINGB":  #  or passive_name == "MCTCASE" or passive_name == "MCBCASE"
-            continue  # skip to the next passive
+    # Initialise the PfPassive Rust class
+    pf_passive: PfPassive = PfPassive(settings_xml)
 
-        if passive_name == "GASBFLB" or passive_name == "GASBFLT":
-            # In our set-up we have the GASBFL's as part of the IVC
-            continue
+    conn: mdsthin.Connection = mdsthin.Connection("smaug")
+    conn.openTree("ASTRA", astra_pulseNo)
+    run_path: str = f"\\ASTRA::TOP.{astra_settings.run_name}"
+    filaments_name_raw: npt.NDArray[np.str_] = np.asarray(conn.get(f"{run_path}.PASSIVES:NAME").data())
+    # ASTRA stores these as float32; GSFit uses float64
+    filaments_r: npt.NDArray[np.float64] = conn.get(f"{run_path}.PASSIVES:RP").data().astype(np.float64)  # [metre]
+    filaments_z: npt.NDArray[np.float64] = conn.get(f"{run_path}.PASSIVES:ZP").data().astype(np.float64)  # [metre]
+    filaments_d_r: npt.NDArray[np.float64] = conn.get(f"{run_path}.PASSIVES:DR").data().astype(np.float64)  # [metre]
+    filaments_d_z: npt.NDArray[np.float64] = conn.get(f"{run_path}.PASSIVES:DZ").data().astype(np.float64)  # [metre]
+    filaments_resistance: npt.NDArray[np.float64] = conn.get(f"{run_path}.PASSIVES:RESP").data().astype(np.float64)  # [ohm]
+    filaments_resistivity: npt.NDArray[np.float64] = filaments_resistance * filaments_d_r * filaments_d_z / (2.0 * np.pi * filaments_r)  # [ohm * metre]
 
-        if passive_name == "IVC":
-            current_distribution_type = "eig"
-            n_dof = settings["passive_dof_regularisation.json"]["IVC"]["n_dof"]
-            regularisations = np.array(settings["passive_dof_regularisation.json"]["IVC"]["regularisations"])
-            regularisations_weight = np.array(settings["passive_dof_regularisation.json"]["IVC"]["regularisations_weight"])
+    # The passive structure each filament belongs to, and the passive structures in the order their first filaments come in
+    n_filament: int = len(filaments_r)
+    filament_passive_names: list[str] = []
+    passive_names: list[str] = []
+    for i_filament in range(n_filament):
+        # mdsthin returns the names padded with spaces
+        passive_name: str = str(filaments_name_raw[i_filament]).strip()
+        if passive_name in PASSIVES_IN_IVC:
+            passive_name = "IVC"
+        filament_passive_names.append(passive_name)
+        if passive_name not in passive_names:
+            passive_names.append(passive_name)
+    filaments_passive_name: npt.NDArray[np.str_] = np.array(filament_passive_names)
 
-            # Add the GASBFL's to the IVC
-            r = np.concatenate((data["r"], passives_data["GASBFLB"]["r"], passives_data["GASBFLT"]["r"]))
-            z = np.concatenate((data["z"], passives_data["GASBFLB"]["z"], passives_data["GASBFLT"]["z"]))
-            d_r = np.concatenate((data["d_r"], passives_data["GASBFLB"]["d_r"], passives_data["GASBFLT"]["d_r"]))
-            d_z = np.concatenate((data["d_z"], passives_data["GASBFLB"]["d_z"], passives_data["GASBFLT"]["d_z"]))
-            angle_1 = np.concatenate((data["angle_1"], passives_data["GASBFLB"]["angle_1"], passives_data["GASBFLT"]["angle_1"]))
-            angle_2 = np.concatenate((data["angle_2"], passives_data["GASBFLB"]["angle_2"], passives_data["GASBFLT"]["angle_2"]))
+    for passive_name in passive_names:
+        in_passive: npt.NDArray[np.bool_] = filaments_passive_name == passive_name
+        n_filament_passive: int = int(np.sum(in_passive))
 
-            passives.add_passive(
-                name=passive_name,
-                r=r,
-                z=z,
-                d_r=d_r,
-                d_z=d_z,
-                angle_1=angle_1,
-                angle_2=angle_2,
-                resistivity=data["resistivity"],
-                current_distribution_type=current_distribution_type,
-                n_dof=n_dof,
-                regularisations=regularisations,
-                regularisations_weight=regularisations_weight,
-            )
-        elif passive_name == "OVC":
-            current_distribution_type = "constant_current_density"
-            n_dof = 1
-            regularisations = np.array([[1.0]])
-            regularisations_weight = np.array([0.001])  # original: 0.1
+        pf_passive.add_loop(
+            name=passive_name,
+            r=filaments_r[in_passive] - filaments_d_r[in_passive] / 2.0,
+            z=filaments_z[in_passive] - filaments_d_z[in_passive] / 2.0,
+            length_alpha=filaments_d_r[in_passive],
+            length_beta=filaments_d_z[in_passive],
+            alpha=np.zeros(n_filament_passive),
+            beta=np.zeros(n_filament_passive),
+            resistivity=float(np.mean(filaments_resistivity[in_passive])),
+        )
 
-            passives.add_passive(
-                name=passive_name,
-                r=data["r"],
-                z=data["z"],
-                d_r=data["d_r"],
-                d_z=data["d_z"],
-                angle_1=data["angle_1"],
-                angle_2=data["angle_2"],
-                resistivity=data["resistivity"],
-                current_distribution_type=current_distribution_type,
-                n_dof=n_dof,
-                regularisations=regularisations,
-                regularisations_weight=regularisations_weight,
-            )
-        else:
-            current_distribution_type = "constant_current_density"
-            n_dof = 1
-            regularisations = np.empty((0, 0))
-            regularisations_weight = np.empty(0)
-
-            passives.add_passive(
-                name=passive_name,
-                r=data["r"],
-                z=data["z"],
-                d_r=data["d_r"],
-                d_z=data["d_z"],
-                angle_1=data["angle_1"],
-                angle_2=data["angle_2"],
-                resistivity=data["resistivity"],
-                current_distribution_type=current_distribution_type,
-                n_dof=n_dof,
-                regularisations=regularisations,
-                regularisations_weight=regularisations_weight,
-            )
-
-    return passives
+    return pf_passive

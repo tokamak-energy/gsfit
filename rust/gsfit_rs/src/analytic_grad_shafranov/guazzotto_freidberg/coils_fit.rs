@@ -114,8 +114,8 @@ pub fn plasma_current_density(
         for i_r in 0..n_r {
             if mask_2d[(i_z, i_r)] > 0.0 {
                 let r_cell: f64 = r[i_r];
-                j_phi_2d[(i_z, i_r)] = (4.0 * PI * psi_hat_2d[(i_z, i_r)] / psi_0)
-                    * (p_axis * r_cell + r_geo * r_geo * bt_vac_at_r_geo * bt_diamagnetic_shift / (MU_0 * r_cell));
+                j_phi_2d[(i_z, i_r)] =
+                    (4.0 * PI * psi_hat_2d[(i_z, i_r)] / psi_0) * (p_axis * r_cell + r_geo * r_geo * bt_vac_at_r_geo * bt_diamagnetic_shift / (MU_0 * r_cell));
             }
         }
     }
@@ -292,7 +292,8 @@ pub fn fit_boundary_coils(
         flux_on_grid(&greens_grid_cell, &cell_current, n_z, n_r)
     };
     let flux_coils: FluxOnGrid = {
-        let greens_grid_coil: Greens = Greens::sensor_to_conductor(grid_r_flat, grid_z_flat, coil_r.clone(), coil_z.clone(), coil_d_r.clone(), coil_d_z.clone());
+        let greens_grid_coil: Greens =
+            Greens::sensor_to_conductor(grid_r_flat, grid_z_flat, coil_r.clone(), coil_z.clone(), coil_d_r.clone(), coil_d_z.clone());
         flux_on_grid(&greens_grid_coil, &coil_current, n_z, n_r)
     };
     let flux_total: FluxOnGrid = FluxOnGrid {

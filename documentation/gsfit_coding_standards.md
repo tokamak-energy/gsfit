@@ -230,6 +230,21 @@ Normally, the `mod.rs` and `lib.rs` files should only be used to register and ex
 It should not normally be used for code.
 The reason-- code can effectively be "hidden" within the module file.
 
+## Error messages for an unrecognized option
+When a setting chooses between options, e.g. a `method`, the error for an option which is not recognized should not list the options which are.
+The list would have to be kept up to date by hand whenever an option is added, which is easy to forget, and nothing can test that it is complete.
+
+This is wrong:
+```rust
+_ => Err(PyValueError::new_err(format!(
+    "`{path}/method` is \"{method}\", but it must be \"efit_polynomial\" or \"tensioned_cubic_b_spline\""
+))),
+```
+This is correct:
+```rust
+_ => Err(PyValueError::new_err(format!("`{path}/method` = \"{method}\" is not recognized"))),
+```
+
 # Python
 When using strings I prefer a double backslash `\\` instead of raw, e.g.
 ```python

@@ -13,7 +13,7 @@ use ndarray::Array1;
 /// * `x_new` - the abscissa to interpolate at
 /// * `x` - the profile's abscissa, finite and strictly increasing
 /// * `values` - the profile itself, the same length as `x`
-pub(super) fn interpolate_profile(x_new: f64, x: &Array1<f64>, values: &Array1<f64>) -> f64 {
+pub(crate) fn interpolate_profile(x_new: f64, x: &Array1<f64>, values: &Array1<f64>) -> f64 {
     let n_x: usize = x.len();
     if !x_new.is_finite() || x_new < x[0] || x_new > x[n_x - 1] {
         return f64::NAN;

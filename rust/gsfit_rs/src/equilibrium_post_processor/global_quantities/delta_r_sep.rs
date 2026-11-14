@@ -2,7 +2,6 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
-use crate::limiter::vacuum_vessel_outline;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use imas_rs::EquilibriumTimeSlice;
@@ -52,7 +51,9 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z;
     let psi_b: f64 = time_slice.boundary.psi;
 
-    let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(constant_values.limiter).unwrap();
+    // The vacuum vessel, `equilibrium/limiter/unit(0)/outline`
+    let vessel_r: &Array1<f64> = &constant_values.limiter.unit[0].outline.r;
+    let vessel_z: &Array1<f64> = &constant_values.limiter.unit[0].outline.z;
     let vessel_coordinates: Vec<Coord<f64>> = vessel_r.iter().zip(vessel_z.iter()).map(|(&x, &y)| Coord { x, y }).collect();
     let vessel_polygon: Polygon = Polygon::new(
         LineString::from(vessel_coordinates),
