@@ -1,3 +1,6 @@
+# Papers folder
+papers/
+
 # Rust binary targets
 target/
 rust/target/
