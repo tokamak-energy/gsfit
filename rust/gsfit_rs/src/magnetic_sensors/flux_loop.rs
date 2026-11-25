@@ -1,15 +1,16 @@
 //! `magnetics/flux_loop(i1)`: the flux loops
 
 use crate::equilibrium::Equilibrium;
-use crate::greens::Greens;
+use crate::greens::{Conductor, ConductorModel, Greens, Sensor};
 use crate::greens_storage::GreensFluxLoop;
 use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
-use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
+use crate::pf_passive::PfPassive;
 use crate::settings::settings_equilibrium::SettingsEquilibriumFluxLoop;
 use imas_rs::EquilibriumConstraints0d;
 use imas_rs::ids::magnetics::{IdentifierStatic, MagneticsFluxLoop, Rphiz0dStatic, SignalFlt1dValidity};
 use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::pf_passive::PfPassiveLoops;
 use ndarray::{Array1, Array2, Axis, array, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -106,9 +107,9 @@ impl Magnetics {
     }
 }
 
-/// Rust only methods, copying the flux loops into the equilibrium IDS
+/// Rust only methods, copying the flux loops into the Equilibrium IDS
 impl Equilibrium {
-    /// Copy the flux loops' fluxes from the magnetics IDS onto every time-slice of the equilibrium IDS, as
+    /// Copy the flux loops' fluxes from the Magnetics IDS onto every time-slice of the Equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/flux_loop(i1)`. This does part of the work of the Python method
     /// `copy_from_magnetics_ids`; see it for what is stored.
     ///
@@ -116,14 +117,14 @@ impl Equilibrium {
     /// * `magnetics` - the magnetic sensors, holding the flux loops in `magnetics/flux_loop`
     ///
     /// # Errors
-    /// A flux loop in the fit settings, `equilibrium_settings/constraints/flux_loop`, is not in the magnetics IDS, or a flux loop's
+    /// A flux loop in the fit settings, `equilibrium_settings/constraints/flux_loop`, is not in the Magnetics IDS, or a flux loop's
     /// measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_flux_loop(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let flux_loops: &Vec<MagneticsFluxLoop> = &magnetics.magnetics_ids.flux_loop;
         let n_flux_loop: usize = flux_loops.len();
 
         // Only the flux loops in the fit settings, `equilibrium_settings/constraints/flux_loop`, are copied, and each of them has to
-        // be in the magnetics IDS. Checked before anything is copied
+        // be in the Magnetics IDS. Checked before anything is copied
         let settings_sensors: &Vec<SettingsEquilibriumFluxLoop> = &self.settings_equilibrium.constraints.flux_loop;
         let n_settings: usize = settings_sensors.len();
         let mut settings_names: Vec<String> = Vec::with_capacity(n_settings);
@@ -166,7 +167,7 @@ impl Equilibrium {
             flux_measured.slice_mut(s![.., i_flux_loop]).assign(&measured);
         }
 
-        // Rebuilt from the flux loops in the fit settings, in the order of the magnetics IDS, so that calling this twice replaces them
+        // Rebuilt from the flux loops in the fit settings, in the order of the Magnetics IDS, so that calling this twice replaces them
         // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight` and
         // `expected_value`, found by its name
         for i_time in 0..n_time {
@@ -217,12 +218,12 @@ impl Equilibrium {
     /// * `magnetics` - the magnetic sensors, holding the flux loops in `magnetics/flux_loop`
     /// * `pf_active` - the PF coils, in the order of `greens_tables/grid/pf_active`
     /// * `pf_passive` - the passive conductors, holding the filaments of those the equilibrium fits
-    pub fn greens_with_magnetics_flux_loop(&mut self, magnetics: &Magnetics, pf_active: &PfActive, pf_passive: &PfPassive) {
+    pub fn greens_with_magnetics_flux_loop(&mut self, magnetics: &Magnetics, pf_active: &PfActive, pf_passive: &PfPassive) -> Result<(), String> {
         let flux_loops: &Vec<MagneticsFluxLoop> = &magnetics.magnetics_ids.flux_loop;
         let n_flux_loop: usize = flux_loops.len();
 
         // Only the flux loops in the fit settings, `equilibrium_settings/constraints/flux_loop`, which `copy_from_magnetics_ids` copies,
-        // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
+        // have Greens tables. `greens_with_magnetics` checked that each of them is in the Magnetics IDS
         let mut settings_names: Vec<String> = Vec::new();
         for settings_sensor in &self.settings_equilibrium.constraints.flux_loop {
             settings_names.push(settings_sensor.name.clone());
@@ -235,25 +236,66 @@ impl Equilibrium {
         let n_z: usize = self.settings_equilibrium.grid.n_z;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
-        let grid_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
-        let grid_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
+        let conductor_model: ConductorModel = ConductorModel::from_settings(&self.settings_equilibrium.numerics.greens)?;
 
-        // The PF coils
+        // The grid's cells, `d_r` by `d_z`, centred on the grid points, flattened; as obliques, each is described from its corner at the
+        // smallest r and z
+        let d_r: f64 = mesh_r[(0, 1)] - mesh_r[(0, 0)];
+        let d_z: f64 = mesh_z[(1, 0)] - mesh_z[(0, 0)];
+        let n_grid: usize = n_z * n_r;
+        let grid_cell: Conductor = Conductor::from_oblique(
+            &(Array1::from_iter(mesh_r.iter().copied()) - 0.5 * d_r),
+            &(Array1::from_iter(mesh_z.iter().copied()) - 0.5 * d_z),
+            &Array1::from_elem(n_grid, d_r),
+            &Array1::from_elem(n_grid, d_z),
+            &Array1::zeros(n_grid),
+            &Array1::zeros(n_grid),
+        )
+        .map_err(|error: String| format!("the grid's cells: {error}"))?;
+
+        // The PF coils, each coil's filaments, `element(i2)/geometry/rectangle`, described from their centres. As obliques they are
+        // described from their corners at the smallest r and z, with both angles zero
         let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
         let n_coil: usize = pf_active_coils.len();
+        let mut coil_conductors: Vec<Conductor> = Vec::with_capacity(n_coil);
+        for i_coil in 0..n_coil {
+            let coil_width: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.width.to_array();
+            let coil_height: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.height.to_array();
+            let n_coil_filaments: usize = coil_width.len();
+            coil_conductors.push(
+                Conductor::from_oblique(
+                    &(pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array() - 0.5 * &coil_width),
+                    &(pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array() - 0.5 * &coil_height),
+                    &coil_width,
+                    &coil_height,
+                    &Array1::zeros(n_coil_filaments),
+                    &Array1::zeros(n_coil_filaments),
+                )
+                .map_err(|error: String| format!("PF coil `{}`: {error}", pf_active_coils[i_coil].name))?,
+            );
+        }
 
         // The passive conductors the equilibrium fits, with their degrees of freedom, `constraints/pf_passive_current`, in the order of
-        // `greens_tables/grid/pf_passive`, and their filaments, which are the same for every flux loop. `time_slice(0)` because the degrees of
+        // `greens_tables/grid/pf_passive`, and their elements, which are the same for every flux loop. `time_slice(0)` because the degrees of
         // freedom are the same on every time-slice. `greens_with_magnetics` checked that each passive conductor is in `pf_passive`
         let pf_passive_currents: &Vec<EquilibriumConstraints0d> = &self.equilibrium_ids.time_slice[0].constraints.pf_passive_current;
         let n_loop: usize = pf_passive_currents.len();
-        let mut loop_filaments: Vec<PassiveFilaments> = Vec::with_capacity(n_loop);
+        let mut loop_conductors: Vec<Conductor> = Vec::with_capacity(n_loop);
         let mut n_dof_total: usize = 0;
         for i_loop in 0..n_loop {
-            let i_pf_passive_loop: usize = pf_passive
-                .i_loop_named(&pf_passive_currents[i_loop].name)
-                .expect("`greens_with_magnetics` checked that each passive conductor the equilibrium fits is in `pf_passive`");
-            loop_filaments.push(passive_filaments(&pf_passive.pf_passive_ids.r#loop[i_pf_passive_loop].element));
+            let i_pf_passive_loop: usize = pf_passive.i_loop_named(&pf_passive_currents[i_loop].name)?;
+            let pf_passive_loop: &PfPassiveLoops = &pf_passive.pf_passive_ids.r#loop[i_pf_passive_loop];
+            loop_conductors.push(
+                Conductor::from_oblique(
+                    &pf_passive_loop.element(..).geometry.oblique.r.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.z.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.length_alpha.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.length_beta.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.alpha.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.beta.to_array(),
+                )
+                .map_err(|error: String| format!("passive conductor `{}`: {error}", pf_passive_loop.name))?,
+            );
             n_dof_total += pf_passive_currents[i_loop].dof.len();
         }
 
@@ -266,50 +308,29 @@ impl Equilibrium {
                 continue;
             }
             // `Magnetics.add_flux_loop` gives every flux loop exactly one position
-            let flux_loop_r: f64 = flux_loops[i_flux_loop].position[0].r;
-            let flux_loop_z: f64 = flux_loops[i_flux_loop].position[0].z;
+            let flux_loop_name: &str = &flux_loops[i_flux_loop].name;
+            let flux_loop_sensor: Sensor = Sensor::new(&array![flux_loops[i_flux_loop].position[0].r], &array![flux_loops[i_flux_loop].position[0].z])
+                .map_err(|error: String| format!("flux loop `{flux_loop_name}`: {error}"))?;
+            let flux_loop_error = |error: String| -> String { format!("`greens_tables/flux_loop` of `{flux_loop_name}`: {error}") };
 
             // With the plasma
-            let greens_calculator: Greens = Greens::sensor_to_conductor(
-                array![flux_loop_r],
-                array![flux_loop_z],
-                grid_r.clone(),
-                grid_z.clone(),
-                grid_r.clone() * 0.0, // TODO: should I set these to NaN?
-                grid_z.clone() * 0.0,
-            );
-            let g_plasma: Array1<f64> = greens_calculator.psi().sum_axis(Axis(0)); // shape = [n_z * n_r]
-            let g_d_plasma_d_z: Array1<f64> = greens_calculator.d_psi_d_z().sum_axis(Axis(0)); // shape = [n_z * n_r]
+            let greens_calculator: Greens = Greens::sensor_to_conductor(&flux_loop_sensor, &grid_cell, conductor_model.clone())?;
+            let g_plasma: Array1<f64> = greens_calculator.psi().map_err(flux_loop_error)?.sum_axis(Axis(0)); // shape = [n_z * n_r]
+            let g_d_plasma_d_z: Array1<f64> = greens_calculator.d_psi_d_z().map_err(flux_loop_error)?.sum_axis(Axis(0)); // shape = [n_z * n_r]
 
             // With each PF coil, summed over the coil's filaments
             let mut g_pf_active: Array1<f64> = Array1::from_elem(n_coil, f64::NAN); // shape = [n_coil]
             for i_coil in 0..n_coil {
-                let coil_r: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array();
-                let coil_z: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array();
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    array![flux_loop_r],
-                    array![flux_loop_z],
-                    coil_r.clone(),
-                    coil_z.clone(),
-                    coil_r.clone() * 0.0, // TODO: should I set these to NaN?
-                    coil_z.clone() * 0.0,
-                );
-                g_pf_active[i_coil] = greens_calculator.psi().sum();
+                let greens_calculator: Greens = Greens::sensor_to_conductor(&flux_loop_sensor, &coil_conductors[i_coil], conductor_model.clone())?;
+                g_pf_active[i_coil] = greens_calculator.psi().map_err(flux_loop_error)?.sum();
             }
 
             // With each passive degree of freedom: the loop's filaments, weighted by the degree of freedom's current distribution
             let mut g_pf_passive: Array1<f64> = Array1::from_elem(n_dof_total, f64::NAN); // shape = [n_dof_total]
             let mut i_dof_total: usize = 0;
             for i_loop in 0..n_loop {
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    array![flux_loop_r],
-                    array![flux_loop_z],
-                    loop_filaments[i_loop].r.clone(),
-                    loop_filaments[i_loop].z.clone(),
-                    loop_filaments[i_loop].r.clone() * 0.0, // TODO: should I set these to NaN?
-                    loop_filaments[i_loop].z.clone() * 0.0,
-                );
-                let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [1, n_filament]
+                let greens_calculator: Greens = Greens::sensor_to_conductor(&flux_loop_sensor, &loop_conductors[i_loop], conductor_model.clone())?;
+                let g_psi_filaments: Array2<f64> = greens_calculator.psi().map_err(flux_loop_error)?; // shape = [1, n_filament]
 
                 let n_dof: usize = pf_passive_currents[i_loop].dof.len();
                 for i_dof in 0..n_dof {
@@ -334,5 +355,7 @@ impl Equilibrium {
 
         // Assigned rather than appended, so that calling this twice replaces the flux loops' tables instead of repeating them
         self.greens_tables.flux_loop = greens_flux_loops;
+
+        Ok(())
     }
 }

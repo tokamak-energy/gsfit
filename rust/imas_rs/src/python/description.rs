@@ -18,7 +18,11 @@ pub enum NodeKind {
     /// A nested structure; navigate into its children by name.
     Structure(&'static [Node]),
     /// An array of structures; must be indexed before navigating further.
-    ArrayOfStructures(&'static [Node]),
+    ArrayOfStructures {
+        children: &'static [Node],
+        /// Whether its elements have a `name`, so that one can be selected by it, e.g. `pf_current["BVLT"]`
+        elements_are_named: bool,
+    },
     /// A terminal data node.
     Leaf(Leaf),
 }
@@ -48,7 +52,7 @@ impl Node {
     pub(super) fn children(&self, indexed: bool) -> Option<&'static [Node]> {
         match &self.kind {
             NodeKind::Structure(children) => Some(children),
-            NodeKind::ArrayOfStructures(children) => {
+            NodeKind::ArrayOfStructures { children, .. } => {
                 if indexed {
                     return Some(children);
                 }

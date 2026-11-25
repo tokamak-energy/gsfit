@@ -31,12 +31,12 @@ def setup_pulse_schedule(
     **This method is specific to ST40's experimental MDSplus database, with a digital filter.**
 
     Only the gap definitions are filled, `pulse_schedule/position_control/gap(i)/name`, `.../r`, `.../z` and `.../angle`.
-    `Equilibrium.copy_from_pulse_schedule_ids` copies them onto the equilibrium IDS, and `solve_grad_shafranov` calculates the value of each gap.
+    `Equilibrium.copy_from_pulse_schedule_ids` copies them onto the Equilibrium IDS, and `solve_grad_shafranov` calculates the value of each gap.
 
     **The angle is converted.**
     ELMAG stores `GAPS.ANGLE` counter-clockwise from the outward major radius, in the usual plot with `R` to the right and `Z` upwards.
     For example `MCTGAP`, on the upper merging-compression tile, is at 3.8 radian, which points down and inwards, into the plasma.
-    GSFit stores the angle in the equilibrium IDS's convention, clockwise from `grad(R)`, so it is negated here.
+    GSFit stores the angle in the Equilibrium IDS's convention, clockwise from `grad(R)`, so it is negated here.
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """

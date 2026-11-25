@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<global_quantities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/global_quantities.xsd">
+    <ip xsi:nil="true"/>
+</global_quantities>

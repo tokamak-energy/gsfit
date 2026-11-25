@@ -45,7 +45,7 @@
                 <xs:element name="ip" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Plasma current.
+                            Initial plasma current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>ampere</units>
@@ -55,7 +55,7 @@
                 <xs:element name="cur_r" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Radial centre of the current.
+                            Radial centre of the initial current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -65,7 +65,7 @@
                 <xs:element name="cur_z" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Vertical centre of the current.
+                            Vertical centre of the initial current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -75,7 +75,7 @@
                 <xs:element name="minor_radius" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Radial semi-axis of the current.
+                            Minor radius of the initial current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -85,7 +85,7 @@
                 <xs:element name="elongation" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Elongation of the current.
+                            Elongation of the initial current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>dimensionless</units>

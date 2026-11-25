@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    GSFit's own settings, which make the equilibrium IDS.
+    GSFit's own settings, which make the Equilibrium IDS.
 
     This file holds no settings itself: each element links to the file which holds one group of them.
     A path is relative to this file. See ../../../settings_schema/xsd/equilibrium/equilibrium.xsd.
@@ -22,12 +22,13 @@
     <!-- Constraints, named as in the IMAS Data Dictionary -->
     <constraints>
         <b_field_pol_probe href="constraints_b_field_pol_probe.xml"/>
-        <flux_loop href="constraints_flux_loop.xml"/>
-        <rogowski_coil href="constraints_rogowski_coil.xml"/>
         <diamagnetic_flux href="constraints_diamagnetic_flux.xml"/>
+        <flux_loop href="constraints_flux_loop.xml"/>
         <isoflux href="constraints_isoflux.xml"/>
         <isoflux_boundary href="constraints_isoflux_boundary.xml"/>
-        <stationary_point href="constraints_stationary_point.xml"/>
+        <j_parallel href="constraints_j_parallel.xml"/>
         <pressure href="constraints_pressure.xml"/>
+        <rogowski_coil href="constraints_rogowski_coil.xml"/>
+        <stationary_point href="constraints_stationary_point.xml"/>
     </constraints>
 </equilibrium_settings>

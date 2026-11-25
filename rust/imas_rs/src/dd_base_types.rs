@@ -571,7 +571,10 @@ impl<'a, T: ArrayOfStructuresElement + Named + 'a> Selection<'a, T> for &String 
 ///
 /// The data dictionary asks for a name to be unique, so a name which more than one element has is an error, like
 /// one which no element has, rather than a choice of the first.
-fn index_of_name<T: Named>(items: &[T], name: &str) -> Result<usize, String> {
+///
+/// Public so that a Python path indexed by name, e.g. `pf_current["BVLT"]`, is resolved by the same rule; the
+/// generated `<ids>_paths.rs` tables call it.
+pub fn index_of_name<T: Named>(items: &[T], name: &str) -> Result<usize, String> {
     let n_items: usize = items.len();
     let mut i_named: Option<usize> = None;
     for i_item in 0..n_items {

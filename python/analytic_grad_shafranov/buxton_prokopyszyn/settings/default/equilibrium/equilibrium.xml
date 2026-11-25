@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The analytic solution's settings, which make the Equilibrium IDS.
+
+    This file holds the time-slice's time; each other element links to the file which holds one group of settings.
+    A path is relative to this file. See ../../../settings_schema/xsd/equilibrium/equilibrium.xsd.
+-->
+<equilibrium_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/equilibrium.xsd">
+    <time>0.0</time>
+    <vacuum_toroidal_field href="vacuum_toroidal_field.xml"/>
+    <configuration href="configuration.xml"/>
+    <profiles href="profiles.xml"/>
+    <global_quantities href="global_quantities.xml"/>
+    <grid href="grid.xml"/>
+    <numerics href="numerics.xml"/>
+</equilibrium_settings>

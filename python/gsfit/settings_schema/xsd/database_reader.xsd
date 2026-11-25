@@ -83,7 +83,7 @@
                 <xs:element name="method" type="DatabaseReaderMethod">
                     <xs:annotation>
                         <xs:documentation>
-                            The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml.
+                            The database reader to use.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

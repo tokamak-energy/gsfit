@@ -6,4 +6,6 @@ pub(super) mod geometry;
 #[expect(non_snake_case, reason = "double underscores separate IDS node names")]
 pub(super) mod outline__r__z;
 #[expect(non_snake_case, reason = "double underscores separate IDS node names")]
+pub(super) mod phi__phi_poloidal_current;
+#[expect(non_snake_case, reason = "double underscores separate IDS node names")]
 pub(super) mod psi_norm__rho_tor;

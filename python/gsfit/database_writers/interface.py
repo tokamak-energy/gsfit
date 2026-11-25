@@ -7,6 +7,9 @@ if TYPE_CHECKING:
 
 
 class DatabaseWriterProtocol(Protocol):
+    # Whether this writer writes `gsfit_controller.results` to MDSplus, which needs the MDSplus nodes creating first
+    writes_to_mdsplus: bool
+
     def map_results_to_database(self, gsfit_controller: "Gsfit") -> Any:
         """
         Map the results to MDSplus structure.

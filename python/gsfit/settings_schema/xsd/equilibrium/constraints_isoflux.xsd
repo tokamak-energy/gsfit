@@ -20,7 +20,7 @@
     <xs:element name="constraints__isoflux">
         <xs:annotation>
             <xs:documentation>
-                The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Each is fitted with the two points of the isoflux constraint of the same `name` in the magnetics IDS, `magnetics/isoflux`, a custom key, which the database reader adds, each on its own timebase; listing one which the magnetics IDS does not have is an error.
+                The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Each is fitted with the two points of the isoflux constraint of the same `name` in the Magnetics IDS, `magnetics/isoflux`, a custom key, which the database reader adds, each on its own timebase; listing one which the Magnetics IDS does not have is an error.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>

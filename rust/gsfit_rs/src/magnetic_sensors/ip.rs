@@ -81,9 +81,9 @@ impl Magnetics {
     }
 }
 
-/// Rust only methods, copying the plasma current into the equilibrium IDS
+/// Rust only methods, copying the plasma current into the Equilibrium IDS
 impl Equilibrium {
-    /// Copy the plasma current from the magnetics IDS onto every time-slice of the equilibrium IDS, as
+    /// Copy the plasma current from the Magnetics IDS onto every time-slice of the Equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/ip`. This does part of the work of the Python method `copy_from_magnetics_ids`;
     /// see it for what is stored.
     ///
@@ -96,7 +96,7 @@ impl Equilibrium {
         let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = times_to_reconstruct.len();
 
-        // The data dictionary has one plasma current constraint, whereas the magnetics IDS has one plasma current for each method of
+        // The data dictionary has one plasma current constraint, whereas the Magnetics IDS has one plasma current for each method of
         // calculating it, the generally recommended method first. So that one is copied
         let ip_methods: &Vec<MagneticsMethodDistinct> = &magnetics.magnetics_ids.ip;
 

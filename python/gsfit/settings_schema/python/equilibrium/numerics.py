@@ -20,18 +20,24 @@ NonlinearSolverMethod: typing.TypeAlias = typing.Literal[
     "newton_picard",
 ]
 
+# How the Green's functions treat every conductor: the plasma's grid cells, the PF coils' elements and the passive conductors' elements.
+ConductorModel: typing.TypeAlias = typing.Literal[
+    "point",
+    "finite_size",
+]
+
 
 @dataclass(kw_only=True)
 class Numerics:
     """
-    Settings for the Grad-Shafranov solve, and the number of threads it runs on.
+    Settings for the Grad-Shafranov solve, the number of threads it runs on, and the flux from, and the mutual inductance between, conductors of finite size.
 
     :param RAYON_NUM_THREADS: Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.
     :param n_iter_max: Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.
     :param grad_shafranov_deviation_tolerance: The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this. [dimensionless]
     :param n_iter_min: Minimum number of nonlinear solver iterations before the convergence test may pass.
-    :param save_unconverged: Not read by the code at present.
     :param nonlinear_solver: The nonlinear solver for the Grad-Shafranov equation.
+    :param greens: How the Green's functions treat the conductors, and the accuracy of the finite-size calculation. This setting affects every conductor: the plasma's grid cells, the PF coils, and the passive conductors. Both for the flux produced by a conductor at a point, and the self- and mutual inductances.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -41,8 +47,8 @@ class Numerics:
     n_iter_max: int
     grad_shafranov_deviation_tolerance: float  # [dimensionless]
     n_iter_min: int
-    save_unconverged: bool
     nonlinear_solver: NonlinearSolver
+    greens: Greens
 
 
 @dataclass(kw_only=True)
@@ -50,10 +56,10 @@ class NonlinearSolver:
     """
     The nonlinear solver for the Grad-Shafranov equation.
 
-    :param method: The solver to use. Its settings are in the element of the same name, below.
-    :param picard: Settings for Picard iterations.
-    :param newton_krylov: Settings for Jacobian-free Newton-Krylov.
-    :param newton_picard: Settings for Newton-Picard, the recursive projection method (RPM).
+    :param method: The nonlinear solver to use.
+    :param picard: Settings for the Picard nonlinear solver.
+    :param newton_krylov: Settings for Jacobian-free Newton-Krylov nonlinear solver.
+    :param newton_picard: Settings for the Newton-Picard nonlinear solver, the recursive projection method (RPM).
     """
 
     method: NonlinearSolverMethod
@@ -65,7 +71,7 @@ class NonlinearSolver:
 @dataclass(kw_only=True)
 class Picard:
     """
-    Settings for Picard iterations.
+    Settings for the Picard nonlinear solver.
 
     :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.
     :param apply_anderson_mixing: Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.
@@ -82,7 +88,7 @@ class Picard:
 @dataclass(kw_only=True)
 class NewtonKrylov:
     """
-    Settings for Jacobian-free Newton-Krylov.
+    Settings for Jacobian-free Newton-Krylov nonlinear solver.
 
     :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback (the fit of delta_z) switched off, which are Picard iterations, before the hand over to Newton.
     :param picard_handover: Grad-Shafranov deviation below which it hands over from Picard to Newton iterations. [dimensionless]
@@ -103,7 +109,7 @@ class NewtonKrylov:
 @dataclass(kw_only=True)
 class NewtonPicard:
     """
-    Settings for Newton-Picard, the recursive projection method (RPM).
+    Settings for the Newton-Picard nonlinear solver, the recursive projection method (RPM).
 
     :param n_basis_max: Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.
     :param contraction_threshold: A direction is added when the residual outside them shrinks by less than this factor per iteration. [dimensionless]
@@ -115,3 +121,35 @@ class NewtonPicard:
     contraction_threshold: float  # [dimensionless]
     finite_difference_step: float  # [dimensionless]
     verbose: bool
+
+
+@dataclass(kw_only=True)
+class Greens:
+    """
+    How the Green's functions treat the conductors, and the accuracy of the finite-size calculation. This setting affects every conductor: the plasma's grid cells, the PF coils, and the passive conductors. Both for the flux produced by a conductor at a point, and the self- and mutual inductances.
+
+    :param conductor_model: How each conductor is modelled.
+    :param finite_size: The flux from, its derivatives, and the mutual inductance between, conductors of finite size: parallelograms which carry a uniform current density, calculated from analytic series. Read whatever `conductor_model` is.
+    """
+
+    conductor_model: ConductorModel
+    finite_size: FiniteSize
+
+
+@dataclass(kw_only=True)
+class FiniteSize:
+    """
+    The flux from, its derivatives, and the mutual inductance between, conductors of finite size: parallelograms which carry a uniform current density, calculated from analytic series. Read whatever `conductor_model` is.
+
+    :param n_elliptic: Near-field series: the highest power of 1 - k^2 kept in the series of the elliptic integrals. 0 is valid: it keeps only the first term, which is the GSFit paper's first approximation.
+    :param n_thin_ring: Near-field series: the highest order kept in the expansion about the thin ring. 0 is valid: it is the thin ring itself, which is the GSFit paper's second approximation; with n_elliptic = 0 as well, the near-field series is the paper's formula. A low order needs a loose relative_tolerance: with 0 and 1.0e-9, a point inside a conductor, or a self-inductance, cannot be calculated within n_subdivision_max halvings.
+    :param n_multipole: Far-field series: the highest order of the multipole expansion; 0 is a point filament.
+    :param relative_tolerance: The relative accuracy wanted, which sets how small each series' expansion parameter has to be before the series is used. [dimensionless]
+    :param n_subdivision_max: How many times a conductor may be halved, which is exact, until one of the two series converges fast enough. 0 is valid: a conductor is never halved, and it is an error if neither series converges fast enough for it.
+    """
+
+    n_elliptic: int
+    n_thin_ring: int
+    n_multipole: int
+    relative_tolerance: float  # [dimensionless]
+    n_subdivision_max: int

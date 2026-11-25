@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for profiles.xml: the coefficients of p' and ff'.
+
+    See ../BUXTON_PROKOPYSZYN_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteDouble"/>
+    </xs:simpleType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="profiles">
+        <xs:annotation>
+            <xs:documentation>
+                p' and ff' are each the paper's EFIT polynomial with a constant term, c_0 + sum_{i >= 1} c_i (1 - psi_N) psi_N**(i - 1), with psi_N 0 on the magnetic axis and 1 on the LCFS. Their linear parts' value at R_c = (r_geo**2 + a_minor**2)**0.5, mu0 R_c**2 c_bar_p_prime + c_bar_ff_prime (c_bar from c_bar_method in numerics.xml), must be non-zero.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="p_prime_coefficients" type="FiniteDoubleList">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The paper's [c_0, c_1, ...] of p'; c_0, the constant (Solov'ev) term, is p' on the LCFS. At least one; the coefficients of p' and ff' must not all be zero.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <units>pascal / weber</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="ff_prime_coefficients" type="FiniteDoubleList">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The paper's [c_0, c_1, ...] of ff'; at least one, of any length.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <units>tesla ** 2 * metre ** 2 / weber</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

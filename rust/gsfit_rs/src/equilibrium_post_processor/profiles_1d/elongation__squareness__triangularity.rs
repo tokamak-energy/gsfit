@@ -2,7 +2,7 @@
 //! `.../triangularity_lower`, `.../squareness_upper_inner`, `.../squareness_upper_outer`,
 //! `.../squareness_lower_inner` and `.../squareness_lower_outer`
 
-use super::super::boundary::geometry::{boundary_geometry, x_points};
+use super::super::boundary::geometry::{ContourShape, boundary_geometry, x_points};
 use super::super::constant_values::ConstantValues;
 use super::super::flux_surfaces::FluxSurface;
 use super::super::intermediate_values::IntermediateValues;
@@ -13,10 +13,13 @@ use ndarray::Array1;
 /// Calculate the elongation, triangularity and squareness of every flux surface, and store them in
 /// the time-slice.
 ///
-/// Each surface is measured exactly as the plasma boundary is - the same `boundary_geometry` is
-/// called on each contour in turn, with its top and bottom refined onto the surface's own flux - so
-/// the last point of each profile is the corresponding `boundary` scalar, by construction rather
-/// than by coincidence.
+/// Each surface is measured as the plasma boundary is - the same `boundary_geometry` is called on each
+/// contour in turn, with its points refined onto the surface's own flux. The last surface is the boundary
+/// outline, measured exactly as `boundary::geometry` measures it, so the last point of each profile is the
+/// corresponding `boundary` scalar, by construction rather than by coincidence. The surfaces inside it are
+/// polygons through where the rays from the magnetic axis cross them, whose vertices are further apart than
+/// the grid lines, so their whole extent and their crossings with the squareness diagonals are refined
+/// onto the surface too; see `boundary::geometry::contour_extremal_points`.
 ///
 /// The eight quantities are filled together because they are all properties of the contour's shape,
 /// and one pass over each contour produces all of them.
@@ -45,7 +48,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     let psi_b: f64 = time_slice.boundary.psi;
 
-    // What `boundary_geometry` refines the tops and the bottoms of the surfaces with
+    // What `boundary_geometry` refines the points of the surfaces with
     let psi_interpolator: PsiInterpolator = PsiInterpolator::new(time_slice);
     let (xpts_r, xpts_z): (Array1<f64>, Array1<f64>) = x_points(time_slice);
 
@@ -84,17 +87,17 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 
         // A flux surface which could not be found is stored with zero points, which
         // `boundary_geometry` returns NaN for
-        let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o): (f64, f64, f64, f64, f64, f64, f64, f64) =
-            boundary_geometry(fs_r, fs_z, psi_contour, &psi_interpolator, &xpts_r, &xpts_z);
+        let is_extent_refined: bool = i_psi_norm != n_psi_norm - 1;
+        let shape: ContourShape = boundary_geometry(fs_r, fs_z, psi_contour, &psi_interpolator, &xpts_r, &xpts_z, is_extent_refined);
 
-        elongation_profile[i_psi_norm] = elongation;
-        triang_profile[i_psi_norm] = triang;
-        triang_l_profile[i_psi_norm] = triang_l;
-        triang_u_profile[i_psi_norm] = triang_u;
-        square_l_i_profile[i_psi_norm] = square_l_i;
-        square_l_o_profile[i_psi_norm] = square_l_o;
-        square_u_i_profile[i_psi_norm] = square_u_i;
-        square_u_o_profile[i_psi_norm] = square_u_o;
+        elongation_profile[i_psi_norm] = shape.elongation;
+        triang_profile[i_psi_norm] = shape.triangularity;
+        triang_l_profile[i_psi_norm] = shape.triangularity_lower;
+        triang_u_profile[i_psi_norm] = shape.triangularity_upper;
+        square_l_i_profile[i_psi_norm] = shape.squareness_lower_inner;
+        square_l_o_profile[i_psi_norm] = shape.squareness_lower_outer;
+        square_u_i_profile[i_psi_norm] = shape.squareness_upper_inner;
+        square_u_o_profile[i_psi_norm] = shape.squareness_upper_outer;
     }
 
     elongation_profile[0] = elongation_at_magnetic_axis(time_slice, &psi_interpolator);
@@ -212,6 +215,7 @@ fn store(
 #[cfg(test)]
 mod tests {
     use super::super::super::constant_values::constant_values_for_test;
+    use super::super::super::flux_surfaces::{empty_flux_surface, shape_only_flux_surface};
     use super::super::super::intermediate_values::intermediate_values_for_test;
     use super::*;
     use approx::assert_abs_diff_eq;
@@ -225,18 +229,7 @@ mod tests {
         let n_theta: usize = 1000;
         let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI * (1.0 - 1.0 / (n_theta as f64)), n_theta);
 
-        return FluxSurface {
-            r: r_geo + r_minor * theta.mapv(f64::cos),
-            z: z_geo + kappa * r_minor * theta.mapv(f64::sin),
-        };
-    }
-
-    /// An empty flux surface, as `flux_surfaces::calculate` stores one it could not trace
-    fn untraced_flux_surface() -> FluxSurface {
-        return FluxSurface {
-            r: Array1::from_elem(0, f64::NAN),
-            z: Array1::from_elem(0, f64::NAN),
-        };
+        shape_only_flux_surface(r_geo + r_minor * theta.mapv(f64::cos), z_geo + kappa * r_minor * theta.mapv(f64::sin))
     }
 
     /// A time-slice whose `psi` is exactly quadratic about `(0.5, 0.0)`, so that the elongation at
@@ -298,7 +291,7 @@ mod tests {
         time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
 
         // The magnetic axis, one surface which could not be traced, and one ellipse
-        let flux_surfaces: Vec<FluxSurface> = vec![untraced_flux_surface(), untraced_flux_surface(), elliptical_flux_surface(0.5, 0.02, 0.3, kappa)];
+        let flux_surfaces: Vec<FluxSurface> = vec![empty_flux_surface(), empty_flux_surface(), elliptical_flux_surface(0.5, 0.02, 0.3, kappa)];
 
         let mut intermediate_values: IntermediateValues = intermediate_values_for_test();
         intermediate_values.flux_surfaces = flux_surfaces;
@@ -335,7 +328,7 @@ mod tests {
 
             // Deliberately nothing like `kappa_axis`, to show the axis value does not come from here
             let flux_surfaces: Vec<FluxSurface> = vec![
-                untraced_flux_surface(),
+                empty_flux_surface(),
                 elliptical_flux_surface(0.5, 0.0, 0.1, 0.4),
                 elliptical_flux_surface(0.5, 0.0, 0.2, 0.6),
                 elliptical_flux_surface(0.5, 0.0, 0.3, 0.9),
@@ -366,15 +359,15 @@ mod tests {
 
         let n_theta: usize = 1000;
         let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI * (1.0 - 1.0 / (n_theta as f64)), n_theta);
-        let flux_surface: FluxSurface = FluxSurface {
-            r: r_geo + r_minor * theta.mapv(|theta_here| (theta_here + delta.asin() * theta_here.sin()).cos()),
-            z: kappa * r_minor * theta.mapv(f64::sin),
-        };
+        let flux_surface: FluxSurface = shape_only_flux_surface(
+            r_geo + r_minor * theta.mapv(|theta_here| (theta_here + delta.asin() * theta_here.sin()).cos()),
+            kappa * r_minor * theta.mapv(f64::sin),
+        );
 
         let mut time_slice: EquilibriumTimeSlice = time_slice_with_quadratic_psi(1.6);
         time_slice.profiles_1d.psi_norm = array![0.0, 1.0];
 
-        let flux_surfaces: Vec<FluxSurface> = vec![untraced_flux_surface(), flux_surface];
+        let flux_surfaces: Vec<FluxSurface> = vec![empty_flux_surface(), flux_surface];
 
         let mut intermediate_values: IntermediateValues = intermediate_values_for_test();
         intermediate_values.flux_surfaces = flux_surfaces;
@@ -386,56 +379,53 @@ mod tests {
         assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_upper[1], delta, epsilon = 1e-6);
     }
 
-    /// Traced surfaces have their tops and bottoms refined onto their own flux, and the last surface
-    /// is refined exactly as `boundary::geometry` refines the boundary
+    /// The surfaces inside the boundary, found along rays, have their extent, their tops and bottoms and their squareness diagonals refined
+    /// onto their own flux, and the last surface, the boundary outline, is measured exactly as `boundary::geometry` measures the boundary
     #[test]
-    fn traced_surfaces_are_refined_and_the_last_one_is_the_boundary() {
+    fn ray_traced_surfaces_are_refined_and_the_last_one_is_the_boundary() {
         use super::super::super::boundary::geometry::{time_slice_with_elliptical_psi, traced_contour};
+        use super::super::super::flux_surfaces::calculate_flux_surfaces;
 
         // Elliptical surfaces centred half a cell off a vertical grid line, which is the worst case
-        // for measuring the triangularity from the vertices; see `boundary::geometry`
+        // for measuring the triangularity of the boundary outline from its vertices; see `boundary::geometry`
         let d_grid: f64 = 0.0125;
         let r_minor: f64 = 0.25;
         let kappa: f64 = 1.6;
         let mut time_slice: EquilibriumTimeSlice =
             time_slice_with_elliptical_psi(0.5 + d_grid / 2.0, 0.0, 1.0 / r_minor.powi(2), 0.0, 1.0 / (kappa * r_minor).powi(2));
-        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.1, 0.5, 1.0];
 
-        // `psi_magnetic_axis = 1` and `boundary/psi = 0`, so `psi_norm = 0.5` is the `psi = 0.5` surface
+        // `psi_magnetic_axis = 1` and `boundary/psi = 0`
         let (boundary_r, boundary_z): (Array1<f64>, Array1<f64>) = traced_contour(&time_slice, 0.0);
-        let (surface_r, surface_z): (Array1<f64>, Array1<f64>) = traced_contour(&time_slice, 0.5);
-        time_slice.boundary.outline.r = boundary_r.clone();
-        time_slice.boundary.outline.z = boundary_z.clone();
-        let flux_surfaces: Vec<FluxSurface> = vec![
-            untraced_flux_surface(),
-            FluxSurface { r: surface_r, z: surface_z },
-            FluxSurface { r: boundary_r, z: boundary_z },
-        ];
+        time_slice.boundary.outline.r = boundary_r;
+        time_slice.boundary.outline.z = boundary_z;
 
         let mut intermediate_values: IntermediateValues = intermediate_values_for_test();
-        intermediate_values.flux_surfaces = flux_surfaces;
+        intermediate_values.flux_surfaces = calculate_flux_surfaces(&time_slice);
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
         super::super::super::boundary::geometry::calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
         // Every surface is an ellipse, so once refined every triangularity is zero. From the
-        // vertices it would be `d_grid / (2 * a)`: 0.035 for the inner surface and 0.025 for the boundary
+        // vertices of the boundary outline it would be `d_grid / (2 * a)`, 0.025
         let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
+        let profiles_1d = &time_slice.profiles_1d;
         for i_psi_norm in 1..n_psi_norm {
-            assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_upper[i_psi_norm], 0.0, epsilon = 1e-9);
-            assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_lower[i_psi_norm], 0.0, epsilon = 1e-9);
+            assert_abs_diff_eq!(profiles_1d.triangularity_upper[i_psi_norm], 0.0, epsilon = 1e-9);
+            assert_abs_diff_eq!(profiles_1d.triangularity_lower[i_psi_norm], 0.0, epsilon = 1e-9);
+        }
+        // and the surfaces inside the boundary have the ellipse's elongation and zero squareness, from their refined extent
+        for i_psi_norm in 1..n_psi_norm - 1 {
+            assert_abs_diff_eq!(profiles_1d.elongation[i_psi_norm], kappa, epsilon = 1e-9);
+            assert_abs_diff_eq!(profiles_1d.squareness_upper_outer[i_psi_norm], 0.0, epsilon = 1e-9);
+            assert_abs_diff_eq!(profiles_1d.squareness_lower_inner[i_psi_norm], 0.0, epsilon = 1e-9);
         }
 
         // The last point of each profile is the boundary scalar, to the last bit
         let i_boundary: usize = n_psi_norm - 1;
-        assert_eq!(time_slice.profiles_1d.triangularity_upper[i_boundary], time_slice.boundary.triangularity_upper);
-        assert_eq!(time_slice.profiles_1d.triangularity_lower[i_boundary], time_slice.boundary.triangularity_lower);
-        assert_eq!(
-            time_slice.profiles_1d.squareness_upper_outer[i_boundary],
-            time_slice.boundary.squareness_upper_outer
-        );
-        assert_eq!(
-            time_slice.profiles_1d.squareness_lower_inner[i_boundary],
-            time_slice.boundary.squareness_lower_inner
-        );
+        assert_eq!(profiles_1d.elongation[i_boundary], time_slice.boundary.elongation);
+        assert_eq!(profiles_1d.triangularity_upper[i_boundary], time_slice.boundary.triangularity_upper);
+        assert_eq!(profiles_1d.triangularity_lower[i_boundary], time_slice.boundary.triangularity_lower);
+        assert_eq!(profiles_1d.squareness_upper_outer[i_boundary], time_slice.boundary.squareness_upper_outer);
+        assert_eq!(profiles_1d.squareness_lower_inner[i_boundary], time_slice.boundary.squareness_lower_inner);
     }
 }

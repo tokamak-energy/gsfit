@@ -10,8 +10,8 @@
 
 #![allow(clippy::all)]
 
-use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels};
-use crate::dd_base_types::{FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D};
+use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels, no_names};
+use crate::dd_base_types::{FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D, index_of_name};
 use crate::ids::pf_passive::PfPassive;
 use std::any::Any;
 
@@ -45,6 +45,35 @@ fn lengths_loop_element(pf_passive: &PfPassive, level: usize, at: &[usize]) -> O
 }
 
 // ============================================================================
+// Array-of-structures names
+// ============================================================================
+
+/// Position of the element named `name` at each array-of-structures level along `code_library` whose elements have a `name`.
+fn position_of_name_code_library(pf_passive: &PfPassive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_passive.code.library, name),
+        _ => return no_names(pf_passive, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `loop` whose elements have a `name`.
+fn position_of_name_loop(pf_passive: &PfPassive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_passive.r#loop, name),
+        _ => return no_names(pf_passive, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `loop_element` whose elements have a `name`.
+fn position_of_name_loop_element(pf_passive: &PfPassive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_passive.r#loop, name),
+        1 => return index_of_name(&pf_passive.r#loop[at[0]].element, name),
+        _ => return no_names(pf_passive, level, at, name),
+    }
+}
+
+// ============================================================================
 // Nodes
 // ============================================================================
 
@@ -57,9 +86,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.outline.r.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D { pf_passive.r#loop[at[0]].element[at[1]].geometry.outline.r.clone() },
+                )
             },
         }),
     },
@@ -71,9 +105,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.outline.z.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D { pf_passive.r#loop[at[0]].element[at[1]].geometry.outline.z.clone() },
+                )
             },
         }),
     },
@@ -88,9 +127,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.r.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.r.clone() },
+                )
             },
         }),
     },
@@ -102,9 +146,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.z.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.z.clone() },
+                )
             },
         }),
     },
@@ -116,9 +165,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.width.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.width.clone() },
+                )
             },
         }),
     },
@@ -130,9 +184,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.height.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.rectangle.height.clone() },
+                )
             },
         }),
     },
@@ -147,9 +206,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.r.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.r.clone() },
+                )
             },
         }),
     },
@@ -161,9 +225,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.z.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.z.clone() },
+                )
             },
         }),
     },
@@ -175,9 +244,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.length_alpha.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.length_alpha.clone() },
+                )
             },
         }),
     },
@@ -189,9 +263,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.length_beta.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.length_beta.clone() },
+                )
             },
         }),
     },
@@ -203,9 +282,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.alpha.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.alpha.clone() },
+                )
             },
         }),
     },
@@ -217,9 +301,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.beta.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.oblique.beta.clone() },
+                )
             },
         }),
     },
@@ -234,9 +323,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.arcs_of_circle.r.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D { pf_passive.r#loop[at[0]].element[at[1]].geometry.arcs_of_circle.r.clone() },
+                )
             },
         }),
     },
@@ -248,9 +342,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.arcs_of_circle.z.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D { pf_passive.r#loop[at[0]].element[at[1]].geometry.arcs_of_circle.z.clone() },
+                )
             },
         }),
     },
@@ -262,9 +361,16 @@ static NODES_LOOP_ELEMENT_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.arcs_of_circle.curvature_radii.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
+                        pf_passive.r#loop[at[0]].element[at[1]].geometry.arcs_of_circle.curvature_radii.clone()
+                    },
+                )
             },
         }),
     },
@@ -279,9 +385,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.r.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.r.clone() },
+                )
             },
         }),
     },
@@ -293,9 +404,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.z.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.z.clone() },
+                )
             },
         }),
     },
@@ -307,9 +423,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.radius_inner.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.radius_inner.clone() },
+                )
             },
         }),
     },
@@ -321,9 +442,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.radius_outer.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.annulus.radius_outer.clone() },
+                )
             },
         }),
     },
@@ -338,9 +464,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_THICK_LINE_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.first_point.r.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.first_point.r.clone() },
+                )
             },
         }),
     },
@@ -352,9 +483,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_THICK_LINE_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.first_point.z.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.first_point.z.clone() },
+                )
             },
         }),
     },
@@ -369,9 +505,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_THICK_LINE_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.second_point.r.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.second_point.r.clone() },
+                )
             },
         }),
     },
@@ -383,9 +524,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_THICK_LINE_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.second_point.z.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.second_point.z.clone() },
+                )
             },
         }),
     },
@@ -412,9 +558,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY_THICK_LINE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.thickness.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.thick_line.thickness.clone() },
+                )
             },
         }),
     },
@@ -429,9 +580,14 @@ static NODES_LOOP_ELEMENT_GEOMETRY: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> INT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].geometry.geometry_type.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> INT_0D { pf_passive.r#loop[at[0]].element[at[1]].geometry.geometry_type.clone() },
+                )
             },
         }),
     },
@@ -482,9 +638,14 @@ static NODES_LOOP_ELEMENT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].name.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.r#loop[at[0]].element[at[1]].name.clone() },
+                )
             },
         }),
     },
@@ -496,9 +657,14 @@ static NODES_LOOP_ELEMENT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].description.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.r#loop[at[0]].element[at[1]].description.clone() },
+                )
             },
         }),
     },
@@ -510,9 +676,14 @@ static NODES_LOOP_ELEMENT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].turns_with_sign.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].turns_with_sign.clone() },
+                )
             },
         }),
     },
@@ -524,9 +695,14 @@ static NODES_LOOP_ELEMENT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].element[at[1]].area.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    2,
+                    lengths_loop_element,
+                    position_of_name_loop_element,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].element[at[1]].area.clone() },
+                )
             },
         }),
     },
@@ -547,9 +723,14 @@ static NODES_LOOP: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.r#loop[at[0]].name.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_loop,
+                    position_of_name_loop,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.r#loop[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -561,9 +742,14 @@ static NODES_LOOP: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.r#loop[at[0]].description.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_loop,
+                    position_of_name_loop,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.r#loop[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -575,9 +761,14 @@ static NODES_LOOP: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].resistance.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_loop,
+                    position_of_name_loop,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].resistance.clone() },
+                )
             },
         }),
     },
@@ -589,9 +780,14 @@ static NODES_LOOP: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
-                    pf_passive.r#loop[at[0]].resistivity.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_loop,
+                    position_of_name_loop,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D { pf_passive.r#loop[at[0]].resistivity.clone() },
+                )
             },
         }),
     },
@@ -599,7 +795,10 @@ static NODES_LOOP: &[Node] = &[
         name: "element",
         documentation: "Each loop is comprised of a number of cross-section elements described  individually",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_LOOP_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_LOOP_ELEMENT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "current",
@@ -609,9 +808,14 @@ static NODES_LOOP: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
-                    pf_passive.r#loop[at[0]].current.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_loop,
+                    position_of_name_loop,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D { pf_passive.r#loop[at[0]].current.clone() },
+                )
             },
         }),
     },
@@ -623,9 +827,14 @@ static NODES_LOOP: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
-                    pf_passive.r#loop[at[0]].time.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_loop,
+                    position_of_name_loop,
+                    |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D { pf_passive.r#loop[at[0]].time.clone() },
+                )
             },
         }),
     },
@@ -640,9 +849,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_code_library, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.code.library[at[0]].name.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.code.library[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -654,9 +868,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_code_library, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.code.library[at[0]].description.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.code.library[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -668,9 +887,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_code_library, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.code.library[at[0]].commit.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.code.library[at[0]].commit.clone() },
+                )
             },
         }),
     },
@@ -682,9 +906,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_code_library, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.code.library[at[0]].version.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.code.library[at[0]].version.clone() },
+                )
             },
         }),
     },
@@ -696,9 +925,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_code_library, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.code.library[at[0]].repository.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.code.library[at[0]].repository.clone() },
+                )
             },
         }),
     },
@@ -710,9 +944,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 1, lengths_code_library, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
-                    pf_passive.code.library[at[0]].parameters.clone()
-                })
+                gather(
+                    pf_passive,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_passive: &PfPassive, at: &[usize]| -> STR_0D { pf_passive.code.library[at[0]].parameters.clone() },
+                )
             },
         }),
     },
@@ -727,7 +966,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 0, no_levels, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
+                gather(pf_passive, indices, 0, no_levels, no_names, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
                     pf_passive.code.name.clone()
                 })
             },
@@ -741,7 +980,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 0, no_levels, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
+                gather(pf_passive, indices, 0, no_levels, no_names, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
                     pf_passive.code.description.clone()
                 })
             },
@@ -755,7 +994,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 0, no_levels, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
+                gather(pf_passive, indices, 0, no_levels, no_names, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
                     pf_passive.code.commit.clone()
                 })
             },
@@ -769,7 +1008,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 0, no_levels, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
+                gather(pf_passive, indices, 0, no_levels, no_names, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
                     pf_passive.code.version.clone()
                 })
             },
@@ -783,7 +1022,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 0, no_levels, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
+                gather(pf_passive, indices, 0, no_levels, no_names, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
                     pf_passive.code.repository.clone()
                 })
             },
@@ -797,7 +1036,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 0, no_levels, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
+                gather(pf_passive, indices, 0, no_levels, no_names, |pf_passive: &PfPassive, _at: &[usize]| -> STR_0D {
                     pf_passive.code.parameters.clone()
                 })
             },
@@ -811,7 +1050,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
-                gather(pf_passive, indices, 0, no_levels, |pf_passive: &PfPassive, _at: &[usize]| -> INT_1D {
+                gather(pf_passive, indices, 0, no_levels, no_names, |pf_passive: &PfPassive, _at: &[usize]| -> INT_1D {
                     pf_passive.code.output_flag.clone()
                 })
             },
@@ -821,7 +1060,10 @@ static NODES_CODE: &[Node] = &[
         name: "library",
         documentation: "List of external libraries used by the code that has produced this IDS",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_CODE_LIBRARY,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -830,7 +1072,10 @@ static NODES_ROOT: &[Node] = &[
         name: "loop",
         documentation: "Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_LOOP),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_LOOP,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "code",

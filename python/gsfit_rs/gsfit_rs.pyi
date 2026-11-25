@@ -22,7 +22,7 @@ def solve_grad_shafranov(
     equilibrium: Equilibrium,
 ) -> None:
     """
-    :param equilibrium: Equilibrium object, note this is mutated and contains the solution. Its equilibrium IDS supplies the limiter,
+    :param equilibrium: Equilibrium object, note this is mutated and contains the solution. Its Equilibrium IDS supplies the limiter,
         the vacuum toroidal field, the PF coil currents, the passive loops' regularisations and any gaps, so
         `Equilibrium.copy_from_wall_ids`, `Equilibrium.copy_from_tf_ids`, `Equilibrium.copy_from_pf_active_ids` and `Equilibrium.copy_from_pf_passive_ids`
         have to have been called first. `Equilibrium.copy_from_pulse_schedule_ids` is optional: without it the equilibrium has no gaps.
@@ -36,9 +36,13 @@ def solve_grad_shafranov(
         their `weight` and `expected_value`; their `reconstructed`, `position/psi` and `chi_squared` are written by the post-processor.
         The constraints at points which can move, `time_slice(itime)/constraints/isoflux(i1)`, `.../isoflux_boundary(i1)` and
         `.../stationary_point(i1)`, custom keys, are fitted where their fit settings include them and their points are known, with their
-        points, which `Equilibrium.copy_from_magnetics_ids` copied in from the magnetics IDS, and their Greens tables, one for each
+        points, which `Equilibrium.copy_from_magnetics_ids` copied in from the Magnetics IDS, and their Greens tables, one for each
         time-slice, which `Equilibrium.greens_with_magnetics` calculated; their `reconstructed` and `chi_squared` are written by the
         post-processor
+    :raises ValueError: Before anything is solved, when an input the solver needs is missing from the Equilibrium IDS or does not match the
+        Greens tables: the vacuum toroidal field, the limiter, the PF coil currents, the passive loops, the pressure constraints when the fit
+        settings include pressure, a magnetic sensor's measurement or Greens tables, the diamagnetic flux when its fit settings include it, the
+        points or Greens tables of an isoflux, isoflux boundary or stationary point constraint, or the grid, `profiles_2d(0)/grid`
 
     The times to reconstruct are read from `equilibrium`, which was built with one equilibrium
     time-slice per time.
@@ -48,6 +52,7 @@ def solve_grad_shafranov(
 def solve_circuit_equations(
     pf_active: PfActive,
     pf_passive: PfPassive,
+    equilibrium: Equilibrium,
     times_to_solve: npt.NDArray[np.float64],
     adaptive_time_stepping: bool,
 ) -> tuple[PfActive, PfPassive]:
@@ -59,6 +64,7 @@ def solve_circuit_equations(
 
     :param pf_active: The PF coils, each with its current prescribed, or its voltage when it has one (`coil(i1)/voltage`)
     :param pf_passive: The passive conductors, whose filaments, `loop(i1)/element(i2)`, carry eddy currents
+    :param equilibrium: The equilibrium, for its numerical settings, `equilibrium_settings/numerics`
     :param times_to_solve: Times to solve the circuit equations at [second]
     :param adaptive_time_stepping: The calculation always uses adaptive time stepping, this flag interpolates results onto `times_to_solve`
     :return: A copy of `pf_active`, whose `coil(i1)/current` is the simulated current, on the simulated timebase; and a copy of
@@ -359,7 +365,7 @@ class Equilibrium:
 
     The equilibrium is constructed with the settings it is built from. Rust validates them against the XML schema in
     `parameters_input`, and only their XML is kept: it is written to `equilibrium/code/parameters`. Rust also reads them into structs
-    generated from the XML schema `equilibrium.xsd`, kept with the class rather than in the IDS, as the equilibrium IDS can also be made by
+    generated from the XML schema `equilibrium.xsd`, kept with the class rather than in the IDS, as the Equilibrium IDS can also be made by
     another code.
     """
 
@@ -377,13 +383,13 @@ class Equilibrium:
         ...
     def copy_from_wall_ids(self, wall: Wall) -> None:
         """
-        Copy the limiter from the wall IDS into the equilibrium IDS.
+        Copy the limiter from the wall IDS into the Equilibrium IDS.
 
         Copies `wall/description_2d(0)/limiter/unit(i)` into `equilibrium/limiter/unit(i)`, in the same order, so `unit(0)` is
-        still the vacuum vessel contour. The solver and the post-processor read the limiter from the equilibrium IDS, so this has
+        still the vacuum vessel contour. The solver and the post-processor read the limiter from the Equilibrium IDS, so this has
         to be called before `solve_grad_shafranov`.
 
-        Any limiter already in the equilibrium IDS is replaced, so calling this twice does not repeat the units.
+        Any limiter already in the Equilibrium IDS is replaced, so calling this twice does not repeat the units.
 
         :param wall: The wall, holding the limiter
         :raises ValueError: When the wall has no limiter units
@@ -391,14 +397,14 @@ class Equilibrium:
         ...
     def copy_from_tf_ids(self, tf: Tf) -> None:
         """
-        Copy the vacuum toroidal field from the tf IDS into the equilibrium IDS.
+        Copy the vacuum toroidal field from the tf IDS into the Equilibrium IDS.
 
         Fills `equilibrium/vacuum_toroidal_field/r0` from `tf/r0`, and `equilibrium/vacuum_toroidal_field/b0` from
         `tf/b_field_phi_vacuum_r`. That is on the experimental timebase, so it is interpolated onto the reconstruction times, the
         times of the time-slices `Equilibrium` was built with, and divided by `r0`. The solver and the post-processor read the vacuum
-        toroidal field from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`.
+        toroidal field from the Equilibrium IDS, so this has to be called before `solve_grad_shafranov`.
 
-        Any vacuum toroidal field already in the equilibrium IDS is replaced.
+        Any vacuum toroidal field already in the Equilibrium IDS is replaced.
 
         :param tf: The toroidal field
         :raises ValueError: When `tf/b_field_phi_vacuum_r` is unset, or when it cannot be interpolated onto the reconstruction
@@ -407,14 +413,14 @@ class Equilibrium:
         ...
     def copy_from_pf_active_ids(self, pf_active: PfActive) -> None:
         """
-        Copy the PF coil currents from the pf_active IDS onto every time-slice of the equilibrium IDS.
+        Copy the PF coil currents from the pf_active IDS onto every time-slice of the Equilibrium IDS.
 
         Fills, for every coil `pf_active/coil(i1)`, in the same order, on every time-slice:
         `equilibrium/time_slice(itime)/constraints/pf_current(i1)/name`, a custom key, from `pf_active/coil(i1)/name`;
         `.../measured`, `pf_active/coil(i1)/current` interpolated onto the time-slice's time [ampere];
         `.../source`, the path `pf_active/coil(i1)/current`; and `.../time_measurement`, the time-slice's own time [second].
 
-        The solver reads the PF coil currents from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`.
+        The solver reads the PF coil currents from the Equilibrium IDS, so this has to be called before `solve_grad_shafranov`.
         The solver multiplies them by the Greens tables, `greens_tables/grid/pf_active(i1)`, so the coils have to be in the same order as
         those, which the solver checks by name.
 
@@ -428,7 +434,7 @@ class Equilibrium:
     def copy_from_pf_passive_ids(self, pf_passive: PfPassive) -> None:
         """
         Make the degrees of freedom the passive conductors' currents are fitted with, from the fit settings and the passive conductors'
-        filaments, and copy them, with their regularisations, onto every time-slice of the equilibrium IDS.
+        filaments, and copy them, with their regularisations, onto every time-slice of the Equilibrium IDS.
 
         The fit settings, `equilibrium/pf_passive_dof.xml`, say which passive conductors to fit, each found in `pf_passive/loop` by its
         `name`, and how. Fills, for each of them, in the order of the fit settings, on every time-slice, these custom keys:
@@ -443,7 +449,7 @@ class Equilibrium:
         fits it, as an amplitude for each of the loop's degrees of freedom, and the regularisations are what constrain the fit. So `measured`,
         `source` and `time_measurement` are left unset.
 
-        `greens_with_pf_passive` reads the degrees of freedom, and the solver the regularisations, from the equilibrium IDS, so this has to be
+        `greens_with_pf_passive` reads the degrees of freedom, and the solver the regularisations, from the Equilibrium IDS, so this has to be
         called before both. The solver fits the amplitudes with the Greens tables, `greens_tables/grid/pf_passive(i1)/dof(i2)`, so the loops and
         their degrees of freedom have to be in the same order as those, which the solver checks by name.
 
@@ -459,7 +465,7 @@ class Equilibrium:
         ...
     def copy_from_pulse_schedule_ids(self, pulse_schedule: PulseSchedule) -> None:
         """
-        Copy the gap definitions from the pulse_schedule IDS onto every time-slice of the equilibrium IDS.
+        Copy the gap definitions from the pulse_schedule IDS onto every time-slice of the Equilibrium IDS.
 
         Fills `equilibrium/time_slice(itime)/boundary/gap(i)/name`, `.../description`, `.../r`, `.../z` and `.../angle` from
         `pulse_schedule/position_control/gap(i)`, in the same order, on every time-slice. `.../value` is left unset, for the
@@ -473,11 +479,11 @@ class Equilibrium:
         ...
     def copy_from_magnetics_ids(self, magnetics: Magnetics) -> None:
         """
-        Copy the magnetic sensors' measurements from the magnetics IDS onto every time-slice of the equilibrium IDS.
+        Copy the magnetic sensors' measurements from the Magnetics IDS onto every time-slice of the Equilibrium IDS.
 
         Only the sensors in the fit settings, the equilibrium settings' `constraints`, are copied, and each of them has to be in the
-        magnetics IDS. Each measurement is on the experimental timebase, so it is interpolated onto the time-slice's time. On every
-        time-slice, for every sensor in the fit settings, in the order of the magnetics IDS: `magnetics/b_field_pol_probe(i1)/field` fills
+        Magnetics IDS. Each measurement is on the experimental timebase, so it is interpolated onto the time-slice's time. On every
+        time-slice, for every sensor in the fit settings, in the order of the Magnetics IDS: `magnetics/b_field_pol_probe(i1)/field` fills
         `equilibrium/time_slice(itime)/constraints/b_field_pol_probe(i1)` [tesla]; `magnetics/flux_loop(i1)/flux` fills
         `.../constraints/flux_loop(i1)` [weber]; `magnetics/rogowski_coil(i1)/current` fills `.../constraints/rogowski_coil(i1)`, a custom
         key, as the data dictionary has no constraint for Rogowski coils [ampere]; `magnetics/diamagnetic_flux(0)/data` fills
@@ -493,22 +499,23 @@ class Equilibrium:
         Each constraint gets `name`, a custom key: the sensor's `name`, or the `method_name` for `ip`, while `diamagnetic_flux` has none, as
         in the data dictionary, because there is only one; `measured`, the measurement interpolated onto the time-slice's time; `source`,
         the path the measurement was read from; and `time_measurement`, the time-slice's own time [second]. GSFit accepts a single
-        diamagnetic flux, so the signals of several diamagnetic loops are averaged into one before it is added to the magnetics IDS; it is
-        left unset without fit settings for it. `ip`, which has no fit settings, takes the magnetics IDS's first, generally recommended,
-        method, and is left unset when it has none. Each sensor keeps the `weight` and `expected_value`, a custom key, `Equilibrium` was made
-        with, from its fit settings, found by its name, or for the diamagnetic flux, from its own.
+        diamagnetic flux, so the signals of several diamagnetic loops are averaged into one before it is added to the Magnetics IDS; it is
+        left unset without fit settings for it, and is NaN when its fit settings do not include it and the Magnetics IDS has none. `ip`,
+        which has no fit settings, takes the Magnetics IDS's first, generally recommended, method, and is left unset when it has none. Each
+        sensor keeps the `weight` and `expected_value`, a custom key, `Equilibrium` was made with, from its fit settings, found by its name,
+        or for the diamagnetic flux, from its own.
 
         Any magnetic constraints already on a time-slice are replaced, so calling this twice does not repeat them.
 
         :param magnetics: The magnetic sensors, holding their measurements
-        :raises ValueError: When a sensor in the fit settings is not in the magnetics IDS, when the magnetics IDS holds more than one
+        :raises ValueError: When a sensor in the fit settings is not in the Magnetics IDS, when the Magnetics IDS holds more than one
             diamagnetic flux, or when a measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does
             not cover them. The diamagnetic flux is the exception: a time-slice it cannot be interpolated onto gets a `weight` of 0 instead
         """
         ...
     def copy_from_core_profiles_ids(self, core_profiles: CoreProfiles) -> None:
         """
-        Make the pressure constraints from the core_profiles IDS, on every time-slice of the equilibrium IDS.
+        Make the pressure constraints from the core_profiles IDS, on every time-slice of the Equilibrium IDS.
 
         When the fit settings, the equilibrium settings' `constraints/pressure`, include pressure, there is one constraint for each point
         of `core_profiles/profiles_2d(itime)`, which must be on the same irregular (R, Z) grid, `irregular_rz_na`, at every time.
@@ -532,9 +539,10 @@ class Equilibrium:
     def greens_with_pf_active(self, pf_active: PfActive) -> None:
         """
         Calculate the Greens tables between the grid and each PF coil, `greens_tables/grid/pf_active(i1)`, one for each coil in
-        `pf_active/coil(i1)`, in the same order.
+        `pf_active/coil(i1)`, in the same order, with the settings' `numerics/greens/conductor_model`.
 
         :param pf_active: The PF coils, holding their filaments
+        :raises ValueError: When a coil's filaments cannot be described as conductors, or the Greens tables cannot be calculated
         """
         ...
     def greens_with_pf_passive(self, pf_passive: PfPassive) -> None:
@@ -554,7 +562,7 @@ class Equilibrium:
         Calculate the magnetic sensors' Greens tables: what each sensor measures, per ampere in each current source.
 
         Fills, for every sensor in the fit settings, the equilibrium settings' `constraints`, which are the sensors `copy_from_magnetics_ids`
-        copies, with the same name and in the order of the magnetics IDS, `greens_tables/b_field_pol_probe(i1)`, `greens_tables/flux_loop(i1)` and
+        copies, with the same name and in the order of the Magnetics IDS, `greens_tables/b_field_pol_probe(i1)`, `greens_tables/flux_loop(i1)` and
         `greens_tables/rogowski_coil(i1)`, each with the sensor's tables with: `plasma`, the
         plasma current in each grid cell, shape = (n_z, n_r); `d_plasma_d_z`, the same differentiated with respect to the sensor's
         height, shape = (n_z, n_r); `pf_active`, each PF coil, in the order of `greens_tables/grid/pf_active`; and `pf_passive`, each passive
@@ -572,14 +580,14 @@ class Equilibrium:
         :param magnetics: The magnetic sensors, holding where they are
         :param pf_active: The PF coils, holding their filaments
         :param pf_passive: The passive conductors, holding their filaments
-        :raises ValueError: When a sensor in the fit settings is not in the magnetics IDS, when the PF coils, or the equilibrium's passive
+        :raises ValueError: When a sensor in the fit settings is not in the Magnetics IDS, when the PF coils, or the equilibrium's passive
             degrees of freedom, are not the ones `greens_tables/grid/pf_active` and `greens_tables/grid/pf_passive` were calculated with, in the same order,
             when a passive conductor the equilibrium fits is not in `pf_passive`, or when the points of a constraint at points which can move
             cannot be interpolated onto the time-slices' times
         """
         ...
     def get(self, path: Path[_T]) -> _T:
-        """Read the data at `path`, from `gsfit_rs.imas.equilibrium_paths`, straight out of the equilibrium IDS.
+        """Read the data at `path`, from `gsfit_rs.imas.equilibrium_paths`, straight out of the Equilibrium IDS.
 
         This is how the data is read, e.g. `equilibrium.get(equilibrium_paths.time_slice[0].global_quantities.ip)`: a path holds
         no data, so the IDS is only borrowed for the read, never copied. The shape of the result follows the shape of the
@@ -588,7 +596,7 @@ class Equilibrium:
         ...
     @property
     def equilibrium_ids(self) -> EquilibriumIds:
-        """A copy of the whole equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`.
+        """A copy of the whole Equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`.
 
         Read the data with `get` instead: this copies the IDS on every access. It is for when a
         detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
@@ -1032,6 +1040,12 @@ class PlasmaCurrentComponent:
         """The toroidal current inside each flux surface, the integral of `j_phi` over the cross-section, by the trapezium rule in
         `area`, shape = [n_time, n_psi_norm] [ampere]"""
         ...
+    @property
+    def j_parallel(self) -> npt.NDArray[np.float64]:
+        """The flux-surface averaged parallel current on each flux surface, `<J . B> / B0`, with `B0` the equilibrium's
+        `vacuum_toroidal_field/b0`, as the data dictionary defines `core_profiles/profiles_1d/j_total`; zero for the diamagnetic and
+        Pfirsch-Schlüter currents, shape = [n_time, n_psi_norm] [ampere / metre ** 2]"""
+        ...
 
 class Tf:
     """The machine's toroidal field, stored as an IMAS `tf` IDS.
@@ -1107,7 +1121,7 @@ class Wall:
     Only the limiter is filled so far:
     `wall/description_2d(0)/limiter/unit(i)/outline/r` and `.../z`.
 
-    `Equilibrium.copy_from_wall_ids` copies the units into the equilibrium IDS, as
+    `Equilibrium.copy_from_wall_ids` copies the units into the Equilibrium IDS, as
     `equilibrium/limiter/unit(i)`, in the same order, and the solver reads them from there by
     position. So the order units are added in is part of the contract: `unit(0)` is the vacuum
     vessel contour, and the solver uses that one, and only that one, as the region the plasma
@@ -1175,7 +1189,7 @@ class PulseSchedule:
     `solve_grad_shafranov` calculates each value: the distance from the reference point to the
     plasma boundary along that direction.
 
-    The angle is stored in the equilibrium IDS's convention, clockwise from `grad(R)` in the usual
+    The angle is stored in the Equilibrium IDS's convention, clockwise from `grad(R)` in the usual
     plot with `R` to the right and `Z` upwards, so the gap points along
     `(cos(angle), -sin(angle))`. A database reader holding a counter-clockwise angle must convert it.
 
@@ -1341,7 +1355,7 @@ class Magnetics:
     data dictionary has no node for them.
 
     For the diamagnetic flux, `diamagnetic_flux(0)`: `method_name`, `data` and `time`. The data dictionary allows one entry for each
-    method of calculating it, but GSFit accepts only one, as the equilibrium IDS has a single diamagnetic flux constraint, so the
+    method of calculating it, but GSFit accepts only one, as the Equilibrium IDS has a single diamagnetic flux constraint, so the
     signals of several diamagnetic loops are averaged into one before it is added.
 
     For the plasma current, `ip(i1)`, one entry for each method of calculating it: `method_name`, `data` and `time`.
@@ -1358,7 +1372,7 @@ class Magnetics:
 
     The magnetic sensors are constructed with the settings they are built from. Rust validates them against the XML schema in
     `parameters_input`, and only their XML is kept: it is written to `magnetics/code/parameters`. Rust also reads them into structs generated
-    from the XML schema `magnetics.xsd`, kept with the class rather than in the IDS, as the magnetics IDS can also be made by another code.
+    from the XML schema `magnetics.xsd`, kept with the class rather than in the IDS, as the Magnetics IDS can also be made by another code.
     """
 
     def __new__(cls, parameters_input: ParametersInput) -> Magnetics:
@@ -1453,7 +1467,7 @@ class Magnetics:
         """
         Add the diamagnetic flux to `magnetics/diamagnetic_flux`, as `magnetics/diamagnetic_flux(0)`.
 
-        GSFit accepts only one diamagnetic flux, as the equilibrium IDS has a single diamagnetic flux constraint,
+        GSFit accepts only one diamagnetic flux, as the Equilibrium IDS has a single diamagnetic flux constraint,
         `time_slice(itime)/constraints/diamagnetic_flux`. A machine with several diamagnetic loops averages their signals into one before
         adding it.
 
@@ -1575,7 +1589,7 @@ class Magnetics:
         """
         ...
     def get(self, path: Path[_T]) -> _T:
-        """Read the data at `path`, from `gsfit_rs.imas.magnetics_paths`, straight out of the magnetics IDS.
+        """Read the data at `path`, from `gsfit_rs.imas.magnetics_paths`, straight out of the Magnetics IDS.
 
         This is how the data is read: a path holds no data, so the IDS is only borrowed for the
         read, never copied. The shape of the result follows the shape of the index; see
@@ -1584,64 +1598,10 @@ class Magnetics:
         ...
     @property
     def magnetics_ids(self) -> MagneticsIds:
-        """A copy of the whole magnetics IDS, read with `gsfit_rs.imas.magnetics_paths`.
+        """A copy of the whole Magnetics IDS, read with `gsfit_rs.imas.magnetics_paths`.
 
         Read the data with `get` instead: this copies the IDS on every access. It is for when a
         detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
-        """
-        ...
-
-class Symmetry:
-    """Up-down symmetry of the equilibrium configuration.
-
-    `Symmetric` selects the 7-term cos(h_n y) expansion (limiter or double-null);
-    `Asymmetric` adds the sin(h_n y) family for the 12-term single-null solve.
-    """
-
-    Symmetric: Symmetry
-    Asymmetric: Symmetry
-
-class Configuration:
-    """Plasma boundary topology and the shape parameters it requires.
-
-    Each variant carries exactly its own shape inputs; up-down symmetry
-    (7- vs 12-term expansion) is implied by the variant.
-    """
-    @staticmethod
-    def SymmetricLimited(kappa: float, delta: float) -> Configuration:
-        """Up-down symmetric smooth limiter (7-term).
-
-        :param kappa: Elongation [dimensionless]
-        :param delta: Triangularity [dimensionless]
-        """
-        ...
-    @staticmethod
-    def AntisymmetricLimited(kappa_upper: float, delta_upper: float, kappa_lower: float, delta_lower: float) -> Configuration:
-        """Up-down asymmetric smooth limiter (12-term). NOT YET IMPLEMENTED.
-
-        :param kappa_upper: Upper elongation [dimensionless]
-        :param delta_upper: Upper triangularity [dimensionless]
-        :param kappa_lower: Lower elongation [dimensionless]
-        :param delta_lower: Lower triangularity [dimensionless]
-        """
-        ...
-    @staticmethod
-    def DoubleNull(kappa_x: float, delta_x: float) -> Configuration:
-        """Up-down symmetric double-null divertor (7-term).
-
-        :param kappa_x: X-point elongation [dimensionless]
-        :param delta_x: X-point triangularity [dimensionless]
-        """
-        ...
-    @staticmethod
-    def SingleNull(kappa: float, delta: float, kappa_x: float, delta_x: float) -> Configuration:
-        """Up-down asymmetric lower single-null divertor (12-term). The upper half is a smooth Miller
-        profile (`kappa`, `delta`) and the lower half has the X-point (`kappa_x`, `delta_x`).
-
-        :param kappa: Upper (smooth) elongation [dimensionless]
-        :param delta: Upper (smooth) triangularity [dimensionless]
-        :param kappa_x: X-point elongation [dimensionless]
-        :param delta_x: X-point triangularity [dimensionless]
         """
         ...
 
@@ -1652,48 +1612,33 @@ class GuazzottoFreidberg:
     currents reproduce the vacuum field consistent with the solution, i.e. a
     self-consistent free-boundary test case for GSFit to reconstruct.
 
+    It is constructed with its settings, which the Python driver, `analytic_grad_shafranov.guazzotto_freidberg.GuazzottoFreidberg`,
+    reads from XML. Their XML is kept in the Equilibrium IDS's `code/parameters`; every setting is described in the XML schemas in
+    `python/analytic_grad_shafranov/guazzotto_freidberg/settings_schema/xsd/`.
+
     Flux follows the IMAS convention, the total poloidal flux `psi = 2 * pi * R * A_phi` [weber],
-    so `psi_0` and the equilibrium IDS are `2 * pi` times GF's per-radian values.
+    so `psi_0` and the Equilibrium IDS are `2 * pi` times GF's per-radian values.
 
-    Reference: J. Plasma Phys. 87 (2021) 905870303.
+    Reference: L. Guazzotto and J. P. Freidberg, J. Plasma Phys. 87 (2021) 905870303.
     """
-    def __new__(
-        cls,
-        configuration: Configuration,
-        eps: float,
-        nu: float,
-        r_geo: float,
-        bt_vac_at_r_geo: float,
-        p_axis: float,
-        n_r: int,
-        n_z: int,
-        r_min: float,
-        r_max: float,
-        z_min: float,
-        z_max: float,
-        n_radial_expansion: int,
-    ) -> GuazzottoFreidberg:
-        """Construct the equilibrium; it is not solved until `solve` is called.
+    def __new__(cls, parameters_input: ParametersInput) -> GuazzottoFreidberg:
+        """Construct the equilibrium from its settings; it is not solved until `solve` is called.
 
-        :param configuration: Boundary topology + shape (SymmetricLimited, AntisymmetricLimited, DoubleNull, or SingleNull)
-        :param eps: Inverse aspect ratio, a / r_geo [dimensionless]
-        :param nu: Profile parameter, approximately the poloidal beta [dimensionless]
-        :param r_geo: Geometric major radius [metre]
-        :param bt_vac_at_r_geo: Vacuum toroidal field at r_geo [tesla]
-        :param p_axis: Pressure on the magnetic axis [pascal]
-        :param n_r: Number of radial grid points [dimensionless]
-        :param n_z: Number of vertical grid points [dimensionless]
-        :param r_min: Minimum radius [metre]
-        :param r_max: Maximum radius [metre]
-        :param z_min: Minimum vertical position [metre]
-        :param z_max: Maximum vertical position [metre]
-        :param n_radial_expansion: Number of terms in the C_n / S_n series (the paper's M) [dimensionless]
+        :param parameters_input: The settings, whose XML is `equilibrium.xml` with each file it links to written in its link's place, as
+            `serialise_python_dataclass_to_imas_parameters_input` writes them; it is written to the Equilibrium IDS's `code/parameters`
+        :raises ValueError: When the XML cannot be read into the settings' structs, or the settings cannot be solved: a model surface GF's
+            construction rejects; `a_minor` not between 0 and `r_geo`; a non-positive `nu`, `p_0` or `r0`; a zero `b0`; a grid with fewer
+            than 4 points either way, `r_min <= 0`, an empty extent, or which does not contain the model surface; `n_psi_norm < 3`; or
+            `n_radial_expansion < 1`
         """
         ...
     def solve(
         self,
     ) -> None:
-        """Solve the eigenvalue `alpha` and evaluate the analytic flux and plasma mask over the (R, Z) grid."""
+        """Solve the eigenvalue `alpha` and evaluate the analytic flux and plasma mask over the (R, Z) grid.
+
+        :raises RuntimeError: When the matching constraints are singular at the eigenvalue found
+        """
         ...
     def get_pf_active(
         self,
@@ -1714,7 +1659,10 @@ class GuazzottoFreidberg:
         :param control_points: (n_control_point, 2) array of (r, z) points where the flux is matched [metre]
         :param wall: The wall: its limiter is copied into `equilibrium_ids`, where its limiter and vacuum vessel bound a
             diverted plasma, and the post-processor traces the scrape-off layer legs up to it
-        :return: One single-filament PF coil per boundary node, carrying the fitted current, at the single time 0
+        :return: One single-filament PF coil per boundary node, carrying the fitted current, at the settings' `time`
+        :raises ValueError: When `control_points` is not (n_control_point, 2)
+        :raises RuntimeError: When `solve` has not run, or the free-boundary equilibrium cannot be built: no vacuum vessel in the wall,
+            or no magnetic axis or boundary found in the total flux
         """
         ...
     def get_sensor_values(
@@ -1728,10 +1676,12 @@ class GuazzottoFreidberg:
         sensors must already be in `magnetics`, e.g. added with `Magnetics.add_flux_loop` and `Magnetics.add_b_field_pol_probe`.
 
         Each coil filament carries its coil's current at the first time of its experimental timebase, so each measurement is a
-        signal with that one time, the first coil's, or 0 without any coils.
+        signal with that one time, the first coil's, or the settings' `time` without any coils.
 
         :param magnetics: The magnetic sensors, with their geometry already set; their measurements are overwritten
         :param pf_active: The PF coils, typically the ones `get_pf_active` returned
+        :raises RuntimeError: When `solve` has not run, or the Greens functions between the sensors and the plasma or the coils cannot
+            be calculated
         """
         ...
     def model_surface(
@@ -1748,63 +1698,37 @@ class GuazzottoFreidberg:
         """
         ...
     @property
-    def configuration(self) -> Configuration:
-        """Boundary topology and its shape parameters"""
-        ...
-    @property
-    def eps(self) -> float:
-        """Inverse aspect ratio, a / r_geo [dimensionless]"""
-        ...
-    @property
-    def nu(self) -> float:
-        """Profile parameter, approximately the poloidal beta [dimensionless]"""
-        ...
-    @property
-    def r_geo(self) -> float:
-        """Geometric major radius [metre]"""
-        ...
-    @property
-    def bt_vac_at_r_geo(self) -> float:
-        """Vacuum toroidal field at r_geo [tesla]"""
-        ...
-    @property
-    def p_axis(self) -> float:
-        """Pressure normalisation, the pressure where psi_hat = 1 [pascal]"""
-        ...
-    @property
-    def n_radial_expansion(self) -> int:
-        """Number of terms in the C_n / S_n series (the paper's M) [dimensionless]"""
-        ...
-    @property
     def alpha(self) -> float:
-        """The eigenvalue; NaN until `solve` has run [dimensionless]"""
+        """The eigenvalue [dimensionless]; a `RuntimeError` until `solve` has run"""
         ...
     @property
     def beta_0(self) -> float:
-        """Beta at psi_hat = 1, 2 * mu_0 * p_axis / bt_vac_at_r_geo ** 2 (GF Eq. 6.4); NaN until `solve` has run [dimensionless]"""
+        """Beta at psi_hat = 1, 2 * mu_0 * p_0 / B_0 ** 2 (GF Eq. 6.4), with GF's B_0 the vacuum toroidal field at r_geo
+        [dimensionless]; a `RuntimeError` until `solve` has run"""
         ...
     @property
     def bt_diamagnetic_shift(self) -> float:
-        """Diamagnetic change in the toroidal field (GF Eq. 6.4); NaN until `solve` has run [tesla]"""
+        """Diamagnetic change in the toroidal field (GF Eq. 6.4) [tesla]; a `RuntimeError` until `solve` has run"""
         ...
     @property
     def psi_0(self) -> float:
-        """Flux normalisation, psi = psi_0 * psi_hat: GF's Psi_0 (Eq. 6.5) times 2 * pi; NaN until `solve` has run [weber]"""
+        """Flux normalisation, psi = psi_0 * psi_hat: GF's Psi_0 (Eq. 6.5) times 2 * pi [weber]; a `RuntimeError` until `solve` has run"""
         ...
     @property
     def psi_analytic(self) -> npt.NDArray[np.float64]:
-        """The analytic flux, psi_0 * psi_hat, on every grid cell, shape (n_z, n_r) [weber].
+        """The analytic flux, psi_0 * psi_hat, on every grid cell, shape (n_z, n_r) [weber]; a `RuntimeError` until `solve` has run.
 
         Outside the model box the truncated series is unphysical and can diverge; use `mask` to select the plasma.
         """
         ...
     @property
     def mask(self) -> npt.NDArray[np.float64]:
-        """1 inside the analytic plasma and 0 elsewhere, shape (n_z, n_r) [dimensionless]"""
+        """1 inside the analytic plasma and 0 elsewhere, shape (n_z, n_r) [dimensionless]; a `RuntimeError` until `solve` has run"""
         ...
     @property
     def equilibrium_ids(self) -> EquilibriumIds:
-        """The free-boundary equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`. Empty until `get_pf_active` has run.
+        """The free-boundary Equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`. Only `code/parameters`, the settings, until
+        `get_pf_active` has run.
 
         The IDS is copied into the returned object, so it is a snapshot: changes made on the Rust side afterwards
         are not seen by it.
@@ -2085,7 +2009,7 @@ class BuxtonProkopyszyn:
         ...
     @property
     def equilibrium_ids(self) -> EquilibriumIds:
-        """The post-processed equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`; empty until `solve` has run. A snapshot."""
+        """The post-processed Equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`; empty until `solve` has run. A snapshot."""
         ...
 
 class EfitPolynomial:
@@ -2117,5 +2041,14 @@ class TensionedCubicBSpline:
         :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
         :param interior_knots: A 1D array of size [n_interior_knots] with the interior knots [dimensionless]
         :param interval_tensions: A 1D array of size [n_intervals] with the interval tensions [dimensionless]
+        """
+        ...
+    def source_function_value_single_dof_python(self, psi_norm: float, i_dof: int) -> float:
+        """
+        One B-spline, the degree of freedom `i_dof`, at one normalised poloidal flux
+
+        :param psi_norm: The normalised poloidal flux [dimensionless]
+        :param i_dof: The degree of freedom, from 0 at the magnetic axis
+        :return: The B-spline's value [dimensionless]
         """
         ...

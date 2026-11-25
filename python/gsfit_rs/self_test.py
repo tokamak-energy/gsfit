@@ -31,7 +31,8 @@ from gsfit_rs.imas import equilibrium_paths as ep
 
 
 def run() -> None:
-    # Make a Helmholtz PF coil. Its filaments are 0.1 m squares: `PfActive` needs a positive size, for the coil's self-inductance.
+    # Make a Helmholtz PF coil. Its filaments are 0.1 m squares: `PfActive` needs a positive size, as the Greens functions treat each filament
+    # as a conductor of that size.
     # The self test reads no settings, so has none to record in `pf_active/code/parameters`
     pf_active = PfActive(ParametersInput())
     pf_active.add_pf_coil(
@@ -157,7 +158,7 @@ def run() -> None:
         data=np.array([f_vac, f_vac]),
     )
 
-    # The solver reads the vacuum toroidal field from the equilibrium IDS, so it is copied in from the toroidal field
+    # The solver reads the vacuum toroidal field from the Equilibrium IDS, so it is copied in from the toroidal field
     plasma.copy_from_tf_ids(tf)
 
     # Wall. `unit(0)` is the vacuum vessel contour; here it is the only limiter unit
@@ -165,16 +166,16 @@ def run() -> None:
     wall = Wall(ParametersInput())
     wall.add_limiter_unit(name="vacuum_vessel", r=limit_pts_r, z=limit_pts_z)
 
-    # The solver reads the limiter from the equilibrium IDS, so it is copied in from the wall
+    # The solver reads the limiter from the Equilibrium IDS, so it is copied in from the wall
     plasma.copy_from_wall_ids(wall)
 
-    # The solver reads the PF coil current from the equilibrium IDS, so it is copied in from the PF coils
+    # The solver reads the PF coil current from the Equilibrium IDS, so it is copied in from the PF coils
     plasma.copy_from_pf_active_ids(pf_active)
 
     # No passive conductors. This test reads no settings, so has none to record in `pf_passive/code/parameters`
     pf_passive = PfPassive(ParametersInput())
 
-    # The solver reads the passive loops' regularisations from the equilibrium IDS, so they are copied in from the passive conductors
+    # The solver reads the passive loops' regularisations from the Equilibrium IDS, so they are copied in from the passive conductors
     plasma.copy_from_pf_passive_ids(pf_passive)
 
     pressure_sensors = Pressure()

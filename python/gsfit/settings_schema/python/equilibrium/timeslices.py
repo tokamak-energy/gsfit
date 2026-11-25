@@ -27,8 +27,8 @@ class Timeslices:
     """
     The times to reconstruct.
 
-    :param method: How the times are chosen. Its settings are in the element of the same name, below.
-    :param arange: Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
+    :param method: How the time-slices to reconstruct are chosen.
+    :param arange: Equally spaced values within a given interval (numpy.arange).
     :param linspace: n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
     :param user_defined: User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3". [second]
     """
@@ -45,10 +45,10 @@ class Timeslices:
 @dataclass(kw_only=True)
 class Arange:
     """
-    Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
+    Equally spaced values within a given interval (numpy.arange).
 
     :param time_start: First time. [second]
-    :param time_end: End of the times, which is not included. [second]
+    :param time_end: End of the times, which is not normally included. [second]
     :param dt: Step between times. [second]
     """
 

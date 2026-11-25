@@ -8,6 +8,8 @@ if TYPE_CHECKING:
 
 
 class DatabaseWriterRTGSFitMDSplus(DatabaseWriterProtocol):
+    writes_to_mdsplus: bool = True
+
     map_results_to_database = map_results_to_database
 
     def get_workflow_names(self, gsfit_controller: "Gsfit") -> list[str]:

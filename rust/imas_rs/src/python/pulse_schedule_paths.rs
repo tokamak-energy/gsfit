@@ -10,8 +10,8 @@
 
 #![allow(clippy::all)]
 
-use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels};
-use crate::dd_base_types::{FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D, STR_1D};
+use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels, no_names};
+use crate::dd_base_types::{FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D, STR_1D, index_of_name};
 use crate::ids::pulse_schedule::PulseSchedule;
 use std::any::Any;
 
@@ -196,6 +196,150 @@ fn lengths_position_control_x_point(pulse_schedule: &PulseSchedule, level: usize
 }
 
 // ============================================================================
+// Array-of-structures names
+// ============================================================================
+
+/// Position of the element named `name` at each array-of-structures level along `code_library` whose elements have a `name`.
+fn position_of_name_code_library(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.code.library, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `density_control_ion` whose elements have a `name`.
+fn position_of_name_density_control_ion(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.density_control.ion, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `density_control_ion_element` whose elements have a `name`.
+fn position_of_name_density_control_ion_element(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.density_control.ion, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `density_control_valve` whose elements have a `name`.
+fn position_of_name_density_control_valve(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.density_control.valve, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `density_control_valve_species` whose elements have a `name`.
+fn position_of_name_density_control_valve_species(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.density_control.valve, name),
+        1 => return index_of_name(&pulse_schedule.density_control.valve[at[0]].species, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `density_control_valve_species_element` whose elements have a `name`.
+fn position_of_name_density_control_valve_species_element(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.density_control.valve, name),
+        1 => return index_of_name(&pulse_schedule.density_control.valve[at[0]].species, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `ec_beam` whose elements have a `name`.
+fn position_of_name_ec_beam(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.ec.beam, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `ec_mirror` whose elements have a `name`.
+fn position_of_name_ec_mirror(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.ec.mirror, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `ec_mirror_movement` whose elements have a `name`.
+fn position_of_name_ec_mirror_movement(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.ec.mirror, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `ic_antenna` whose elements have a `name`.
+fn position_of_name_ic_antenna(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.ic.antenna, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `lh_antenna` whose elements have a `name`.
+fn position_of_name_lh_antenna(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.lh.antenna, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `nbi_unit` whose elements have a `name`.
+fn position_of_name_nbi_unit(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.nbi.unit, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `nbi_unit_species` whose elements have a `name`.
+fn position_of_name_nbi_unit_species(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.nbi.unit, name),
+        1 => return index_of_name(&pulse_schedule.nbi.unit[at[0]].species, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `nbi_unit_species_element` whose elements have a `name`.
+fn position_of_name_nbi_unit_species_element(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.nbi.unit, name),
+        1 => return index_of_name(&pulse_schedule.nbi.unit[at[0]].species, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `pf_active_coil` whose elements have a `name`.
+fn position_of_name_pf_active_coil(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.pf_active.coil, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `pf_active_supply` whose elements have a `name`.
+fn position_of_name_pf_active_supply(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.pf_active.supply, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `position_control_gap` whose elements have a `name`.
+fn position_of_name_position_control_gap(pulse_schedule: &PulseSchedule, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pulse_schedule.position_control.gap, name),
+        _ => return no_names(pulse_schedule, level, at, name),
+    }
+}
+
+// ============================================================================
 // Nodes
 // ============================================================================
 
@@ -213,6 +357,7 @@ static NODES_IC_ANTENNA_POWER_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ic.antenna[at[0]].power_type.name.clone() },
                 )
             },
@@ -231,6 +376,7 @@ static NODES_IC_ANTENNA_POWER_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ic.antenna[at[0]].power_type.index.clone() },
                 )
             },
@@ -249,6 +395,7 @@ static NODES_IC_ANTENNA_POWER_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ic.antenna[at[0]].power_type.description.clone() },
                 )
             },
@@ -270,6 +417,7 @@ static NODES_IC_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ic.antenna[at[0]].power.reference_name.clone() },
                 )
             },
@@ -288,6 +436,7 @@ static NODES_IC_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ic.antenna[at[0]].power.reference.clone() },
                 )
             },
@@ -306,6 +455,7 @@ static NODES_IC_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ic.antenna[at[0]].power.reference_type.clone() },
                 )
             },
@@ -324,6 +474,7 @@ static NODES_IC_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ic.antenna[at[0]].power.envelope_type.clone() },
                 )
             },
@@ -345,6 +496,7 @@ static NODES_IC_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ic.antenna[at[0]].phase.reference_name.clone() },
                 )
             },
@@ -363,6 +515,7 @@ static NODES_IC_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ic.antenna[at[0]].phase.reference.clone() },
                 )
             },
@@ -381,6 +534,7 @@ static NODES_IC_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ic.antenna[at[0]].phase.reference_type.clone() },
                 )
             },
@@ -399,6 +553,7 @@ static NODES_IC_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ic.antenna[at[0]].phase.envelope_type.clone() },
                 )
             },
@@ -420,6 +575,7 @@ static NODES_IC_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ic.antenna[at[0]].frequency.reference_name.clone() },
                 )
             },
@@ -438,6 +594,7 @@ static NODES_IC_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ic.antenna[at[0]].frequency.reference.clone() },
                 )
             },
@@ -456,6 +613,7 @@ static NODES_IC_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ic.antenna[at[0]].frequency.reference_type.clone() },
                 )
             },
@@ -474,6 +632,7 @@ static NODES_IC_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ic.antenna[at[0]].frequency.envelope_type.clone() },
                 )
             },
@@ -495,6 +654,7 @@ static NODES_IC_ANTENNA: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ic.antenna[at[0]].name.clone() },
                 )
             },
@@ -513,6 +673,7 @@ static NODES_IC_ANTENNA: &[Node] = &[
                     indices,
                     1,
                     lengths_ic_antenna,
+                    position_of_name_ic_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ic.antenna[at[0]].description.clone() },
                 )
             },
@@ -558,6 +719,7 @@ static NODES_IC_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.ic.power.reference_name.clone() },
                 )
             },
@@ -576,6 +738,7 @@ static NODES_IC_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.ic.power.reference.clone() },
                 )
             },
@@ -594,6 +757,7 @@ static NODES_IC_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.ic.power.reference_type.clone() },
                 )
             },
@@ -612,6 +776,7 @@ static NODES_IC_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.ic.power.envelope_type.clone() },
                 )
             },
@@ -624,7 +789,10 @@ static NODES_IC: &[Node] = &[
         name: "antenna",
         documentation: "Set of ICRH antennas",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_IC_ANTENNA),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_IC_ANTENNA,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "power",
@@ -645,6 +813,7 @@ static NODES_IC: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.ic.mode.clone() },
                 )
             },
@@ -663,6 +832,7 @@ static NODES_IC: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.ic.time.clone() },
                 )
             },
@@ -684,6 +854,7 @@ static NODES_EC_BEAM_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.beam[at[0]].power_launched.reference_name.clone() },
                 )
             },
@@ -702,6 +873,7 @@ static NODES_EC_BEAM_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].power_launched.reference.clone() },
                 )
             },
@@ -720,6 +892,7 @@ static NODES_EC_BEAM_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].power_launched.reference_type.clone() },
                 )
             },
@@ -738,6 +911,7 @@ static NODES_EC_BEAM_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].power_launched.envelope_type.clone() },
                 )
             },
@@ -759,6 +933,7 @@ static NODES_EC_BEAM_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.beam[at[0]].frequency.reference_name.clone() },
                 )
             },
@@ -777,6 +952,7 @@ static NODES_EC_BEAM_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].frequency.reference.clone() },
                 )
             },
@@ -795,6 +971,7 @@ static NODES_EC_BEAM_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].frequency.reference_type.clone() },
                 )
             },
@@ -813,6 +990,7 @@ static NODES_EC_BEAM_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].frequency.envelope_type.clone() },
                 )
             },
@@ -834,6 +1012,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_POL: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.beam[at[0]].steering_angle_pol.reference_name.clone() },
                 )
             },
@@ -852,6 +1031,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_POL: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].steering_angle_pol.reference.clone() },
                 )
             },
@@ -870,6 +1050,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_POL: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].steering_angle_pol.reference_type.clone() },
                 )
             },
@@ -888,6 +1069,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_POL: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].steering_angle_pol.envelope_type.clone() },
                 )
             },
@@ -909,6 +1091,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_TOR: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.beam[at[0]].steering_angle_tor.reference_name.clone() },
                 )
             },
@@ -927,6 +1110,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_TOR: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].steering_angle_tor.reference.clone() },
                 )
             },
@@ -945,6 +1129,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_TOR: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].steering_angle_tor.reference_type.clone() },
                 )
             },
@@ -963,6 +1148,7 @@ static NODES_EC_BEAM_STEERING_ANGLE_TOR: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].steering_angle_tor.envelope_type.clone() },
                 )
             },
@@ -984,6 +1170,7 @@ static NODES_EC_BEAM_POLARIZATION_O_MODE_FRACTION: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.reference_name.clone()
                     },
@@ -1004,6 +1191,7 @@ static NODES_EC_BEAM_POLARIZATION_O_MODE_FRACTION: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.reference.clone() },
                 )
             },
@@ -1022,6 +1210,7 @@ static NODES_EC_BEAM_POLARIZATION_O_MODE_FRACTION: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.reference_type.clone()
                     },
@@ -1042,6 +1231,7 @@ static NODES_EC_BEAM_POLARIZATION_O_MODE_FRACTION: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.envelope_type.clone()
                     },
@@ -1065,6 +1255,7 @@ static NODES_EC_BEAM_POLARIZATION_AZIMUTHAL_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.reference_name.clone()
                     },
@@ -1085,6 +1276,7 @@ static NODES_EC_BEAM_POLARIZATION_AZIMUTHAL_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.reference.clone() },
                 )
             },
@@ -1103,6 +1295,7 @@ static NODES_EC_BEAM_POLARIZATION_AZIMUTHAL_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.reference_type.clone()
                     },
@@ -1123,6 +1316,7 @@ static NODES_EC_BEAM_POLARIZATION_AZIMUTHAL_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.envelope_type.clone()
                     },
@@ -1146,6 +1340,7 @@ static NODES_EC_BEAM_POLARIZATION_ELLIPTICITY_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.reference_name.clone()
                     },
@@ -1166,6 +1361,7 @@ static NODES_EC_BEAM_POLARIZATION_ELLIPTICITY_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.reference.clone() },
                 )
             },
@@ -1184,6 +1380,7 @@ static NODES_EC_BEAM_POLARIZATION_ELLIPTICITY_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.reference_type.clone()
                     },
@@ -1204,6 +1401,7 @@ static NODES_EC_BEAM_POLARIZATION_ELLIPTICITY_ANGLE: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.envelope_type.clone()
                     },
@@ -1248,6 +1446,7 @@ static NODES_EC_BEAM: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.beam[at[0]].name.clone() },
                 )
             },
@@ -1266,6 +1465,7 @@ static NODES_EC_BEAM: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_beam,
+                    position_of_name_ec_beam,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.beam[at[0]].description.clone() },
                 )
             },
@@ -1317,6 +1517,7 @@ static NODES_EC_MIRROR_MOVEMENT_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].r#type.name.clone() },
                 )
             },
@@ -1335,6 +1536,7 @@ static NODES_EC_MIRROR_MOVEMENT_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].r#type.index.clone() },
                 )
             },
@@ -1353,6 +1555,7 @@ static NODES_EC_MIRROR_MOVEMENT_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].r#type.description.clone() },
                 )
             },
@@ -1374,6 +1577,7 @@ static NODES_EC_MIRROR_MOVEMENT_TRANSLATION: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.reference_name.clone()
                     },
@@ -1394,6 +1598,7 @@ static NODES_EC_MIRROR_MOVEMENT_TRANSLATION: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.reference.clone() },
                 )
             },
@@ -1412,6 +1617,7 @@ static NODES_EC_MIRROR_MOVEMENT_TRANSLATION: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.reference_type.clone()
                     },
@@ -1432,6 +1638,7 @@ static NODES_EC_MIRROR_MOVEMENT_TRANSLATION: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.envelope_type.clone()
                     },
@@ -1455,6 +1662,7 @@ static NODES_EC_MIRROR_MOVEMENT_ROTATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.reference_name.clone()
                     },
@@ -1475,6 +1683,7 @@ static NODES_EC_MIRROR_MOVEMENT_ROTATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D {
                         pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.reference.clone()
                     },
@@ -1495,6 +1704,7 @@ static NODES_EC_MIRROR_MOVEMENT_ROTATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.reference_type.clone()
                     },
@@ -1515,6 +1725,7 @@ static NODES_EC_MIRROR_MOVEMENT_ROTATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.envelope_type.clone()
                     },
@@ -1538,6 +1749,7 @@ static NODES_EC_MIRROR_MOVEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_ec_mirror_movement,
+                    position_of_name_ec_mirror_movement,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].description.clone() },
                 )
             },
@@ -1577,6 +1789,7 @@ static NODES_EC_MIRROR_DEPOSITION_RHO_TOR_NORM: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_mirror,
+                    position_of_name_ec_mirror,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.reference_name.clone() },
                 )
             },
@@ -1595,6 +1808,7 @@ static NODES_EC_MIRROR_DEPOSITION_RHO_TOR_NORM: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_mirror,
+                    position_of_name_ec_mirror,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.reference.clone() },
                 )
             },
@@ -1613,6 +1827,7 @@ static NODES_EC_MIRROR_DEPOSITION_RHO_TOR_NORM: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_mirror,
+                    position_of_name_ec_mirror,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.reference_type.clone() },
                 )
             },
@@ -1631,6 +1846,7 @@ static NODES_EC_MIRROR_DEPOSITION_RHO_TOR_NORM: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_mirror,
+                    position_of_name_ec_mirror,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.envelope_type.clone() },
                 )
             },
@@ -1652,6 +1868,7 @@ static NODES_EC_MIRROR: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_mirror,
+                    position_of_name_ec_mirror,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].name.clone() },
                 )
             },
@@ -1670,6 +1887,7 @@ static NODES_EC_MIRROR: &[Node] = &[
                     indices,
                     1,
                     lengths_ec_mirror,
+                    position_of_name_ec_mirror,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].description.clone() },
                 )
             },
@@ -1679,7 +1897,10 @@ static NODES_EC_MIRROR: &[Node] = &[
         name: "movement",
         documentation: "Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_EC_MIRROR_MOVEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_EC_MIRROR_MOVEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "deposition_rho_tor_norm",
@@ -1703,6 +1924,7 @@ static NODES_EC_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.ec.power_launched.reference_name.clone() },
                 )
             },
@@ -1721,6 +1943,7 @@ static NODES_EC_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.ec.power_launched.reference.clone() },
                 )
             },
@@ -1739,6 +1962,7 @@ static NODES_EC_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.ec.power_launched.reference_type.clone() },
                 )
             },
@@ -1757,6 +1981,7 @@ static NODES_EC_POWER_LAUNCHED: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.ec.power_launched.envelope_type.clone() },
                 )
             },
@@ -1769,13 +1994,19 @@ static NODES_EC: &[Node] = &[
         name: "beam",
         documentation: "Set of Electron Cyclotron beams",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_EC_BEAM),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_EC_BEAM,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "mirror",
         documentation: "Set of Electron Cyclotron mirrors",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_EC_MIRROR),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_EC_MIRROR,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "power_launched",
@@ -1796,6 +2027,7 @@ static NODES_EC: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.ec.mode.clone() },
                 )
             },
@@ -1814,6 +2046,7 @@ static NODES_EC: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.ec.time.clone() },
                 )
             },
@@ -1835,6 +2068,7 @@ static NODES_LH_ANTENNA_POWER_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].power_type.name.clone() },
                 )
             },
@@ -1853,6 +2087,7 @@ static NODES_LH_ANTENNA_POWER_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].power_type.index.clone() },
                 )
             },
@@ -1871,6 +2106,7 @@ static NODES_LH_ANTENNA_POWER_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].power_type.description.clone() },
                 )
             },
@@ -1892,6 +2128,7 @@ static NODES_LH_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].power.reference_name.clone() },
                 )
             },
@@ -1910,6 +2147,7 @@ static NODES_LH_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.lh.antenna[at[0]].power.reference.clone() },
                 )
             },
@@ -1928,6 +2166,7 @@ static NODES_LH_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].power.reference_type.clone() },
                 )
             },
@@ -1946,6 +2185,7 @@ static NODES_LH_ANTENNA_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].power.envelope_type.clone() },
                 )
             },
@@ -1967,6 +2207,7 @@ static NODES_LH_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].phase.reference_name.clone() },
                 )
             },
@@ -1985,6 +2226,7 @@ static NODES_LH_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.lh.antenna[at[0]].phase.reference.clone() },
                 )
             },
@@ -2003,6 +2245,7 @@ static NODES_LH_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].phase.reference_type.clone() },
                 )
             },
@@ -2021,6 +2264,7 @@ static NODES_LH_ANTENNA_PHASE: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].phase.envelope_type.clone() },
                 )
             },
@@ -2042,6 +2286,7 @@ static NODES_LH_ANTENNA_N_PARALLEL: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].n_parallel.reference_name.clone() },
                 )
             },
@@ -2060,6 +2305,7 @@ static NODES_LH_ANTENNA_N_PARALLEL: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.lh.antenna[at[0]].n_parallel.reference.clone() },
                 )
             },
@@ -2078,6 +2324,7 @@ static NODES_LH_ANTENNA_N_PARALLEL: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].n_parallel.reference_type.clone() },
                 )
             },
@@ -2096,6 +2343,7 @@ static NODES_LH_ANTENNA_N_PARALLEL: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].n_parallel.envelope_type.clone() },
                 )
             },
@@ -2117,6 +2365,7 @@ static NODES_LH_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].frequency.reference_name.clone() },
                 )
             },
@@ -2135,6 +2384,7 @@ static NODES_LH_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.lh.antenna[at[0]].frequency.reference.clone() },
                 )
             },
@@ -2153,6 +2403,7 @@ static NODES_LH_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].frequency.reference_type.clone() },
                 )
             },
@@ -2171,6 +2422,7 @@ static NODES_LH_ANTENNA_FREQUENCY: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.lh.antenna[at[0]].frequency.envelope_type.clone() },
                 )
             },
@@ -2192,6 +2444,7 @@ static NODES_LH_ANTENNA: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].name.clone() },
                 )
             },
@@ -2240,6 +2493,7 @@ static NODES_LH_ANTENNA: &[Node] = &[
                     indices,
                     1,
                     lengths_lh_antenna,
+                    position_of_name_lh_antenna,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.lh.antenna[at[0]].description.clone() },
                 )
             },
@@ -2261,6 +2515,7 @@ static NODES_LH_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.lh.power.reference_name.clone() },
                 )
             },
@@ -2279,6 +2534,7 @@ static NODES_LH_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.lh.power.reference.clone() },
                 )
             },
@@ -2297,6 +2553,7 @@ static NODES_LH_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.lh.power.reference_type.clone() },
                 )
             },
@@ -2315,6 +2572,7 @@ static NODES_LH_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.lh.power.envelope_type.clone() },
                 )
             },
@@ -2327,7 +2585,10 @@ static NODES_LH: &[Node] = &[
         name: "antenna",
         documentation: "Set of LH antennas",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_LH_ANTENNA),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_LH_ANTENNA,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "power",
@@ -2348,6 +2609,7 @@ static NODES_LH: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.lh.mode.clone() },
                 )
             },
@@ -2366,6 +2628,7 @@ static NODES_LH: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.lh.time.clone() },
                 )
             },
@@ -2387,6 +2650,7 @@ static NODES_NBI_UNIT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_nbi_unit_species_element,
+                    position_of_name_nbi_unit_species_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.nbi.unit[at[0]].species[at[1]].element[at[2]].a.clone() },
                 )
             },
@@ -2405,6 +2669,7 @@ static NODES_NBI_UNIT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_nbi_unit_species_element,
+                    position_of_name_nbi_unit_species_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.nbi.unit[at[0]].species[at[1]].element[at[2]].z_n.clone() },
                 )
             },
@@ -2423,6 +2688,7 @@ static NODES_NBI_UNIT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_nbi_unit_species_element,
+                    position_of_name_nbi_unit_species_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.nbi.unit[at[0]].species[at[1]].element[at[2]].atoms_n.clone() },
                 )
             },
@@ -2435,7 +2701,10 @@ static NODES_NBI_UNIT_SPECIES: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_NBI_UNIT_SPECIES_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_NBI_UNIT_SPECIES_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -2450,6 +2719,7 @@ static NODES_NBI_UNIT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_nbi_unit_species,
+                    position_of_name_nbi_unit_species,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.nbi.unit[at[0]].species[at[1]].name.clone() },
                 )
             },
@@ -2468,6 +2738,7 @@ static NODES_NBI_UNIT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_nbi_unit_species,
+                    position_of_name_nbi_unit_species,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.nbi.unit[at[0]].species[at[1]].fraction.clone() },
                 )
             },
@@ -2489,6 +2760,7 @@ static NODES_NBI_UNIT_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.nbi.unit[at[0]].power.reference_name.clone() },
                 )
             },
@@ -2507,6 +2779,7 @@ static NODES_NBI_UNIT_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.nbi.unit[at[0]].power.reference.clone() },
                 )
             },
@@ -2525,6 +2798,7 @@ static NODES_NBI_UNIT_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.nbi.unit[at[0]].power.reference_type.clone() },
                 )
             },
@@ -2543,6 +2817,7 @@ static NODES_NBI_UNIT_POWER: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.nbi.unit[at[0]].power.envelope_type.clone() },
                 )
             },
@@ -2564,6 +2839,7 @@ static NODES_NBI_UNIT_ENERGY: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.nbi.unit[at[0]].energy.reference_name.clone() },
                 )
             },
@@ -2582,6 +2858,7 @@ static NODES_NBI_UNIT_ENERGY: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.nbi.unit[at[0]].energy.reference.clone() },
                 )
             },
@@ -2600,6 +2877,7 @@ static NODES_NBI_UNIT_ENERGY: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.nbi.unit[at[0]].energy.reference_type.clone() },
                 )
             },
@@ -2618,6 +2896,7 @@ static NODES_NBI_UNIT_ENERGY: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.nbi.unit[at[0]].energy.envelope_type.clone() },
                 )
             },
@@ -2639,6 +2918,7 @@ static NODES_NBI_UNIT: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.nbi.unit[at[0]].name.clone() },
                 )
             },
@@ -2657,6 +2937,7 @@ static NODES_NBI_UNIT: &[Node] = &[
                     indices,
                     1,
                     lengths_nbi_unit,
+                    position_of_name_nbi_unit,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.nbi.unit[at[0]].description.clone() },
                 )
             },
@@ -2666,7 +2947,10 @@ static NODES_NBI_UNIT: &[Node] = &[
         name: "species",
         documentation: "Species injected by the NBI unit (may be more than one in case the unit injects a gas mixture)",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_NBI_UNIT_SPECIES),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_NBI_UNIT_SPECIES,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "power",
@@ -2696,6 +2980,7 @@ static NODES_NBI_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.nbi.power.reference_name.clone() },
                 )
             },
@@ -2714,6 +2999,7 @@ static NODES_NBI_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.nbi.power.reference.clone() },
                 )
             },
@@ -2732,6 +3018,7 @@ static NODES_NBI_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.nbi.power.reference_type.clone() },
                 )
             },
@@ -2750,6 +3037,7 @@ static NODES_NBI_POWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.nbi.power.envelope_type.clone() },
                 )
             },
@@ -2762,7 +3050,10 @@ static NODES_NBI: &[Node] = &[
         name: "unit",
         documentation: "Set of NBI units",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_NBI_UNIT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_NBI_UNIT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "power",
@@ -2783,6 +3074,7 @@ static NODES_NBI: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.nbi.mode.clone() },
                 )
             },
@@ -2801,6 +3093,7 @@ static NODES_NBI: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.nbi.time.clone() },
                 )
             },
@@ -2822,6 +3115,7 @@ static NODES_DENSITY_CONTROL_VALVE_FLOW_RATE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_valve,
+                    position_of_name_density_control_valve,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.density_control.valve[at[0]].flow_rate.reference_name.clone() },
                 )
             },
@@ -2840,6 +3134,7 @@ static NODES_DENSITY_CONTROL_VALVE_FLOW_RATE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_valve,
+                    position_of_name_density_control_valve,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.density_control.valve[at[0]].flow_rate.reference.clone() },
                 )
             },
@@ -2858,6 +3153,7 @@ static NODES_DENSITY_CONTROL_VALVE_FLOW_RATE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_valve,
+                    position_of_name_density_control_valve,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.density_control.valve[at[0]].flow_rate.reference_type.clone() },
                 )
             },
@@ -2876,6 +3172,7 @@ static NODES_DENSITY_CONTROL_VALVE_FLOW_RATE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_valve,
+                    position_of_name_density_control_valve,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.density_control.valve[at[0]].flow_rate.envelope_type.clone() },
                 )
             },
@@ -2897,6 +3194,7 @@ static NODES_DENSITY_CONTROL_VALVE_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_density_control_valve_species_element,
+                    position_of_name_density_control_valve_species_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D {
                         pulse_schedule.density_control.valve[at[0]].species[at[1]].element[at[2]].a.clone()
                     },
@@ -2917,6 +3215,7 @@ static NODES_DENSITY_CONTROL_VALVE_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_density_control_valve_species_element,
+                    position_of_name_density_control_valve_species_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.density_control.valve[at[0]].species[at[1]].element[at[2]].z_n.clone()
                     },
@@ -2937,6 +3236,7 @@ static NODES_DENSITY_CONTROL_VALVE_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_density_control_valve_species_element,
+                    position_of_name_density_control_valve_species_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.density_control.valve[at[0]].species[at[1]].element[at[2]].atoms_n.clone()
                     },
@@ -2951,7 +3251,10 @@ static NODES_DENSITY_CONTROL_VALVE_SPECIES: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DENSITY_CONTROL_VALVE_SPECIES_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DENSITY_CONTROL_VALVE_SPECIES_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -2966,6 +3269,7 @@ static NODES_DENSITY_CONTROL_VALVE_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_density_control_valve_species,
+                    position_of_name_density_control_valve_species,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.density_control.valve[at[0]].species[at[1]].name.clone() },
                 )
             },
@@ -2984,6 +3288,7 @@ static NODES_DENSITY_CONTROL_VALVE_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_density_control_valve_species,
+                    position_of_name_density_control_valve_species,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.density_control.valve[at[0]].species[at[1]].fraction.clone() },
                 )
             },
@@ -3005,6 +3310,7 @@ static NODES_DENSITY_CONTROL_VALVE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_valve,
+                    position_of_name_density_control_valve,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.density_control.valve[at[0]].name.clone() },
                 )
             },
@@ -3023,6 +3329,7 @@ static NODES_DENSITY_CONTROL_VALVE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_valve,
+                    position_of_name_density_control_valve,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.density_control.valve[at[0]].description.clone() },
                 )
             },
@@ -3038,7 +3345,10 @@ static NODES_DENSITY_CONTROL_VALVE: &[Node] = &[
         name: "species",
         documentation: "Species injected by the valve (may be more than one in case the valve injects a gas mixture)",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DENSITY_CONTROL_VALVE_SPECIES),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DENSITY_CONTROL_VALVE_SPECIES,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -3056,6 +3366,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.n_e_line.reference_name.clone() },
                 )
             },
@@ -3074,6 +3385,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.n_e_line.reference.clone() },
                 )
             },
@@ -3092,6 +3404,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_line.reference_type.clone() },
                 )
             },
@@ -3110,6 +3423,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_line.envelope_type.clone() },
                 )
             },
@@ -3131,6 +3445,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_LCFS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.n_e_line_lcfs.reference_name.clone() },
                 )
             },
@@ -3149,6 +3464,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_LCFS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.n_e_line_lcfs.reference.clone() },
                 )
             },
@@ -3167,6 +3483,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_LCFS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_line_lcfs.reference_type.clone() },
                 )
             },
@@ -3185,6 +3502,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_LCFS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_line_lcfs.envelope_type.clone() },
                 )
             },
@@ -3206,6 +3524,7 @@ static NODES_DENSITY_CONTROL_N_E_PROFILE_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.n_e_profile_average.reference_name.clone() },
                 )
             },
@@ -3224,6 +3543,7 @@ static NODES_DENSITY_CONTROL_N_E_PROFILE_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.n_e_profile_average.reference.clone() },
                 )
             },
@@ -3242,6 +3562,7 @@ static NODES_DENSITY_CONTROL_N_E_PROFILE_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_profile_average.reference_type.clone() },
                 )
             },
@@ -3260,6 +3581,7 @@ static NODES_DENSITY_CONTROL_N_E_PROFILE_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_profile_average.envelope_type.clone() },
                 )
             },
@@ -3281,6 +3603,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_FIRST_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.first_point.r.clone() },
                 )
             },
@@ -3299,6 +3622,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_FIRST_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.first_point.phi.clone() },
                 )
             },
@@ -3317,6 +3641,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_FIRST_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.first_point.z.clone() },
                 )
             },
@@ -3338,6 +3663,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_SECOND_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.second_point.r.clone() },
                 )
             },
@@ -3356,6 +3682,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_SECOND_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.second_point.phi.clone() },
                 )
             },
@@ -3374,6 +3701,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_SECOND_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.second_point.z.clone() },
                 )
             },
@@ -3395,6 +3723,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_THIRD_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.third_point.r.clone() },
                 )
             },
@@ -3413,6 +3742,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_THIRD_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.third_point.phi.clone() },
                 )
             },
@@ -3431,6 +3761,7 @@ static NODES_DENSITY_CONTROL_N_E_LINE_OF_SIGHT_THIRD_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.n_e_line_of_sight.third_point.z.clone() },
                 )
             },
@@ -3473,6 +3804,7 @@ static NODES_DENSITY_CONTROL_N_E_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.n_e_volume_average.reference_name.clone() },
                 )
             },
@@ -3491,6 +3823,7 @@ static NODES_DENSITY_CONTROL_N_E_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.n_e_volume_average.reference.clone() },
                 )
             },
@@ -3509,6 +3842,7 @@ static NODES_DENSITY_CONTROL_N_E_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_volume_average.reference_type.clone() },
                 )
             },
@@ -3527,6 +3861,7 @@ static NODES_DENSITY_CONTROL_N_E_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_e_volume_average.envelope_type.clone() },
                 )
             },
@@ -3548,6 +3883,7 @@ static NODES_DENSITY_CONTROL_ZEFF: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.zeff.reference_name.clone() },
                 )
             },
@@ -3566,6 +3902,7 @@ static NODES_DENSITY_CONTROL_ZEFF: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.zeff.reference.clone() },
                 )
             },
@@ -3584,6 +3921,7 @@ static NODES_DENSITY_CONTROL_ZEFF: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.zeff.reference_type.clone() },
                 )
             },
@@ -3602,6 +3940,7 @@ static NODES_DENSITY_CONTROL_ZEFF: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.zeff.envelope_type.clone() },
                 )
             },
@@ -3623,6 +3962,7 @@ static NODES_DENSITY_CONTROL_ZEFF_METHOD: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.zeff_method.name.clone() },
                 )
             },
@@ -3641,6 +3981,7 @@ static NODES_DENSITY_CONTROL_ZEFF_METHOD: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.zeff_method.index.clone() },
                 )
             },
@@ -3659,6 +4000,7 @@ static NODES_DENSITY_CONTROL_ZEFF_METHOD: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.zeff_method.description.clone() },
                 )
             },
@@ -3680,6 +4022,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_FIRST_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.first_point.r.clone() },
                 )
             },
@@ -3698,6 +4041,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_FIRST_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.first_point.phi.clone() },
                 )
             },
@@ -3716,6 +4060,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_FIRST_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.first_point.z.clone() },
                 )
             },
@@ -3737,6 +4082,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_SECOND_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.second_point.r.clone() },
                 )
             },
@@ -3755,6 +4101,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_SECOND_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.second_point.phi.clone() },
                 )
             },
@@ -3773,6 +4120,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_SECOND_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.second_point.z.clone() },
                 )
             },
@@ -3794,6 +4142,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_THIRD_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.third_point.r.clone() },
                 )
             },
@@ -3812,6 +4161,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_THIRD_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.third_point.phi.clone() },
                 )
             },
@@ -3830,6 +4180,7 @@ static NODES_DENSITY_CONTROL_ZEFF_LINE_OF_SIGHT_THIRD_POINT: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_0D { pulse_schedule.density_control.zeff_line_of_sight.third_point.z.clone() },
                 )
             },
@@ -3872,6 +4223,7 @@ static NODES_DENSITY_CONTROL_N_T_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.n_t_over_n_d.reference_name.clone() },
                 )
             },
@@ -3890,6 +4242,7 @@ static NODES_DENSITY_CONTROL_N_T_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.n_t_over_n_d.reference.clone() },
                 )
             },
@@ -3908,6 +4261,7 @@ static NODES_DENSITY_CONTROL_N_T_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_t_over_n_d.reference_type.clone() },
                 )
             },
@@ -3926,6 +4280,7 @@ static NODES_DENSITY_CONTROL_N_T_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_t_over_n_d.envelope_type.clone() },
                 )
             },
@@ -3947,6 +4302,7 @@ static NODES_DENSITY_CONTROL_N_H_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.density_control.n_h_over_n_d.reference_name.clone() },
                 )
             },
@@ -3965,6 +4321,7 @@ static NODES_DENSITY_CONTROL_N_H_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.n_h_over_n_d.reference.clone() },
                 )
             },
@@ -3983,6 +4340,7 @@ static NODES_DENSITY_CONTROL_N_H_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_h_over_n_d.reference_type.clone() },
                 )
             },
@@ -4001,6 +4359,7 @@ static NODES_DENSITY_CONTROL_N_H_OVER_N_D: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.density_control.n_h_over_n_d.envelope_type.clone() },
                 )
             },
@@ -4022,6 +4381,7 @@ static NODES_DENSITY_CONTROL_ION_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_density_control_ion_element,
+                    position_of_name_density_control_ion_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.density_control.ion[at[0]].element[at[1]].a.clone() },
                 )
             },
@@ -4040,6 +4400,7 @@ static NODES_DENSITY_CONTROL_ION_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_density_control_ion_element,
+                    position_of_name_density_control_ion_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.density_control.ion[at[0]].element[at[1]].z_n.clone() },
                 )
             },
@@ -4058,6 +4419,7 @@ static NODES_DENSITY_CONTROL_ION_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_density_control_ion_element,
+                    position_of_name_density_control_ion_element,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.density_control.ion[at[0]].element[at[1]].atoms_n.clone() },
                 )
             },
@@ -4079,6 +4441,7 @@ static NODES_DENSITY_CONTROL_ION_N_I_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_ion,
+                    position_of_name_density_control_ion,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.density_control.ion[at[0]].n_i_volume_average.reference_name.clone()
                     },
@@ -4099,6 +4462,7 @@ static NODES_DENSITY_CONTROL_ION_N_I_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_ion,
+                    position_of_name_density_control_ion,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.density_control.ion[at[0]].n_i_volume_average.reference.clone() },
                 )
             },
@@ -4117,6 +4481,7 @@ static NODES_DENSITY_CONTROL_ION_N_I_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_ion,
+                    position_of_name_density_control_ion,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.density_control.ion[at[0]].n_i_volume_average.reference_type.clone()
                     },
@@ -4137,6 +4502,7 @@ static NODES_DENSITY_CONTROL_ION_N_I_VOLUME_AVERAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_ion,
+                    position_of_name_density_control_ion,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.density_control.ion[at[0]].n_i_volume_average.envelope_type.clone()
                     },
@@ -4151,7 +4517,10 @@ static NODES_DENSITY_CONTROL_ION: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DENSITY_CONTROL_ION_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DENSITY_CONTROL_ION_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "z_ion",
@@ -4166,6 +4535,7 @@ static NODES_DENSITY_CONTROL_ION: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_ion,
+                    position_of_name_density_control_ion,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.density_control.ion[at[0]].z_ion.clone() },
                 )
             },
@@ -4184,6 +4554,7 @@ static NODES_DENSITY_CONTROL_ION: &[Node] = &[
                     indices,
                     1,
                     lengths_density_control_ion,
+                    position_of_name_density_control_ion,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.density_control.ion[at[0]].name.clone() },
                 )
             },
@@ -4202,7 +4573,10 @@ static NODES_DENSITY_CONTROL: &[Node] = &[
         name: "valve",
         documentation: "Set of injection valves. Time-dependent",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DENSITY_CONTROL_VALVE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DENSITY_CONTROL_VALVE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "n_e_line",
@@ -4268,7 +4642,10 @@ static NODES_DENSITY_CONTROL: &[Node] = &[
         name: "ion",
         documentation: "Quantities related to the different ion species, in the sense of isonuclear or isomolecular sequences",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DENSITY_CONTROL_ION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DENSITY_CONTROL_ION,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "mode",
@@ -4283,6 +4660,7 @@ static NODES_DENSITY_CONTROL: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.density_control.mode.clone() },
                 )
             },
@@ -4301,6 +4679,7 @@ static NODES_DENSITY_CONTROL: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.density_control.time.clone() },
                 )
             },
@@ -4322,6 +4701,7 @@ static NODES_EVENT_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].r#type.name.clone() },
                 )
             },
@@ -4340,6 +4720,7 @@ static NODES_EVENT_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.event[at[0]].r#type.index.clone() },
                 )
             },
@@ -4358,6 +4739,7 @@ static NODES_EVENT_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].r#type.description.clone() },
                 )
             },
@@ -4379,6 +4761,7 @@ static NODES_EVENT_ACQUISITION_STRATEGY: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].acquisition_strategy.name.clone() },
                 )
             },
@@ -4397,6 +4780,7 @@ static NODES_EVENT_ACQUISITION_STRATEGY: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.event[at[0]].acquisition_strategy.index.clone() },
                 )
             },
@@ -4415,6 +4799,7 @@ static NODES_EVENT_ACQUISITION_STRATEGY: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].acquisition_strategy.description.clone() },
                 )
             },
@@ -4436,6 +4821,7 @@ static NODES_EVENT_ACQUISITION_STATE: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].acquisition_state.name.clone() },
                 )
             },
@@ -4454,6 +4840,7 @@ static NODES_EVENT_ACQUISITION_STATE: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.event[at[0]].acquisition_state.index.clone() },
                 )
             },
@@ -4472,6 +4859,7 @@ static NODES_EVENT_ACQUISITION_STATE: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].acquisition_state.description.clone() },
                 )
             },
@@ -4499,6 +4887,7 @@ static NODES_EVENT: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].identifier.clone() },
                 )
             },
@@ -4517,6 +4906,7 @@ static NODES_EVENT: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.event[at[0]].time_stamp.clone() },
                 )
             },
@@ -4535,6 +4925,7 @@ static NODES_EVENT: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.event[at[0]].duration.clone() },
                 )
             },
@@ -4565,6 +4956,7 @@ static NODES_EVENT: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.event[at[0]].provider.clone() },
                 )
             },
@@ -4583,6 +4975,7 @@ static NODES_EVENT: &[Node] = &[
                     indices,
                     1,
                     lengths_event,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_1D { pulse_schedule.event[at[0]].listeners.clone() },
                 )
             },
@@ -4604,6 +4997,7 @@ static NODES_FLUX_CONTROL_IP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.flux_control.ip.reference_name.clone() },
                 )
             },
@@ -4622,6 +5016,7 @@ static NODES_FLUX_CONTROL_IP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.flux_control.ip.reference.clone() },
                 )
             },
@@ -4640,6 +5035,7 @@ static NODES_FLUX_CONTROL_IP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.ip.reference_type.clone() },
                 )
             },
@@ -4658,6 +5054,7 @@ static NODES_FLUX_CONTROL_IP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.ip.envelope_type.clone() },
                 )
             },
@@ -4679,6 +5076,7 @@ static NODES_FLUX_CONTROL_V_LOOP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.flux_control.v_loop.reference_name.clone() },
                 )
             },
@@ -4697,6 +5095,7 @@ static NODES_FLUX_CONTROL_V_LOOP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.flux_control.v_loop.reference.clone() },
                 )
             },
@@ -4715,6 +5114,7 @@ static NODES_FLUX_CONTROL_V_LOOP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.v_loop.reference_type.clone() },
                 )
             },
@@ -4733,6 +5133,7 @@ static NODES_FLUX_CONTROL_V_LOOP: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.v_loop.envelope_type.clone() },
                 )
             },
@@ -4754,6 +5155,7 @@ static NODES_FLUX_CONTROL_LI_3: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.flux_control.li_3.reference_name.clone() },
                 )
             },
@@ -4772,6 +5174,7 @@ static NODES_FLUX_CONTROL_LI_3: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.flux_control.li_3.reference.clone() },
                 )
             },
@@ -4790,6 +5193,7 @@ static NODES_FLUX_CONTROL_LI_3: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.li_3.reference_type.clone() },
                 )
             },
@@ -4808,6 +5212,7 @@ static NODES_FLUX_CONTROL_LI_3: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.li_3.envelope_type.clone() },
                 )
             },
@@ -4829,6 +5234,7 @@ static NODES_FLUX_CONTROL_BETA_TOR_NORM: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.flux_control.beta_tor_norm.reference_name.clone() },
                 )
             },
@@ -4847,6 +5253,7 @@ static NODES_FLUX_CONTROL_BETA_TOR_NORM: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.flux_control.beta_tor_norm.reference.clone() },
                 )
             },
@@ -4865,6 +5272,7 @@ static NODES_FLUX_CONTROL_BETA_TOR_NORM: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.beta_tor_norm.reference_type.clone() },
                 )
             },
@@ -4883,6 +5291,7 @@ static NODES_FLUX_CONTROL_BETA_TOR_NORM: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.flux_control.beta_tor_norm.envelope_type.clone() },
                 )
             },
@@ -4928,6 +5337,7 @@ static NODES_FLUX_CONTROL: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.flux_control.mode.clone() },
                 )
             },
@@ -4946,6 +5356,7 @@ static NODES_FLUX_CONTROL: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.flux_control.time.clone() },
                 )
             },
@@ -4967,6 +5378,7 @@ static NODES_PF_ACTIVE_COIL_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.pf_active.coil[at[0]].current.reference_name.clone() },
                 )
             },
@@ -4985,6 +5397,7 @@ static NODES_PF_ACTIVE_COIL_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.pf_active.coil[at[0]].current.reference.clone() },
                 )
             },
@@ -5003,6 +5416,7 @@ static NODES_PF_ACTIVE_COIL_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.pf_active.coil[at[0]].current.reference_type.clone() },
                 )
             },
@@ -5021,6 +5435,7 @@ static NODES_PF_ACTIVE_COIL_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.pf_active.coil[at[0]].current.envelope_type.clone() },
                 )
             },
@@ -5042,6 +5457,7 @@ static NODES_PF_ACTIVE_COIL_RESISTANCE_ADDITIONAL: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.pf_active.coil[at[0]].resistance_additional.reference_name.clone()
                     },
@@ -5062,6 +5478,7 @@ static NODES_PF_ACTIVE_COIL_RESISTANCE_ADDITIONAL: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.pf_active.coil[at[0]].resistance_additional.reference.clone() },
                 )
             },
@@ -5080,6 +5497,7 @@ static NODES_PF_ACTIVE_COIL_RESISTANCE_ADDITIONAL: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.pf_active.coil[at[0]].resistance_additional.reference_type.clone()
                     },
@@ -5100,6 +5518,7 @@ static NODES_PF_ACTIVE_COIL_RESISTANCE_ADDITIONAL: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.pf_active.coil[at[0]].resistance_additional.envelope_type.clone()
                     },
@@ -5123,6 +5542,7 @@ static NODES_PF_ACTIVE_COIL: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.pf_active.coil[at[0]].name.clone() },
                 )
             },
@@ -5141,6 +5561,7 @@ static NODES_PF_ACTIVE_COIL: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_coil,
+                    position_of_name_pf_active_coil,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.pf_active.coil[at[0]].description.clone() },
                 )
             },
@@ -5174,6 +5595,7 @@ static NODES_PF_ACTIVE_SUPPLY_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.pf_active.supply[at[0]].voltage.reference_name.clone() },
                 )
             },
@@ -5192,6 +5614,7 @@ static NODES_PF_ACTIVE_SUPPLY_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.pf_active.supply[at[0]].voltage.reference.clone() },
                 )
             },
@@ -5210,6 +5633,7 @@ static NODES_PF_ACTIVE_SUPPLY_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.pf_active.supply[at[0]].voltage.reference_type.clone() },
                 )
             },
@@ -5228,6 +5652,7 @@ static NODES_PF_ACTIVE_SUPPLY_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.pf_active.supply[at[0]].voltage.envelope_type.clone() },
                 )
             },
@@ -5249,6 +5674,7 @@ static NODES_PF_ACTIVE_SUPPLY_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.pf_active.supply[at[0]].current.reference_name.clone() },
                 )
             },
@@ -5267,6 +5693,7 @@ static NODES_PF_ACTIVE_SUPPLY_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.pf_active.supply[at[0]].current.reference.clone() },
                 )
             },
@@ -5285,6 +5712,7 @@ static NODES_PF_ACTIVE_SUPPLY_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.pf_active.supply[at[0]].current.reference_type.clone() },
                 )
             },
@@ -5303,6 +5731,7 @@ static NODES_PF_ACTIVE_SUPPLY_CURRENT: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.pf_active.supply[at[0]].current.envelope_type.clone() },
                 )
             },
@@ -5324,6 +5753,7 @@ static NODES_PF_ACTIVE_SUPPLY: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.pf_active.supply[at[0]].name.clone() },
                 )
             },
@@ -5342,6 +5772,7 @@ static NODES_PF_ACTIVE_SUPPLY: &[Node] = &[
                     indices,
                     1,
                     lengths_pf_active_supply,
+                    position_of_name_pf_active_supply,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.pf_active.supply[at[0]].description.clone() },
                 )
             },
@@ -5366,13 +5797,19 @@ static NODES_PF_ACTIVE: &[Node] = &[
         name: "coil",
         documentation: "Set of poloidal field coils",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_PF_ACTIVE_COIL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_PF_ACTIVE_COIL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "supply",
         documentation: "Set of PF power supplies",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_PF_ACTIVE_SUPPLY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_PF_ACTIVE_SUPPLY,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "mode",
@@ -5387,6 +5824,7 @@ static NODES_PF_ACTIVE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.pf_active.mode.clone() },
                 )
             },
@@ -5405,6 +5843,7 @@ static NODES_PF_ACTIVE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.pf_active.time.clone() },
                 )
             },
@@ -5426,6 +5865,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.magnetic_axis.r.reference_name.clone() },
                 )
             },
@@ -5444,6 +5884,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.magnetic_axis.r.reference.clone() },
                 )
             },
@@ -5462,6 +5903,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.magnetic_axis.r.reference_type.clone() },
                 )
             },
@@ -5480,6 +5922,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.magnetic_axis.r.envelope_type.clone() },
                 )
             },
@@ -5501,6 +5944,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.magnetic_axis.z.reference_name.clone() },
                 )
             },
@@ -5519,6 +5963,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.magnetic_axis.z.reference.clone() },
                 )
             },
@@ -5537,6 +5982,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.magnetic_axis.z.reference_type.clone() },
                 )
             },
@@ -5555,6 +6001,7 @@ static NODES_POSITION_CONTROL_MAGNETIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.magnetic_axis.z.envelope_type.clone() },
                 )
             },
@@ -5591,6 +6038,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.geometric_axis.r.reference_name.clone() },
                 )
             },
@@ -5609,6 +6057,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.geometric_axis.r.reference.clone() },
                 )
             },
@@ -5627,6 +6076,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.geometric_axis.r.reference_type.clone() },
                 )
             },
@@ -5645,6 +6095,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.geometric_axis.r.envelope_type.clone() },
                 )
             },
@@ -5666,6 +6117,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.geometric_axis.z.reference_name.clone() },
                 )
             },
@@ -5684,6 +6136,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.geometric_axis.z.reference.clone() },
                 )
             },
@@ -5702,6 +6155,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.geometric_axis.z.reference_type.clone() },
                 )
             },
@@ -5720,6 +6174,7 @@ static NODES_POSITION_CONTROL_GEOMETRIC_AXIS_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.geometric_axis.z.envelope_type.clone() },
                 )
             },
@@ -5756,6 +6211,7 @@ static NODES_POSITION_CONTROL_MINOR_RADIUS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.minor_radius.reference_name.clone() },
                 )
             },
@@ -5774,6 +6230,7 @@ static NODES_POSITION_CONTROL_MINOR_RADIUS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.minor_radius.reference.clone() },
                 )
             },
@@ -5792,6 +6249,7 @@ static NODES_POSITION_CONTROL_MINOR_RADIUS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.minor_radius.reference_type.clone() },
                 )
             },
@@ -5810,6 +6268,7 @@ static NODES_POSITION_CONTROL_MINOR_RADIUS: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.minor_radius.envelope_type.clone() },
                 )
             },
@@ -5831,6 +6290,7 @@ static NODES_POSITION_CONTROL_ELONGATION: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.elongation.reference_name.clone() },
                 )
             },
@@ -5849,6 +6309,7 @@ static NODES_POSITION_CONTROL_ELONGATION: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.elongation.reference.clone() },
                 )
             },
@@ -5867,6 +6328,7 @@ static NODES_POSITION_CONTROL_ELONGATION: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.elongation.reference_type.clone() },
                 )
             },
@@ -5885,6 +6347,7 @@ static NODES_POSITION_CONTROL_ELONGATION: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.elongation.envelope_type.clone() },
                 )
             },
@@ -5906,6 +6369,7 @@ static NODES_POSITION_CONTROL_ELONGATION_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.elongation_upper.reference_name.clone() },
                 )
             },
@@ -5924,6 +6388,7 @@ static NODES_POSITION_CONTROL_ELONGATION_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.elongation_upper.reference.clone() },
                 )
             },
@@ -5942,6 +6407,7 @@ static NODES_POSITION_CONTROL_ELONGATION_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.elongation_upper.reference_type.clone() },
                 )
             },
@@ -5960,6 +6426,7 @@ static NODES_POSITION_CONTROL_ELONGATION_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.elongation_upper.envelope_type.clone() },
                 )
             },
@@ -5981,6 +6448,7 @@ static NODES_POSITION_CONTROL_ELONGATION_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.elongation_lower.reference_name.clone() },
                 )
             },
@@ -5999,6 +6467,7 @@ static NODES_POSITION_CONTROL_ELONGATION_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.elongation_lower.reference.clone() },
                 )
             },
@@ -6017,6 +6486,7 @@ static NODES_POSITION_CONTROL_ELONGATION_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.elongation_lower.reference_type.clone() },
                 )
             },
@@ -6035,6 +6505,7 @@ static NODES_POSITION_CONTROL_ELONGATION_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.elongation_lower.envelope_type.clone() },
                 )
             },
@@ -6056,6 +6527,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.triangularity.reference_name.clone() },
                 )
             },
@@ -6074,6 +6546,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.triangularity.reference.clone() },
                 )
             },
@@ -6092,6 +6565,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity.reference_type.clone() },
                 )
             },
@@ -6110,6 +6584,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity.envelope_type.clone() },
                 )
             },
@@ -6131,6 +6606,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.triangularity_upper.reference_name.clone() },
                 )
             },
@@ -6149,6 +6625,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.triangularity_upper.reference.clone() },
                 )
             },
@@ -6167,6 +6644,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_upper.reference_type.clone() },
                 )
             },
@@ -6185,6 +6663,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_UPPER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_upper.envelope_type.clone() },
                 )
             },
@@ -6206,6 +6685,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.triangularity_lower.reference_name.clone() },
                 )
             },
@@ -6224,6 +6704,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.triangularity_lower.reference.clone() },
                 )
             },
@@ -6242,6 +6723,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_lower.reference_type.clone() },
                 )
             },
@@ -6260,6 +6742,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_LOWER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_lower.envelope_type.clone() },
                 )
             },
@@ -6281,6 +6764,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.triangularity_inner.reference_name.clone() },
                 )
             },
@@ -6299,6 +6783,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.triangularity_inner.reference.clone() },
                 )
             },
@@ -6317,6 +6802,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_inner.reference_type.clone() },
                 )
             },
@@ -6335,6 +6821,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_inner.envelope_type.clone() },
                 )
             },
@@ -6356,6 +6843,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.triangularity_outer.reference_name.clone() },
                 )
             },
@@ -6374,6 +6862,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.triangularity_outer.reference.clone() },
                 )
             },
@@ -6392,6 +6881,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_outer.reference_type.clone() },
                 )
             },
@@ -6410,6 +6900,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_outer.envelope_type.clone() },
                 )
             },
@@ -6431,6 +6922,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_MINOR: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.triangularity_minor.reference_name.clone() },
                 )
             },
@@ -6449,6 +6941,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_MINOR: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.triangularity_minor.reference.clone() },
                 )
             },
@@ -6467,6 +6960,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_MINOR: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_minor.reference_type.clone() },
                 )
             },
@@ -6485,6 +6979,7 @@ static NODES_POSITION_CONTROL_TRIANGULARITY_MINOR: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.triangularity_minor.envelope_type.clone() },
                 )
             },
@@ -6506,6 +7001,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.squareness_upper_outer.reference_name.clone() },
                 )
             },
@@ -6524,6 +7020,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.squareness_upper_outer.reference.clone() },
                 )
             },
@@ -6542,6 +7039,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_upper_outer.reference_type.clone() },
                 )
             },
@@ -6560,6 +7058,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_upper_outer.envelope_type.clone() },
                 )
             },
@@ -6581,6 +7080,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.squareness_upper_inner.reference_name.clone() },
                 )
             },
@@ -6599,6 +7099,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.squareness_upper_inner.reference.clone() },
                 )
             },
@@ -6617,6 +7118,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_upper_inner.reference_type.clone() },
                 )
             },
@@ -6635,6 +7137,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_UPPER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_upper_inner.envelope_type.clone() },
                 )
             },
@@ -6656,6 +7159,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.squareness_lower_outer.reference_name.clone() },
                 )
             },
@@ -6674,6 +7178,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.squareness_lower_outer.reference.clone() },
                 )
             },
@@ -6692,6 +7197,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_lower_outer.reference_type.clone() },
                 )
             },
@@ -6710,6 +7216,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_OUTER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_lower_outer.envelope_type.clone() },
                 )
             },
@@ -6731,6 +7238,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.squareness_lower_inner.reference_name.clone() },
                 )
             },
@@ -6749,6 +7257,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.squareness_lower_inner.reference.clone() },
                 )
             },
@@ -6767,6 +7276,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_lower_inner.reference_type.clone() },
                 )
             },
@@ -6785,6 +7295,7 @@ static NODES_POSITION_CONTROL_SQUARENESS_LOWER_INNER: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.squareness_lower_inner.envelope_type.clone() },
                 )
             },
@@ -6806,6 +7317,7 @@ static NODES_POSITION_CONTROL_X_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.position_control.x_point[at[0]].r.reference_name.clone() },
                 )
             },
@@ -6824,6 +7336,7 @@ static NODES_POSITION_CONTROL_X_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.position_control.x_point[at[0]].r.reference.clone() },
                 )
             },
@@ -6842,6 +7355,7 @@ static NODES_POSITION_CONTROL_X_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.x_point[at[0]].r.reference_type.clone() },
                 )
             },
@@ -6860,6 +7374,7 @@ static NODES_POSITION_CONTROL_X_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.x_point[at[0]].r.envelope_type.clone() },
                 )
             },
@@ -6881,6 +7396,7 @@ static NODES_POSITION_CONTROL_X_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.position_control.x_point[at[0]].z.reference_name.clone() },
                 )
             },
@@ -6899,6 +7415,7 @@ static NODES_POSITION_CONTROL_X_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.position_control.x_point[at[0]].z.reference.clone() },
                 )
             },
@@ -6917,6 +7434,7 @@ static NODES_POSITION_CONTROL_X_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.x_point[at[0]].z.reference_type.clone() },
                 )
             },
@@ -6935,6 +7453,7 @@ static NODES_POSITION_CONTROL_X_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_x_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.x_point[at[0]].z.envelope_type.clone() },
                 )
             },
@@ -6971,6 +7490,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.position_control.strike_point[at[0]].r.reference_name.clone() },
                 )
             },
@@ -6989,6 +7509,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.position_control.strike_point[at[0]].r.reference.clone() },
                 )
             },
@@ -7007,6 +7528,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.strike_point[at[0]].r.reference_type.clone() },
                 )
             },
@@ -7025,6 +7547,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.strike_point[at[0]].r.envelope_type.clone() },
                 )
             },
@@ -7046,6 +7569,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.position_control.strike_point[at[0]].z.reference_name.clone() },
                 )
             },
@@ -7064,6 +7588,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.position_control.strike_point[at[0]].z.reference.clone() },
                 )
             },
@@ -7082,6 +7607,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.strike_point[at[0]].z.reference_type.clone() },
                 )
             },
@@ -7100,6 +7626,7 @@ static NODES_POSITION_CONTROL_STRIKE_POINT_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_strike_point,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.strike_point[at[0]].z.envelope_type.clone() },
                 )
             },
@@ -7136,6 +7663,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.active_limiter_point.r.reference_name.clone() },
                 )
             },
@@ -7154,6 +7682,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.active_limiter_point.r.reference.clone() },
                 )
             },
@@ -7172,6 +7701,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.active_limiter_point.r.reference_type.clone() },
                 )
             },
@@ -7190,6 +7720,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.active_limiter_point.r.envelope_type.clone() },
                 )
             },
@@ -7211,6 +7742,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.active_limiter_point.z.reference_name.clone() },
                 )
             },
@@ -7229,6 +7761,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.active_limiter_point.z.reference.clone() },
                 )
             },
@@ -7247,6 +7780,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.active_limiter_point.z.reference_type.clone() },
                 )
             },
@@ -7265,6 +7799,7 @@ static NODES_POSITION_CONTROL_ACTIVE_LIMITER_POINT_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.active_limiter_point.z.envelope_type.clone() },
                 )
             },
@@ -7301,6 +7836,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.position_control.boundary_outline[at[0]].r.reference_name.clone()
                     },
@@ -7321,6 +7857,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.position_control.boundary_outline[at[0]].r.reference.clone() },
                 )
             },
@@ -7339,6 +7876,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.position_control.boundary_outline[at[0]].r.reference_type.clone()
                     },
@@ -7359,6 +7897,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_R: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.position_control.boundary_outline[at[0]].r.envelope_type.clone()
                     },
@@ -7382,6 +7921,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
                         pulse_schedule.position_control.boundary_outline[at[0]].z.reference_name.clone()
                     },
@@ -7402,6 +7942,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.position_control.boundary_outline[at[0]].z.reference.clone() },
                 )
             },
@@ -7420,6 +7961,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.position_control.boundary_outline[at[0]].z.reference_type.clone()
                     },
@@ -7440,6 +7982,7 @@ static NODES_POSITION_CONTROL_BOUNDARY_OUTLINE_Z: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_boundary_outline,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
                         pulse_schedule.position_control.boundary_outline[at[0]].z.envelope_type.clone()
                     },
@@ -7478,6 +8021,7 @@ static NODES_POSITION_CONTROL_Z_R_MAX: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.z_r_max.reference_name.clone() },
                 )
             },
@@ -7496,6 +8040,7 @@ static NODES_POSITION_CONTROL_Z_R_MAX: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.z_r_max.reference.clone() },
                 )
             },
@@ -7514,6 +8059,7 @@ static NODES_POSITION_CONTROL_Z_R_MAX: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.z_r_max.reference_type.clone() },
                 )
             },
@@ -7532,6 +8078,7 @@ static NODES_POSITION_CONTROL_Z_R_MAX: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.z_r_max.envelope_type.clone() },
                 )
             },
@@ -7553,6 +8100,7 @@ static NODES_POSITION_CONTROL_Z_R_MIN: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.z_r_min.reference_name.clone() },
                 )
             },
@@ -7571,6 +8119,7 @@ static NODES_POSITION_CONTROL_Z_R_MIN: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.z_r_min.reference.clone() },
                 )
             },
@@ -7589,6 +8138,7 @@ static NODES_POSITION_CONTROL_Z_R_MIN: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.z_r_min.reference_type.clone() },
                 )
             },
@@ -7607,6 +8157,7 @@ static NODES_POSITION_CONTROL_Z_R_MIN: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.z_r_min.envelope_type.clone() },
                 )
             },
@@ -7628,6 +8179,7 @@ static NODES_POSITION_CONTROL_GAP_VALUE: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.position_control.gap[at[0]].value.reference_name.clone() },
                 )
             },
@@ -7646,6 +8198,7 @@ static NODES_POSITION_CONTROL_GAP_VALUE: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.position_control.gap[at[0]].value.reference.clone() },
                 )
             },
@@ -7664,6 +8217,7 @@ static NODES_POSITION_CONTROL_GAP_VALUE: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.gap[at[0]].value.reference_type.clone() },
                 )
             },
@@ -7682,6 +8236,7 @@ static NODES_POSITION_CONTROL_GAP_VALUE: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.position_control.gap[at[0]].value.envelope_type.clone() },
                 )
             },
@@ -7703,6 +8258,7 @@ static NODES_POSITION_CONTROL_GAP: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.position_control.gap[at[0]].name.clone() },
                 )
             },
@@ -7721,6 +8277,7 @@ static NODES_POSITION_CONTROL_GAP: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.position_control.gap[at[0]].description.clone() },
                 )
             },
@@ -7739,6 +8296,7 @@ static NODES_POSITION_CONTROL_GAP: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.position_control.gap[at[0]].r.clone() },
                 )
             },
@@ -7757,6 +8315,7 @@ static NODES_POSITION_CONTROL_GAP: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.position_control.gap[at[0]].z.clone() },
                 )
             },
@@ -7775,6 +8334,7 @@ static NODES_POSITION_CONTROL_GAP: &[Node] = &[
                     indices,
                     1,
                     lengths_position_control_gap,
+                    position_of_name_position_control_gap,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_0D { pulse_schedule.position_control.gap[at[0]].angle.clone() },
                 )
             },
@@ -7802,6 +8362,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.current_centroid.r.reference_name.clone() },
                 )
             },
@@ -7820,6 +8381,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.current_centroid.r.reference.clone() },
                 )
             },
@@ -7838,6 +8400,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.current_centroid.r.reference_type.clone() },
                 )
             },
@@ -7856,6 +8419,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.current_centroid.r.envelope_type.clone() },
                 )
             },
@@ -7877,6 +8441,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.position_control.current_centroid.z.reference_name.clone() },
                 )
             },
@@ -7895,6 +8460,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.current_centroid.z.reference.clone() },
                 )
             },
@@ -7913,6 +8479,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.current_centroid.z.reference_type.clone() },
                 )
             },
@@ -7931,6 +8498,7 @@ static NODES_POSITION_CONTROL_CURRENT_CENTROID_Z: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.position_control.current_centroid.z.envelope_type.clone() },
                 )
             },
@@ -8054,13 +8622,19 @@ static NODES_POSITION_CONTROL: &[Node] = &[
         name: "x_point",
         documentation: "Array of X-points, for each of them the RZ position is given",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_POSITION_CONTROL_X_POINT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_POSITION_CONTROL_X_POINT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "strike_point",
         documentation: "Array of strike points, for each of them the RZ position is given",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_POSITION_CONTROL_STRIKE_POINT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_POSITION_CONTROL_STRIKE_POINT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "active_limiter_point",
@@ -8072,7 +8646,10 @@ static NODES_POSITION_CONTROL: &[Node] = &[
         name: "boundary_outline",
         documentation: "Set of (R,Z) points defining the outline of the plasma boundary",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_POSITION_CONTROL_BOUNDARY_OUTLINE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_POSITION_CONTROL_BOUNDARY_OUTLINE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "z_r_max",
@@ -8090,7 +8667,10 @@ static NODES_POSITION_CONTROL: &[Node] = &[
         name: "gap",
         documentation: "Set of gaps, defined by a reference point and a direction.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_POSITION_CONTROL_GAP),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_POSITION_CONTROL_GAP,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "current_centroid",
@@ -8111,6 +8691,7 @@ static NODES_POSITION_CONTROL: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.position_control.mode.clone() },
                 )
             },
@@ -8129,6 +8710,7 @@ static NODES_POSITION_CONTROL: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.position_control.time.clone() },
                 )
             },
@@ -8150,6 +8732,7 @@ static NODES_TF_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.tf.b_field_tor_vacuum_r.reference_name.clone() },
                 )
             },
@@ -8168,6 +8751,7 @@ static NODES_TF_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.tf.b_field_tor_vacuum_r.reference.clone() },
                 )
             },
@@ -8186,6 +8770,7 @@ static NODES_TF_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.tf.b_field_tor_vacuum_r.reference_type.clone() },
                 )
             },
@@ -8204,6 +8789,7 @@ static NODES_TF_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_0D { pulse_schedule.tf.b_field_tor_vacuum_r.envelope_type.clone() },
                 )
             },
@@ -8231,6 +8817,7 @@ static NODES_TF: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.tf.mode.clone() },
                 )
             },
@@ -8249,6 +8836,7 @@ static NODES_TF: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> FLT_1D { pulse_schedule.tf.time.clone() },
                 )
             },
@@ -8270,6 +8858,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.code.library[at[0]].name.clone() },
                 )
             },
@@ -8288,6 +8877,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.code.library[at[0]].description.clone() },
                 )
             },
@@ -8306,6 +8896,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.code.library[at[0]].commit.clone() },
                 )
             },
@@ -8324,6 +8915,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.code.library[at[0]].version.clone() },
                 )
             },
@@ -8342,6 +8934,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.code.library[at[0]].repository.clone() },
                 )
             },
@@ -8360,6 +8953,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.code.library[at[0]].parameters.clone() },
                 )
             },
@@ -8381,6 +8975,7 @@ static NODES_CODE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.code.name.clone() },
                 )
             },
@@ -8399,6 +8994,7 @@ static NODES_CODE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.code.description.clone() },
                 )
             },
@@ -8417,6 +9013,7 @@ static NODES_CODE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.code.commit.clone() },
                 )
             },
@@ -8435,6 +9032,7 @@ static NODES_CODE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.code.version.clone() },
                 )
             },
@@ -8453,6 +9051,7 @@ static NODES_CODE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.code.repository.clone() },
                 )
             },
@@ -8471,6 +9070,7 @@ static NODES_CODE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> STR_0D { pulse_schedule.code.parameters.clone() },
                 )
             },
@@ -8489,6 +9089,7 @@ static NODES_CODE: &[Node] = &[
                     indices,
                     0,
                     no_levels,
+                    no_names,
                     |pulse_schedule: &PulseSchedule, _at: &[usize]| -> INT_1D { pulse_schedule.code.output_flag.clone() },
                 )
             },
@@ -8498,7 +9099,10 @@ static NODES_CODE: &[Node] = &[
         name: "library",
         documentation: "List of external libraries used by the code that has produced this IDS",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_CODE_LIBRARY,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -8537,7 +9141,10 @@ static NODES_ROOT: &[Node] = &[
         name: "event",
         documentation: "List of events, either predefined triggers  or events recorded during the pulse",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_EVENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_EVENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "flux_control",

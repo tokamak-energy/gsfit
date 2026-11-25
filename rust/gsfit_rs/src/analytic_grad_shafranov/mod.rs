@@ -9,4 +9,4 @@ mod guazzotto_freidberg;
 
 // Public flattened exports
 pub use buxton_prokopyszyn::BuxtonProkopyszyn;
-pub use guazzotto_freidberg::{Configuration, GuazzottoFreidberg, Symmetry};
+pub use guazzotto_freidberg::GuazzottoFreidberg;

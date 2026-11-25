@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for BUXTON_PROKOPYSZYN_code_settings.xml, the file the Buxton-Prokopyszyn analytic solution reads its settings from.
+
+    BUXTON_PROKOPYSZYN_code_settings.xml holds no settings itself. It links, inside `ids`, to the settings of the one IDS the
+    analytic solution makes, equilibrium/equilibrium.xml.
+
+    The conventions are GSFit's, described in python/gsfit/settings_schema/xsd/GSFIT_code_settings.xsd. In brief:
+    * The schemas are laid out as a settings directory is, e.g. equilibrium/grid.xsd for equilibrium/grid.xml.
+    * A link's path is relative to the file holding the link, and the link names the schema of the file it links to in
+      `xs:appinfo/schema`, relative to the schema holding the link.
+    * A linked file's root element is the link's name, e.g. `grid`; an IDS's file's is the IDS's name followed by `_settings`.
+    * Each schema stands alone, with no `xs:include` or `xs:import`. Types used by several schemas are repeated in each, and must be
+      the same in each.
+    * Every element and enum value is described by an `xs:documentation`, and units are in `xs:appinfo/units`, as the full names of
+      SI units, such as metre and tesla, and dimensionless for a quantity with no dimensions. Counts have no units.
+    * A "method" element is an enum, each value naming the sibling element that holds that method's settings.
+    * A setting which is a node of the Equilibrium IDS has the node's name and file, e.g. vacuum_toroidal_field.xml's `r0` and `b0`
+      and global_quantities.xml's `ip`. The other settings use the paper's notation.
+    * Named types are UpperCamelCase and elements are snake_case. f64 -> `FiniteDouble`, or a restriction of it; usize ->
+      xs:nonNegativeInteger, xs:positiveInteger, or a type of its own for a larger minimum; bool -> `TrueOrFalse`.
+    * JSON's `null` (Rust's `None`) is `xsi:nil="true"` on an element declared `nillable="true"`.
+    * A list of numbers is space-separated, e.g. "0.1 0.2 0.3".
+    * Children are in `xs:all` groups, so their order does not matter.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= Types ================================= -->
+
+    <xs:simpleType name="XmlPath">
+        <xs:annotation>
+            <xs:documentation>
+                Path of an XML file, relative to the file holding the link.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:anyURI">
+            <xs:pattern value="\S+\.xml"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="Link">
+        <xs:annotation>
+            <xs:documentation>
+                A link to the file holding these settings.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="href" type="XmlPath" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    Path of the linked file, relative to BUXTON_PROKOPYSZYN_code_settings.xml, e.g. "equilibrium/equilibrium.xml" or "../default/equilibrium/equilibrium.xml".
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="BuxtonProkopyszynCodeSettingsIds">
+        <xs:annotation>
+            <xs:documentation>
+                Settings needed to build IDSs. These settings will be stored within the IDSs once built.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="equilibrium" type="Link">
+                <xs:annotation>
+                    <xs:documentation>
+                        Settings needed to build the `equilibrium` IDS: the time, the vacuum toroidal field, the shape, the profiles, the plasma current, the grid and the numerics.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <schema>equilibrium/equilibrium.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="buxton_prokopyszyn_code_settings">
+        <xs:annotation>
+            <xs:documentation>
+                The Buxton-Prokopyszyn analytic solution's settings. This file holds no settings itself; instead it links to different *.xml's.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="ids" type="BuxtonProkopyszynCodeSettingsIds">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Settings needed to build IDSs.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -141,7 +141,7 @@ def setup_pf_active(
     MCVC), which `coil.dat` numbers from 1; IPL is the plasma, which feeds no coil.
     A winding of `turns` turns, fed by a current `I`, carries `turns * I`, shared equally by its filaments; a negative `turns`, as in MCVCT, is a
     winding wound against its power supply's current. The filaments are not the turns, so `coil(i1)/current`, the current of each filament, is
-    `turns * I / n_filament`, not `I`, and the coil's self-inductance, which only the circuit equations use, is not the coil's.
+    `turns * I / n_filament`, not `I`, and the inductances which the circuit equations calculate from the filaments are not the coil's.
 
     The coils are named, and ordered, as in ST40's own machine description, ELMAG, which the settings and the Tokamak Energy writers are made for
     (`ELMAG_COILS`), so some are made of two of ASTRA's windings:

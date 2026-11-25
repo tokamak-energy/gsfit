@@ -12,6 +12,7 @@ from . import constraints_diamagnetic_flux
 from . import constraints_flux_loop
 from . import constraints_isoflux
 from . import constraints_isoflux_boundary
+from . import constraints_j_parallel
 from . import constraints_pressure
 from . import constraints_rogowski_coil
 from . import constraints_stationary_point
@@ -30,6 +31,7 @@ __all__ = [
     "constraints_flux_loop",
     "constraints_isoflux",
     "constraints_isoflux_boundary",
+    "constraints_j_parallel",
     "constraints_pressure",
     "constraints_rogowski_coil",
     "constraints_stationary_point",

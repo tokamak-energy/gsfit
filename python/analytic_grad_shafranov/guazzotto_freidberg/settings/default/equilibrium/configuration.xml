@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Guazzotto and Freidberg's elongated D (Table 1): r_geo = 1.7 m, a_minor / r_geo = 0.33, elongation 1.8, triangularity 0.4 -->
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/configuration.xsd">
+    <method>symmetric_limited</method>
+    <symmetric_limited>
+        <r_geo>1.7</r_geo>
+        <z_geo>0.0</z_geo>
+        <a_minor>0.561</a_minor>
+        <kappa>1.8</kappa>
+        <delta>0.4</delta>
+    </symmetric_limited>
+</configuration>

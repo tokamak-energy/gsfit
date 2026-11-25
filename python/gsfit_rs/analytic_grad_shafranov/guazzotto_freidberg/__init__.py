@@ -1,10 +1,11 @@
 """Guazzotto-Freidberg analytic Grad-Shafranov equilibrium.
 
-Re-exports the Rust-backed classes under a namespace that mirrors the Rust module
-tree (`analytic_grad_shafranov::guazzotto_freidberg`), so the solver-specific
-`Configuration` does not sit on the flat `gsfit_rs` namespace.
+Re-exports the Rust-backed class under a namespace that mirrors the Rust module
+tree (`analytic_grad_shafranov::guazzotto_freidberg`). It is constructed from its
+settings, which the Python driver, `analytic_grad_shafranov.guazzotto_freidberg`,
+reads from XML.
 """
 
-from gsfit_rs.gsfit_rs import Configuration, GuazzottoFreidberg, Symmetry
+from gsfit_rs.gsfit_rs import GuazzottoFreidberg
 
-__all__ = ["Configuration", "GuazzottoFreidberg", "Symmetry"]
+__all__ = ["GuazzottoFreidberg"]

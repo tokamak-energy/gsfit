@@ -167,7 +167,7 @@ impl PyCoreSources {
     }
 }
 
-/// An equilibrium IDS, readable from Python through paths.
+/// An Equilibrium IDS, readable from Python through paths.
 #[pyclass(module = "gsfit_rs.imas", name = "Equilibrium")]
 pub struct PyEquilibrium {
     pub inner: Equilibrium,
@@ -238,7 +238,7 @@ impl PyEquilibrium {
     }
 }
 
-/// A magnetics IDS, readable from Python through paths.
+/// A Magnetics IDS, readable from Python through paths.
 #[pyclass(module = "gsfit_rs.imas", name = "Magnetics")]
 pub struct PyMagnetics {
     pub inner: Magnetics,
@@ -257,7 +257,7 @@ impl PyMagnetics {
         read_path(py, &self.inner, "magnetics", path)
     }
 
-    /// The three sensor arrays are listed rather than summed: a magnetics IDS has no single
+    /// The three sensor arrays are listed rather than summed: a Magnetics IDS has no single
     /// length, so there is no `__len__`.
     fn __repr__(&self) -> String {
         format!(

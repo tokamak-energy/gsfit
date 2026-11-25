@@ -1,4 +1,4 @@
-use crate::greens::Greens;
+use crate::greens::{Conductor, ConductorModel, Greens, Sensor};
 use ndarray::{Array1, Array2};
 use std::f64::consts::PI;
 
@@ -81,16 +81,16 @@ fn cholesky_solve(a: &Array2<f64>, b: &Array1<f64>) -> Array1<f64> {
 /// Toroidal current density of the analytic plasma on the grid, zero outside the plasma.
 ///
 /// `j_phi = 2 * pi * (R * p' + ff' / (mu_0 * R))`, with the derivatives taken with respect to the
-/// total flux [weber]. For the GF profiles `p = p_axis * psi_hat ** 2` and
+/// total flux [weber]. For the GF profiles `p = p_0 * psi_hat ** 2` and
 /// `f ** 2 = r_geo ** 2 * b_0 ** 2 * (1 + 2 * (d_b / b_0) * psi_hat ** 2)` this is
-/// `j_phi = (4 * pi * psi_hat / psi_0) * (p_axis * R + r_geo ** 2 * b_0 * d_b / (mu_0 * R))`.
+/// `j_phi = (4 * pi * psi_hat / psi_0) * (p_0 * R + r_geo ** 2 * b_0 * d_b / (mu_0 * R))`.
 ///
 /// # Arguments
 /// * `r` - grid radial axis [metre]
 /// * `psi_hat_2d` - normalised flux, shape `(n_z, n_r)` [dimensionless]
 /// * `mask_2d` - 1 inside the plasma and 0 outside, shape `(n_z, n_r)` [dimensionless]
 /// * `psi_0` - the flux normalisation, `psi = psi_0 * psi_hat` [weber]
-/// * `p_axis` - pressure normalisation [pascal]
+/// * `p_0` - GF's pressure normalisation, the pressure where `psi_hat = 1` [pascal]
 /// * `r_geo` - geometric major radius [metre]
 /// * `bt_vac_at_r_geo` - vacuum toroidal field at `r_geo` [tesla]
 /// * `bt_diamagnetic_shift` - diamagnetic change in the toroidal field, `d_b` [tesla]
@@ -103,7 +103,7 @@ pub fn plasma_current_density(
     psi_hat_2d: &Array2<f64>,
     mask_2d: &Array2<f64>,
     psi_0: f64,
-    p_axis: f64,
+    p_0: f64,
     r_geo: f64,
     bt_vac_at_r_geo: f64,
     bt_diamagnetic_shift: f64,
@@ -115,7 +115,7 @@ pub fn plasma_current_density(
             if mask_2d[(i_z, i_r)] > 0.0 {
                 let r_cell: f64 = r[i_r];
                 j_phi_2d[(i_z, i_r)] =
-                    (4.0 * PI * psi_hat_2d[(i_z, i_r)] / psi_0) * (p_axis * r_cell + r_geo * r_geo * bt_vac_at_r_geo * bt_diamagnetic_shift / (MU_0 * r_cell));
+                    (4.0 * PI * psi_hat_2d[(i_z, i_r)] / psi_0) * (p_0 * r_cell + r_geo * r_geo * bt_vac_at_r_geo * bt_diamagnetic_shift / (MU_0 * r_cell));
             }
         }
     }
@@ -160,12 +160,12 @@ fn flux_on_grid(greens: &Greens, current: &Array1<f64>, n_z: usize, n_r: usize) 
     };
     // One `let` per table: a temporary lives until the end of its statement, so building all six
     // inside one struct literal would hold every `(n_grid, n_conductor)` Green's table at once
-    let psi: Array2<f64> = unflatten(greens.psi().dot(current));
-    let d_psi_d_r: Array2<f64> = unflatten(greens.d_psi_d_r().dot(current));
-    let d_psi_d_z: Array2<f64> = unflatten(greens.d_psi_d_z().dot(current));
-    let d2_psi_d_r2: Array2<f64> = unflatten(greens.d2_psi_d_r2().dot(current));
-    let d2_psi_d_r_d_z: Array2<f64> = unflatten(greens.d2_psi_d_r_d_z().dot(current));
-    let d2_psi_d_z2: Array2<f64> = unflatten(greens.d2_psi_d_z2().dot(current));
+    let psi: Array2<f64> = unflatten(greens.psi().expect("guazzotto_freidberg.flux_on_grid: psi").dot(current));
+    let d_psi_d_r: Array2<f64> = unflatten(greens.d_psi_d_r().expect("guazzotto_freidberg.flux_on_grid: d_psi_d_r").dot(current));
+    let d_psi_d_z: Array2<f64> = unflatten(greens.d_psi_d_z().expect("guazzotto_freidberg.flux_on_grid: d_psi_d_z").dot(current));
+    let d2_psi_d_r2: Array2<f64> = unflatten(greens.d2_psi_d_r2().expect("guazzotto_freidberg.flux_on_grid: d2_psi_d_r2").dot(current));
+    let d2_psi_d_r_d_z: Array2<f64> = unflatten(greens.d2_psi_d_r_d_z().expect("guazzotto_freidberg.flux_on_grid: d2_psi_d_r_d_z").dot(current));
+    let d2_psi_d_z2: Array2<f64> = unflatten(greens.d2_psi_d_z2().expect("guazzotto_freidberg.flux_on_grid: d2_psi_d_z2").dot(current));
     FluxOnGrid {
         psi,
         d_psi_d_r,
@@ -236,26 +236,34 @@ pub fn fit_boundary_coils(
     let coil_d_r: Array1<f64> = Array1::from_elem(n_coil, d_r_cell);
     let coil_d_z: Array1<f64> = Array1::from_elem(n_coil, d_z_cell);
 
-    // 3. Green's tables and the plasma self-flux at the control points.
-    let m_control_coil: Array2<f64> = Greens::sensor_to_conductor(
-        control_r.clone(),
-        control_z.clone(),
-        coil_r.clone(),
-        coil_z.clone(),
-        coil_d_r.clone(),
-        coil_d_z.clone(),
+    // 3. Green's tables and the plasma self-flux at the control points. The cells and the coil filaments are points,
+    //    `ConductorModel::Point`; as obliques they are described from their corners at the smallest r and z
+    let cells: Conductor = Conductor::from_oblique(
+        &(&cell_r - 0.5 * &cell_d_r),
+        &(&cell_z - 0.5 * &cell_d_z),
+        &cell_d_r,
+        &cell_d_z,
+        &Array1::zeros(n_cell),
+        &Array1::zeros(n_cell),
     )
-    .psi(); // (n_control, n_coil)
-    let psi_plasma_control: Array1<f64> = Greens::sensor_to_conductor(
-        control_r.clone(),
-        control_z.clone(),
-        cell_r.clone(),
-        cell_z.clone(),
-        cell_d_r.clone(),
-        cell_d_z.clone(),
+    .expect("guazzotto_freidberg.fit_boundary_coils: the plasma's cells");
+    let coils: Conductor = Conductor::from_oblique(
+        &(&coil_r - 0.5 * &coil_d_r),
+        &(&coil_z - 0.5 * &coil_d_z),
+        &coil_d_r,
+        &coil_d_z,
+        &Array1::zeros(n_coil),
+        &Array1::zeros(n_coil),
     )
-    .psi()
-    .dot(&cell_current);
+    .expect("guazzotto_freidberg.fit_boundary_coils: the coil filaments");
+    let control: Sensor = Sensor::new(control_r, control_z).expect("guazzotto_freidberg.fit_boundary_coils: the control points");
+    let m_control_coil: Array2<f64> = Greens::sensor_to_conductor(&control, &coils, ConductorModel::Point)
+        .and_then(|greens_calculator: Greens| greens_calculator.psi())
+        .expect("guazzotto_freidberg.fit_boundary_coils: the control points' Greens with the coils"); // (n_control, n_coil)
+    let psi_plasma_control: Array1<f64> = Greens::sensor_to_conductor(&control, &cells, ConductorModel::Point)
+        .and_then(|greens_calculator: Greens| greens_calculator.psi())
+        .expect("guazzotto_freidberg.fit_boundary_coils: the control points' Greens with the plasma")
+        .dot(&cell_current);
 
     // 4. Regularised least squares: (M^T M + lambda^2 I) I = M^T (psi_control - psi_plasma).
     //    The weight is scaled by the mean diagonal of M^T M so the caller's
@@ -287,13 +295,15 @@ pub fn fit_boundary_coils(
     }
     // Each `Greens` holds its elliptic integrals, `(n_grid, n_conductor)` twice over, so the plasma's is
     // dropped before the coils' is built
+    let grid: Sensor = Sensor::new(&grid_r_flat, &grid_z_flat).expect("guazzotto_freidberg.fit_boundary_coils: the grid");
     let flux_plasma: FluxOnGrid = {
-        let greens_grid_cell: Greens = Greens::sensor_to_conductor(grid_r_flat.clone(), grid_z_flat.clone(), cell_r, cell_z, cell_d_r, cell_d_z);
+        let greens_grid_cell: Greens = Greens::sensor_to_conductor(&grid, &cells, ConductorModel::Point)
+            .expect("guazzotto_freidberg.fit_boundary_coils: the grid's Greens with the plasma");
         flux_on_grid(&greens_grid_cell, &cell_current, n_z, n_r)
     };
     let flux_coils: FluxOnGrid = {
-        let greens_grid_coil: Greens =
-            Greens::sensor_to_conductor(grid_r_flat, grid_z_flat, coil_r.clone(), coil_z.clone(), coil_d_r.clone(), coil_d_z.clone());
+        let greens_grid_coil: Greens = Greens::sensor_to_conductor(&grid, &coils, ConductorModel::Point)
+            .expect("guazzotto_freidberg.fit_boundary_coils: the grid's Greens with the coils");
         flux_on_grid(&greens_grid_coil, &coil_current, n_z, n_r)
     };
     let flux_total: FluxOnGrid = FluxOnGrid {

@@ -33,5 +33,9 @@ def get_database_writer(method: str) -> DatabaseWriterProtocol:
             from .imas import DatabaseWriterIMAS
 
             return DatabaseWriterIMAS()
+        case "geqdsk":
+            from .geqdsk import DatabaseWriterGeqdsk
+
+            return DatabaseWriterGeqdsk()
         case _:
             raise ValueError(f"Unknown database writer method: {method}")

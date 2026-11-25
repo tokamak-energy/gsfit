@@ -10,8 +10,8 @@
 
 #![allow(clippy::all)]
 
-use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels};
-use crate::dd_base_types::{FLT_0D, FLT_1D, INT_0D, INT_1D, INT_2D, STR_0D};
+use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels, no_names};
+use crate::dd_base_types::{FLT_0D, FLT_1D, INT_0D, INT_1D, INT_2D, STR_0D, index_of_name};
 use crate::ids::magnetics::Magnetics;
 use std::any::Any;
 
@@ -126,6 +126,98 @@ fn lengths_stationary_point(magnetics: &Magnetics, level: usize, _at: &[usize]) 
 }
 
 // ============================================================================
+// Array-of-structures names
+// ============================================================================
+
+/// Position of the element named `name` at each array-of-structures level along `b_field_phi_probe` whose elements have a `name`.
+fn position_of_name_b_field_phi_probe(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.b_field_phi_probe, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `b_field_pol_probe` whose elements have a `name`.
+fn position_of_name_b_field_pol_probe(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.b_field_pol_probe, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `code_library` whose elements have a `name`.
+fn position_of_name_code_library(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.code.library, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `flux_loop` whose elements have a `name`.
+fn position_of_name_flux_loop(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.flux_loop, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `flux_loop_position` whose elements have a `name`.
+fn position_of_name_flux_loop_position(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.flux_loop, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `isoflux` whose elements have a `name`.
+fn position_of_name_isoflux(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.isoflux, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `isoflux_boundary` whose elements have a `name`.
+fn position_of_name_isoflux_boundary(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.isoflux_boundary, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `rogowski_coil` whose elements have a `name`.
+fn position_of_name_rogowski_coil(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.rogowski_coil, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `rogowski_coil_position` whose elements have a `name`.
+fn position_of_name_rogowski_coil_position(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.rogowski_coil, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `shunt` whose elements have a `name`.
+fn position_of_name_shunt(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.shunt, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `stationary_point` whose elements have a `name`.
+fn position_of_name_stationary_point(magnetics: &Magnetics, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&magnetics.stationary_point, name),
+        _ => return no_names(magnetics, level, at, name),
+    }
+}
+
+// ============================================================================
 // Nodes
 // ============================================================================
 
@@ -138,9 +230,14 @@ static NODES_FLUX_LOOP_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.flux_loop[at[0]].r#type.name.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.flux_loop[at[0]].r#type.name.clone() },
+                )
             },
         }),
     },
@@ -152,9 +249,14 @@ static NODES_FLUX_LOOP_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.flux_loop[at[0]].r#type.index.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.flux_loop[at[0]].r#type.index.clone() },
+                )
             },
         }),
     },
@@ -166,9 +268,14 @@ static NODES_FLUX_LOOP_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.flux_loop[at[0]].r#type.description.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.flux_loop[at[0]].r#type.description.clone() },
+                )
             },
         }),
     },
@@ -188,6 +295,7 @@ static NODES_FLUX_LOOP_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_flux_loop_position,
+                    position_of_name_flux_loop_position,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.flux_loop[at[0]].position[at[1]].r.clone() },
                 )
             },
@@ -206,6 +314,7 @@ static NODES_FLUX_LOOP_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_flux_loop_position,
+                    position_of_name_flux_loop_position,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.flux_loop[at[0]].position[at[1]].phi.clone() },
                 )
             },
@@ -224,6 +333,7 @@ static NODES_FLUX_LOOP_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_flux_loop_position,
+                    position_of_name_flux_loop_position,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.flux_loop[at[0]].position[at[1]].z.clone() },
                 )
             },
@@ -240,9 +350,14 @@ static NODES_FLUX_LOOP_FLUX: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.flux_loop[at[0]].flux.data.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.flux_loop[at[0]].flux.data.clone() },
+                )
             },
         }),
     },
@@ -254,9 +369,14 @@ static NODES_FLUX_LOOP_FLUX: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
-                    magnetics.flux_loop[at[0]].flux.validity_timed.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.flux_loop[at[0]].flux.validity_timed.clone() },
+                )
             },
         }),
     },
@@ -268,9 +388,14 @@ static NODES_FLUX_LOOP_FLUX: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.flux_loop[at[0]].flux.validity.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.flux_loop[at[0]].flux.validity.clone() },
+                )
             },
         }),
     },
@@ -282,9 +407,14 @@ static NODES_FLUX_LOOP_FLUX: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.flux_loop[at[0]].flux.time.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.flux_loop[at[0]].flux.time.clone() },
+                )
             },
         }),
     },
@@ -299,9 +429,14 @@ static NODES_FLUX_LOOP_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.flux_loop[at[0]].voltage.data.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.flux_loop[at[0]].voltage.data.clone() },
+                )
             },
         }),
     },
@@ -313,9 +448,14 @@ static NODES_FLUX_LOOP_VOLTAGE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
-                    magnetics.flux_loop[at[0]].voltage.validity_timed.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.flux_loop[at[0]].voltage.validity_timed.clone() },
+                )
             },
         }),
     },
@@ -327,9 +467,14 @@ static NODES_FLUX_LOOP_VOLTAGE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.flux_loop[at[0]].voltage.validity.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.flux_loop[at[0]].voltage.validity.clone() },
+                )
             },
         }),
     },
@@ -341,9 +486,14 @@ static NODES_FLUX_LOOP_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.flux_loop[at[0]].voltage.time.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.flux_loop[at[0]].voltage.time.clone() },
+                )
             },
         }),
     },
@@ -358,9 +508,14 @@ static NODES_FLUX_LOOP: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.flux_loop[at[0]].name.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.flux_loop[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -372,9 +527,14 @@ static NODES_FLUX_LOOP: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.flux_loop[at[0]].description.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.flux_loop[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -388,7 +548,10 @@ static NODES_FLUX_LOOP: &[Node] = &[
         name: "position",
         documentation: "List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_FLUX_LOOP_POSITION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_FLUX_LOOP_POSITION,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "indices_differential",
@@ -398,9 +561,14 @@ static NODES_FLUX_LOOP: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
-                    magnetics.flux_loop[at[0]].indices_differential.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.flux_loop[at[0]].indices_differential.clone() },
+                )
             },
         }),
     },
@@ -412,9 +580,14 @@ static NODES_FLUX_LOOP: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.flux_loop[at[0]].area.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.flux_loop[at[0]].area.clone() },
+                )
             },
         }),
     },
@@ -426,9 +599,14 @@ static NODES_FLUX_LOOP: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_flux_loop, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.flux_loop[at[0]].gm9.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_flux_loop,
+                    position_of_name_flux_loop,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.flux_loop[at[0]].gm9.clone() },
+                )
             },
         }),
     },
@@ -460,6 +638,7 @@ static NODES_B_FIELD_POL_PROBE_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_pol_probe[at[0]].r#type.name.clone() },
                 )
             },
@@ -478,6 +657,7 @@ static NODES_B_FIELD_POL_PROBE_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_pol_probe[at[0]].r#type.index.clone() },
                 )
             },
@@ -496,6 +676,7 @@ static NODES_B_FIELD_POL_PROBE_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_pol_probe[at[0]].r#type.description.clone() },
                 )
             },
@@ -517,6 +698,7 @@ static NODES_B_FIELD_POL_PROBE_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_pol_probe[at[0]].position.r.clone() },
                 )
             },
@@ -535,6 +717,7 @@ static NODES_B_FIELD_POL_PROBE_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_pol_probe[at[0]].position.phi.clone() },
                 )
             },
@@ -553,6 +736,7 @@ static NODES_B_FIELD_POL_PROBE_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_pol_probe[at[0]].position.z.clone() },
                 )
             },
@@ -574,6 +758,7 @@ static NODES_B_FIELD_POL_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_pol_probe[at[0]].field.data.clone() },
                 )
             },
@@ -592,6 +777,7 @@ static NODES_B_FIELD_POL_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.b_field_pol_probe[at[0]].field.validity_timed.clone() },
                 )
             },
@@ -610,6 +796,7 @@ static NODES_B_FIELD_POL_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_pol_probe[at[0]].field.validity.clone() },
                 )
             },
@@ -628,6 +815,7 @@ static NODES_B_FIELD_POL_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_pol_probe[at[0]].field.time.clone() },
                 )
             },
@@ -649,6 +837,7 @@ static NODES_B_FIELD_POL_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_pol_probe[at[0]].voltage.data.clone() },
                 )
             },
@@ -667,6 +856,7 @@ static NODES_B_FIELD_POL_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.b_field_pol_probe[at[0]].voltage.validity_timed.clone() },
                 )
             },
@@ -685,6 +875,7 @@ static NODES_B_FIELD_POL_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_pol_probe[at[0]].voltage.validity.clone() },
                 )
             },
@@ -703,6 +894,7 @@ static NODES_B_FIELD_POL_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_pol_probe[at[0]].voltage.time.clone() },
                 )
             },
@@ -724,6 +916,7 @@ static NODES_B_FIELD_POL_PROBE_NON_LINEAR_RESPONSE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_pol_probe[at[0]].non_linear_response.b_field_linear.clone() },
                 )
             },
@@ -742,6 +935,7 @@ static NODES_B_FIELD_POL_PROBE_NON_LINEAR_RESPONSE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_pol_probe[at[0]].non_linear_response.b_field_non_linear.clone() },
                 )
             },
@@ -763,6 +957,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_pol_probe[at[0]].name.clone() },
                 )
             },
@@ -781,6 +976,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_pol_probe[at[0]].description.clone() },
                 )
             },
@@ -811,6 +1007,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_pol_probe[at[0]].poloidal_angle.clone() },
                 )
             },
@@ -829,6 +1026,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_pol_probe[at[0]].toroidal_angle.clone() },
                 )
             },
@@ -847,6 +1045,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.b_field_pol_probe[at[0]].indices_differential.clone() },
                 )
             },
@@ -865,6 +1064,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_pol_probe[at[0]].bandwidth_3db.clone() },
                 )
             },
@@ -883,6 +1083,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_pol_probe[at[0]].area.clone() },
                 )
             },
@@ -901,6 +1102,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_pol_probe[at[0]].length.clone() },
                 )
             },
@@ -919,6 +1121,7 @@ static NODES_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_pol_probe,
+                    position_of_name_b_field_pol_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_pol_probe[at[0]].turns.clone() },
                 )
             },
@@ -958,6 +1161,7 @@ static NODES_B_FIELD_PHI_PROBE_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_phi_probe[at[0]].r#type.name.clone() },
                 )
             },
@@ -976,6 +1180,7 @@ static NODES_B_FIELD_PHI_PROBE_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_phi_probe[at[0]].r#type.index.clone() },
                 )
             },
@@ -994,6 +1199,7 @@ static NODES_B_FIELD_PHI_PROBE_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_phi_probe[at[0]].r#type.description.clone() },
                 )
             },
@@ -1015,6 +1221,7 @@ static NODES_B_FIELD_PHI_PROBE_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_phi_probe[at[0]].position.r.clone() },
                 )
             },
@@ -1033,6 +1240,7 @@ static NODES_B_FIELD_PHI_PROBE_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_phi_probe[at[0]].position.phi.clone() },
                 )
             },
@@ -1051,6 +1259,7 @@ static NODES_B_FIELD_PHI_PROBE_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_phi_probe[at[0]].position.z.clone() },
                 )
             },
@@ -1072,6 +1281,7 @@ static NODES_B_FIELD_PHI_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_phi_probe[at[0]].field.data.clone() },
                 )
             },
@@ -1090,6 +1300,7 @@ static NODES_B_FIELD_PHI_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.b_field_phi_probe[at[0]].field.validity_timed.clone() },
                 )
             },
@@ -1108,6 +1319,7 @@ static NODES_B_FIELD_PHI_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_phi_probe[at[0]].field.validity.clone() },
                 )
             },
@@ -1126,6 +1338,7 @@ static NODES_B_FIELD_PHI_PROBE_FIELD: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_phi_probe[at[0]].field.time.clone() },
                 )
             },
@@ -1147,6 +1360,7 @@ static NODES_B_FIELD_PHI_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_phi_probe[at[0]].voltage.data.clone() },
                 )
             },
@@ -1165,6 +1379,7 @@ static NODES_B_FIELD_PHI_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.b_field_phi_probe[at[0]].voltage.validity_timed.clone() },
                 )
             },
@@ -1183,6 +1398,7 @@ static NODES_B_FIELD_PHI_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_phi_probe[at[0]].voltage.validity.clone() },
                 )
             },
@@ -1201,6 +1417,7 @@ static NODES_B_FIELD_PHI_PROBE_VOLTAGE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_phi_probe[at[0]].voltage.time.clone() },
                 )
             },
@@ -1222,6 +1439,7 @@ static NODES_B_FIELD_PHI_PROBE_NON_LINEAR_RESPONSE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_phi_probe[at[0]].non_linear_response.b_field_linear.clone() },
                 )
             },
@@ -1240,6 +1458,7 @@ static NODES_B_FIELD_PHI_PROBE_NON_LINEAR_RESPONSE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_phi_probe[at[0]].non_linear_response.b_field_non_linear.clone() },
                 )
             },
@@ -1261,6 +1480,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_phi_probe[at[0]].name.clone() },
                 )
             },
@@ -1279,6 +1499,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.b_field_phi_probe[at[0]].description.clone() },
                 )
             },
@@ -1309,6 +1530,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_phi_probe[at[0]].poloidal_angle.clone() },
                 )
             },
@@ -1327,6 +1549,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_phi_probe[at[0]].toroidal_angle.clone() },
                 )
             },
@@ -1345,6 +1568,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.b_field_phi_probe[at[0]].indices_differential.clone() },
                 )
             },
@@ -1363,6 +1587,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.b_field_phi_probe[at[0]].bandwidth_3db.clone() },
                 )
             },
@@ -1381,6 +1606,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_phi_probe[at[0]].area.clone() },
                 )
             },
@@ -1399,6 +1625,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.b_field_phi_probe[at[0]].length.clone() },
                 )
             },
@@ -1417,6 +1644,7 @@ static NODES_B_FIELD_PHI_PROBE: &[Node] = &[
                     indices,
                     1,
                     lengths_b_field_phi_probe,
+                    position_of_name_b_field_phi_probe,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.b_field_phi_probe[at[0]].turns.clone() },
                 )
             },
@@ -1451,9 +1679,14 @@ static NODES_ROGOWSKI_COIL_MEASURED_QUANTITY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.rogowski_coil[at[0]].measured_quantity.name.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.rogowski_coil[at[0]].measured_quantity.name.clone() },
+                )
             },
         }),
     },
@@ -1465,9 +1698,14 @@ static NODES_ROGOWSKI_COIL_MEASURED_QUANTITY: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.rogowski_coil[at[0]].measured_quantity.index.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.rogowski_coil[at[0]].measured_quantity.index.clone() },
+                )
             },
         }),
     },
@@ -1479,9 +1717,14 @@ static NODES_ROGOWSKI_COIL_MEASURED_QUANTITY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.rogowski_coil[at[0]].measured_quantity.description.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.rogowski_coil[at[0]].measured_quantity.description.clone() },
+                )
             },
         }),
     },
@@ -1501,6 +1744,7 @@ static NODES_ROGOWSKI_COIL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_rogowski_coil_position,
+                    position_of_name_rogowski_coil_position,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].position[at[1]].r.clone() },
                 )
             },
@@ -1519,6 +1763,7 @@ static NODES_ROGOWSKI_COIL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_rogowski_coil_position,
+                    position_of_name_rogowski_coil_position,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].position[at[1]].phi.clone() },
                 )
             },
@@ -1537,6 +1782,7 @@ static NODES_ROGOWSKI_COIL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_rogowski_coil_position,
+                    position_of_name_rogowski_coil_position,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].position[at[1]].z.clone() },
                 )
             },
@@ -1553,9 +1799,14 @@ static NODES_ROGOWSKI_COIL_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.rogowski_coil[at[0]].current.data.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.rogowski_coil[at[0]].current.data.clone() },
+                )
             },
         }),
     },
@@ -1567,9 +1818,14 @@ static NODES_ROGOWSKI_COIL_CURRENT: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
-                    magnetics.rogowski_coil[at[0]].current.validity_timed.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.rogowski_coil[at[0]].current.validity_timed.clone() },
+                )
             },
         }),
     },
@@ -1581,9 +1837,14 @@ static NODES_ROGOWSKI_COIL_CURRENT: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.rogowski_coil[at[0]].current.validity.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.rogowski_coil[at[0]].current.validity.clone() },
+                )
             },
         }),
     },
@@ -1595,9 +1856,14 @@ static NODES_ROGOWSKI_COIL_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.rogowski_coil[at[0]].current.time.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.rogowski_coil[at[0]].current.time.clone() },
+                )
             },
         }),
     },
@@ -1612,9 +1878,14 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.rogowski_coil[at[0]].name.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.rogowski_coil[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -1626,9 +1897,14 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.rogowski_coil[at[0]].description.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.rogowski_coil[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -1642,7 +1918,10 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
         name: "position",
         documentation: "List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_ROGOWSKI_COIL_POSITION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_ROGOWSKI_COIL_POSITION,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "indices_compound",
@@ -1652,9 +1931,14 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
-                    magnetics.rogowski_coil[at[0]].indices_compound.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.rogowski_coil[at[0]].indices_compound.clone() },
+                )
             },
         }),
     },
@@ -1666,9 +1950,14 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.rogowski_coil[at[0]].area.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].area.clone() },
+                )
             },
         }),
     },
@@ -1680,9 +1969,14 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_rogowski_coil, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.rogowski_coil[at[0]].turns_per_metre.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_rogowski_coil,
+                    position_of_name_rogowski_coil,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].turns_per_metre.clone() },
+                )
             },
         }),
     },
@@ -1703,9 +1997,14 @@ static NODES_SHUNT_POSITION_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.shunt[at[0]].position.first_point.r.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.shunt[at[0]].position.first_point.r.clone() },
+                )
             },
         }),
     },
@@ -1717,9 +2016,14 @@ static NODES_SHUNT_POSITION_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.shunt[at[0]].position.first_point.z.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.shunt[at[0]].position.first_point.z.clone() },
+                )
             },
         }),
     },
@@ -1734,9 +2038,14 @@ static NODES_SHUNT_POSITION_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.shunt[at[0]].position.second_point.r.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.shunt[at[0]].position.second_point.r.clone() },
+                )
             },
         }),
     },
@@ -1748,9 +2057,14 @@ static NODES_SHUNT_POSITION_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.shunt[at[0]].position.second_point.z.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.shunt[at[0]].position.second_point.z.clone() },
+                )
             },
         }),
     },
@@ -1780,9 +2094,14 @@ static NODES_SHUNT_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.shunt[at[0]].voltage.data.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.shunt[at[0]].voltage.data.clone() },
+                )
             },
         }),
     },
@@ -1794,9 +2113,14 @@ static NODES_SHUNT_VOLTAGE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
-                    magnetics.shunt[at[0]].voltage.validity_timed.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.shunt[at[0]].voltage.validity_timed.clone() },
+                )
             },
         }),
     },
@@ -1808,9 +2132,14 @@ static NODES_SHUNT_VOLTAGE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.shunt[at[0]].voltage.validity.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.shunt[at[0]].voltage.validity.clone() },
+                )
             },
         }),
     },
@@ -1822,9 +2151,14 @@ static NODES_SHUNT_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.shunt[at[0]].voltage.time.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.shunt[at[0]].voltage.time.clone() },
+                )
             },
         }),
     },
@@ -1839,9 +2173,14 @@ static NODES_SHUNT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.shunt[at[0]].name.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.shunt[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -1853,9 +2192,14 @@ static NODES_SHUNT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.shunt[at[0]].description.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.shunt[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -1873,9 +2217,14 @@ static NODES_SHUNT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> FLT_0D {
-                    magnetics.shunt[at[0]].resistance.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.shunt[at[0]].resistance.clone() },
+                )
             },
         }),
     },
@@ -1893,9 +2242,14 @@ static NODES_SHUNT: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.shunt[at[0]].divertor_index.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.shunt[at[0]].divertor_index.clone() },
+                )
             },
         }),
     },
@@ -1907,9 +2261,14 @@ static NODES_SHUNT: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.shunt[at[0]].target_index.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.shunt[at[0]].target_index.clone() },
+                )
             },
         }),
     },
@@ -1921,9 +2280,14 @@ static NODES_SHUNT: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_shunt, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.shunt[at[0]].tile_index.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_shunt,
+                    position_of_name_shunt,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.shunt[at[0]].tile_index.clone() },
+                )
             },
         }),
     },
@@ -1938,7 +2302,7 @@ static NODES_IP: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_ip, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
+                gather(magnetics, indices, 1, lengths_ip, no_names, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
                     magnetics.ip[at[0]].method_name.clone()
                 })
             },
@@ -1952,7 +2316,7 @@ static NODES_IP: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_ip, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
+                gather(magnetics, indices, 1, lengths_ip, no_names, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
                     magnetics.ip[at[0]].data.clone()
                 })
             },
@@ -1966,7 +2330,7 @@ static NODES_IP: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_ip, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
+                gather(magnetics, indices, 1, lengths_ip, no_names, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
                     magnetics.ip[at[0]].time.clone()
                 })
             },
@@ -1988,6 +2352,7 @@ static NODES_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_diamagnetic_flux,
+                    no_names,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.diamagnetic_flux[at[0]].method_name.clone() },
                 )
             },
@@ -2006,6 +2371,7 @@ static NODES_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_diamagnetic_flux,
+                    no_names,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.diamagnetic_flux[at[0]].data.clone() },
                 )
             },
@@ -2024,6 +2390,7 @@ static NODES_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_diamagnetic_flux,
+                    no_names,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.diamagnetic_flux[at[0]].time.clone() },
                 )
             },
@@ -2040,9 +2407,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_code_library, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.code.library[at[0]].name.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.code.library[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -2054,9 +2426,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_code_library, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.code.library[at[0]].description.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.code.library[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -2068,9 +2445,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_code_library, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.code.library[at[0]].commit.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.code.library[at[0]].commit.clone() },
+                )
             },
         }),
     },
@@ -2082,9 +2464,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_code_library, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.code.library[at[0]].version.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.code.library[at[0]].version.clone() },
+                )
             },
         }),
     },
@@ -2096,9 +2483,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_code_library, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.code.library[at[0]].repository.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.code.library[at[0]].repository.clone() },
+                )
             },
         }),
     },
@@ -2110,9 +2502,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_code_library, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.code.library[at[0]].parameters.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.code.library[at[0]].parameters.clone() },
+                )
             },
         }),
     },
@@ -2127,7 +2524,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
                     magnetics.code.name.clone()
                 })
             },
@@ -2141,7 +2538,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
                     magnetics.code.description.clone()
                 })
             },
@@ -2155,7 +2552,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
                     magnetics.code.commit.clone()
                 })
             },
@@ -2169,7 +2566,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
                     magnetics.code.version.clone()
                 })
             },
@@ -2183,7 +2580,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
                     magnetics.code.repository.clone()
                 })
             },
@@ -2197,7 +2594,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> STR_0D {
                     magnetics.code.parameters.clone()
                 })
             },
@@ -2211,7 +2608,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> INT_1D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> INT_1D {
                     magnetics.code.output_flag.clone()
                 })
             },
@@ -2221,7 +2618,10 @@ static NODES_CODE: &[Node] = &[
         name: "library",
         documentation: "List of external libraries used by the code that has produced this IDS",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_CODE_LIBRARY,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -2234,9 +2634,14 @@ static NODES_ISOFLUX_POSITION_1: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.isoflux[at[0]].position_1.r.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux[at[0]].position_1.r.clone() },
+                )
             },
         }),
     },
@@ -2248,9 +2653,14 @@ static NODES_ISOFLUX_POSITION_1: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.isoflux[at[0]].position_1.z.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux[at[0]].position_1.z.clone() },
+                )
             },
         }),
     },
@@ -2265,9 +2675,14 @@ static NODES_ISOFLUX_POSITION_2: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.isoflux[at[0]].position_2.r.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux[at[0]].position_2.r.clone() },
+                )
             },
         }),
     },
@@ -2279,9 +2694,14 @@ static NODES_ISOFLUX_POSITION_2: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.isoflux[at[0]].position_2.z.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux[at[0]].position_2.z.clone() },
+                )
             },
         }),
     },
@@ -2296,9 +2716,14 @@ static NODES_ISOFLUX: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.isoflux[at[0]].name.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.isoflux[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -2310,9 +2735,14 @@ static NODES_ISOFLUX: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> STR_0D {
-                    magnetics.isoflux[at[0]].description.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.isoflux[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -2336,9 +2766,14 @@ static NODES_ISOFLUX: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> INT_1D {
-                    magnetics.isoflux[at[0]].validity_timed.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.isoflux[at[0]].validity_timed.clone() },
+                )
             },
         }),
     },
@@ -2350,9 +2785,14 @@ static NODES_ISOFLUX: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> INT_0D {
-                    magnetics.isoflux[at[0]].validity.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.isoflux[at[0]].validity.clone() },
+                )
             },
         }),
     },
@@ -2364,9 +2804,14 @@ static NODES_ISOFLUX: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 1, lengths_isoflux, |magnetics: &Magnetics, at: &[usize]| -> FLT_1D {
-                    magnetics.isoflux[at[0]].time.clone()
-                })
+                gather(
+                    magnetics,
+                    indices,
+                    1,
+                    lengths_isoflux,
+                    position_of_name_isoflux,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux[at[0]].time.clone() },
+                )
             },
         }),
     },
@@ -2386,6 +2831,7 @@ static NODES_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_isoflux_boundary,
+                    position_of_name_isoflux_boundary,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux_boundary[at[0]].position.r.clone() },
                 )
             },
@@ -2404,6 +2850,7 @@ static NODES_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_isoflux_boundary,
+                    position_of_name_isoflux_boundary,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux_boundary[at[0]].position.z.clone() },
                 )
             },
@@ -2425,6 +2872,7 @@ static NODES_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_isoflux_boundary,
+                    position_of_name_isoflux_boundary,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.isoflux_boundary[at[0]].name.clone() },
                 )
             },
@@ -2443,6 +2891,7 @@ static NODES_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_isoflux_boundary,
+                    position_of_name_isoflux_boundary,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.isoflux_boundary[at[0]].description.clone() },
                 )
             },
@@ -2467,6 +2916,7 @@ static NODES_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_isoflux_boundary,
+                    position_of_name_isoflux_boundary,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.isoflux_boundary[at[0]].validity_timed.clone() },
                 )
             },
@@ -2485,6 +2935,7 @@ static NODES_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_isoflux_boundary,
+                    position_of_name_isoflux_boundary,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.isoflux_boundary[at[0]].validity.clone() },
                 )
             },
@@ -2503,6 +2954,7 @@ static NODES_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_isoflux_boundary,
+                    position_of_name_isoflux_boundary,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.isoflux_boundary[at[0]].time.clone() },
                 )
             },
@@ -2524,6 +2976,7 @@ static NODES_STATIONARY_POINT_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_stationary_point,
+                    position_of_name_stationary_point,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.stationary_point[at[0]].position.r.clone() },
                 )
             },
@@ -2542,6 +2995,7 @@ static NODES_STATIONARY_POINT_POSITION: &[Node] = &[
                     indices,
                     1,
                     lengths_stationary_point,
+                    position_of_name_stationary_point,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.stationary_point[at[0]].position.z.clone() },
                 )
             },
@@ -2563,6 +3017,7 @@ static NODES_STATIONARY_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_stationary_point,
+                    position_of_name_stationary_point,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.stationary_point[at[0]].name.clone() },
                 )
             },
@@ -2581,6 +3036,7 @@ static NODES_STATIONARY_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_stationary_point,
+                    position_of_name_stationary_point,
                     |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.stationary_point[at[0]].description.clone() },
                 )
             },
@@ -2605,6 +3061,7 @@ static NODES_STATIONARY_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_stationary_point,
+                    position_of_name_stationary_point,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_1D { magnetics.stationary_point[at[0]].validity_timed.clone() },
                 )
             },
@@ -2623,6 +3080,7 @@ static NODES_STATIONARY_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_stationary_point,
+                    position_of_name_stationary_point,
                     |magnetics: &Magnetics, at: &[usize]| -> INT_0D { magnetics.stationary_point[at[0]].validity.clone() },
                 )
             },
@@ -2641,6 +3099,7 @@ static NODES_STATIONARY_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_stationary_point,
+                    position_of_name_stationary_point,
                     |magnetics: &Magnetics, at: &[usize]| -> FLT_1D { magnetics.stationary_point[at[0]].time.clone() },
                 )
             },
@@ -2653,13 +3112,19 @@ static NODES_ROOT: &[Node] = &[
         name: "flux_loop",
         documentation: "Flux loops; partial flux loops can be described. In case of differential loops, the geometry of differential flux loops is stored in the flux_loop indices of the primitive loops. Signals may be stored on the primitive loop indices but this is optional if the index of the primitive loop is referenced by a differential loop index",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_FLUX_LOOP),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_FLUX_LOOP,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "b_field_pol_probe",
         documentation: "Poloidal field probes",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_B_FIELD_POL_PROBE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_B_FIELD_POL_PROBE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "b_field_pol_probe_equivalent",
@@ -2669,7 +3134,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "INT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> INT_2D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> INT_2D {
                     magnetics.b_field_pol_probe_equivalent.clone()
                 })
             },
@@ -2679,31 +3144,46 @@ static NODES_ROOT: &[Node] = &[
         name: "b_field_phi_probe",
         documentation: "Toroidal field probes",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_B_FIELD_PHI_PROBE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_B_FIELD_PHI_PROBE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "rogowski_coil",
         documentation: "Set of Rogowski coils. If some of the coils form a compound Rogowski sensor, they must be entered in contiguous order",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_ROGOWSKI_COIL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_ROGOWSKI_COIL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "shunt",
         documentation: "Set of shunt resistances through which currents in the divertor structure are measured. Shunts are modelled as piecewise straight line segments in the poloidal plane.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_SHUNT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_SHUNT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "ip",
         documentation: "Plasma current. Positive sign means counter-clockwise when viewed from above. The array of structure corresponds to a set of calculation methods (starting with the generally recommended method).",
         units: "A",
-        kind: NodeKind::ArrayOfStructures(NODES_IP),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_IP,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "diamagnetic_flux",
         documentation: "Diamagnetic flux. The array of structure corresponds to a set of calculation methods (starting with the generally recommended method). Positive sign means counter-clockwise when viewed from above",
         units: "Wb",
-        kind: NodeKind::ArrayOfStructures(NODES_DIAMAGNETIC_FLUX),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DIAMAGNETIC_FLUX,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "latency",
@@ -2713,7 +3193,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
-                gather(magnetics, indices, 0, no_levels, |magnetics: &Magnetics, _at: &[usize]| -> FLT_0D {
+                gather(magnetics, indices, 0, no_levels, no_names, |magnetics: &Magnetics, _at: &[usize]| -> FLT_0D {
                     magnetics.latency.clone()
                 })
             },
@@ -2729,19 +3209,28 @@ static NODES_ROOT: &[Node] = &[
         name: "isoflux",
         documentation: "Set of isoflux constraints, each a pair of points which lie on the same flux surface.\nThe data dictionary has no node for them",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_ISOFLUX),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_ISOFLUX,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "isoflux_boundary",
         documentation: "Set of isoflux boundary constraints, each a point which lies on the plasma boundary.\nThe data dictionary has no node for them",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_ISOFLUX_BOUNDARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_ISOFLUX_BOUNDARY,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "stationary_point",
         documentation: "Set of stationary point constraints, each a point where both derivatives of the poloidal flux are zero: an X-point or the magnetic axis.\nThe data dictionary has no node for them",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_STATIONARY_POINT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_STATIONARY_POINT,
+            elements_are_named: true,
+        },
     },
 ];
 

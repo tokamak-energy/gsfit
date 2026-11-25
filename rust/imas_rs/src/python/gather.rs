@@ -262,6 +262,18 @@ pub fn no_levels<I>(_ids: &I, _level: usize, _at: &[usize]) -> Option<usize> {
     None
 }
 
+/// The position of the element named `name` at one array-of-structures level, given the elements already chosen at
+/// the levels above it. Generated per array-of-structures chain which has a level whose elements have a `name`.
+pub type PositionOfName<I> = fn(&I, usize, &[usize], &str) -> Result<usize, String>;
+
+/// Used by leaves with no array of structures above them whose elements have a `name`.
+///
+/// A path is refused as it is built when it indexes such an array by name, so this is only reached if the generated
+/// tables disagree with that.
+pub fn no_names<I>(_ids: &I, level: usize, _at: &[usize], name: &str) -> Result<usize, String> {
+    Err(format!("array-of-structures level {level} has no names, so cannot select `{name}`"))
+}
+
 /// Read a leaf, applying one index selection per array-of-structures level on its path.
 ///
 /// Any number of levels may keep their dimension (be indexed with a slice or a list). The result
@@ -269,11 +281,15 @@ pub fn no_levels<I>(_ids: &I, _level: usize, _at: &[usize]) -> Option<usize> {
 /// then the leaf's own dimensions. A sliced level must select the same number of elements under every
 /// element of the levels above it, because otherwise the result would be jagged; that is refused
 /// with an error naming the two elements which disagree.
+///
+/// A level indexed by name is looked up with `position_of_name` under every element above it, so the
+/// element can be at a different position under each.
 pub fn gather<I, T: Gatherable>(
     ids: &I,
     indices: &[IndexSpec],
     n_levels: usize,
     length_of: LengthOf<I>,
+    position_of_name: PositionOfName<I>,
     project: fn(&I, &[usize]) -> T,
 ) -> Result<Value, String> {
     if indices.len() != n_levels {
@@ -295,7 +311,7 @@ pub fn gather<I, T: Gatherable>(
     let mut selected_lengths: Vec<Option<(usize, Vec<usize>)>> = vec![None; n_levels];
     let mut values: Vec<T> = Vec::new();
     let mut at: Vec<usize> = Vec::with_capacity(n_levels);
-    collect_values(ids, indices, length_of, project, &mut at, &mut selected_lengths, &mut values)?;
+    collect_values(ids, indices, length_of, position_of_name, project, &mut at, &mut selected_lengths, &mut values)?;
 
     if sliced_levels.is_empty() {
         let value: T = values.pop().expect("with no sliced level exactly one element is selected");
@@ -319,12 +335,14 @@ pub fn gather<I, T: Gatherable>(
 /// Visit every selected element, depth first in path order, reading the leaf at the bottom.
 ///
 /// Levels are resolved per element, because a nested array of structures can have a different
-/// length under each element above it. The recursion is one call per level, so its depth is
-/// bounded by the number of levels on the path.
+/// length, or hold a named element at a different position, under each element above it. The
+/// recursion is one call per level, so its depth is bounded by the number of levels on the path.
+#[allow(clippy::too_many_arguments)]
 fn collect_values<I, T>(
     ids: &I,
     indices: &[IndexSpec],
     length_of: LengthOf<I>,
+    position_of_name: PositionOfName<I>,
     project: fn(&I, &[usize]) -> T,
     at: &mut Vec<usize>,
     selected_lengths: &mut [Option<(usize, Vec<usize>)>],
@@ -340,7 +358,7 @@ fn collect_values<I, T>(
         Some(n_elements) => n_elements,
         None => return Err(format!("array-of-structures level {i_level} could not be reached")),
     };
-    let selected: Vec<usize> = indices[i_level].resolve(n_elements)?;
+    let selected: Vec<usize> = indices[i_level].resolve(n_elements, |name: &str| position_of_name(ids, i_level, at, name))?;
     let n_selected: usize = selected.len();
 
     if !indices[i_level].is_scalar() {
@@ -359,7 +377,7 @@ fn collect_values<I, T>(
 
     for i_selected in 0..n_selected {
         at.push(selected[i_selected]);
-        collect_values(ids, indices, length_of, project, at, selected_lengths, values)?;
+        collect_values(ids, indices, length_of, position_of_name, project, at, selected_lengths, values)?;
         at.pop();
     }
 
@@ -369,7 +387,8 @@ fn collect_values<I, T>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ids::equilibrium::{Equilibrium, EquilibriumProfiles2d};
+    use crate::dd_base_types::index_of_name;
+    use crate::ids::equilibrium::{Equilibrium, EquilibriumConstraints0dIpLike, EquilibriumProfiles2d};
 
     /// `time_slice` is the only array-of-structures level used by these tests.
     fn time_slice_lengths(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
@@ -393,7 +412,7 @@ mod tests {
     }
 
     fn gather_ip(equilibrium: &Equilibrium, index: IndexSpec) -> Result<Value, String> {
-        return gather(equilibrium, &[index], 1, time_slice_lengths, project_ip);
+        return gather(equilibrium, &[index], 1, time_slice_lengths, no_names, project_ip);
     }
 
     fn everything() -> IndexSpec {
@@ -505,7 +524,7 @@ mod tests {
         }
 
         let gathered: ArrayD<f64> =
-            expect_float_array(gather(&equilibrium, &[everything()], 1, time_slice_lengths, project_psi).expect("`[:]` should resolve"));
+            expect_float_array(gather(&equilibrium, &[everything()], 1, time_slice_lengths, no_names, project_psi).expect("`[:]` should resolve"));
 
         // shape = [n_time, n_psi]
         assert_eq!(gathered.shape(), &[3, 3], "padded to the longest profile");
@@ -523,7 +542,15 @@ mod tests {
         let equilibrium: Equilibrium = equilibrium_with_profiles_2d(n_time, n_profiles_2d);
 
         let gathered: ArrayD<f64> = expect_float_array(
-            gather(&equilibrium, &[everything(), everything()], 2, time_slice_profiles_2d_lengths, project_psi_2d).expect("both levels have one length"),
+            gather(
+                &equilibrium,
+                &[everything(), everything()],
+                2,
+                time_slice_profiles_2d_lengths,
+                no_names,
+                project_psi_2d,
+            )
+            .expect("both levels have one length"),
         );
 
         // shape = [n_time, n_profiles_2d, n_z, n_r]
@@ -541,6 +568,7 @@ mod tests {
                 &[IndexSpec::Many(vec![2, 0]), IndexSpec::One(1)],
                 2,
                 time_slice_profiles_2d_lengths,
+                no_names,
                 project_psi_2d,
             )
             .expect("the selections are in range"),
@@ -560,6 +588,7 @@ mod tests {
             &[everything(), everything()],
             2,
             time_slice_profiles_2d_lengths,
+            no_names,
             project_profiles_2d_type_name,
         )
         .expect("both levels have one length");
@@ -580,7 +609,14 @@ mod tests {
         let mut equilibrium: Equilibrium = equilibrium_with_profiles_2d(3, 2);
         equilibrium.time_slice[1].profiles_2d.pop();
 
-        let result: Result<Value, String> = gather(&equilibrium, &[everything(), everything()], 2, time_slice_profiles_2d_lengths, project_psi_2d);
+        let result: Result<Value, String> = gather(
+            &equilibrium,
+            &[everything(), everything()],
+            2,
+            time_slice_profiles_2d_lengths,
+            no_names,
+            project_psi_2d,
+        );
 
         let message: String = result.err().expect("a jagged level should be refused");
         assert!(message.contains("would be jagged"), "unexpected message: {message}");
@@ -593,9 +629,116 @@ mod tests {
                 &[everything(), IndexSpec::One(0)],
                 2,
                 time_slice_profiles_2d_lengths,
+                no_names,
                 project_psi_2d
             )
             .is_ok()
         );
+    }
+
+    /// `time_slice` and the `constraints/pf_current` under each time slice.
+    fn time_slice_pf_current_lengths(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
+        match level {
+            0 => return Some(equilibrium.time_slice.len()),
+            1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.pf_current.len()),
+            _ => return None,
+        }
+    }
+
+    /// The `constraints/pf_current` elements have a `name`; `time_slice` has none.
+    fn time_slice_pf_current_position_of_name(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+        match level {
+            1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.pf_current, name),
+            _ => return no_names(equilibrium, level, at, name),
+        }
+    }
+
+    fn project_pf_current_measured(equilibrium: &Equilibrium, at: &[usize]) -> f64 {
+        return equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].measured;
+    }
+
+    /// An equilibrium whose PF coils are in a different order in every time slice, with `measured` equal to
+    /// `1000 * i_time` plus the coil's position in `pf_names`.
+    fn equilibrium_with_pf_current(n_time: usize) -> Equilibrium {
+        let pf_names: Vec<&str> = vec!["BVL", "DIV", "PSH"];
+        let n_pf: usize = pf_names.len();
+        let mut equilibrium: Equilibrium = Equilibrium::with_size(n_time);
+        for i_time in 0..n_time {
+            equilibrium.time_slice[i_time].constraints.pf_current = vec![EquilibriumConstraints0dIpLike::default(); n_pf];
+            for i_pf in 0..n_pf {
+                let i_pf_name: usize = (i_pf + i_time) % n_pf;
+                equilibrium.time_slice[i_time].constraints.pf_current[i_pf].name = pf_names[i_pf_name].to_string();
+                equilibrium.time_slice[i_time].constraints.pf_current[i_pf].measured = (1000 * i_time + i_pf_name) as f64;
+            }
+        }
+        return equilibrium;
+    }
+
+    /// A name selects the element with that name under every element above it, wherever it is, and drops the
+    /// dimension as an integer does.
+    #[test]
+    fn a_name_selects_its_element_wherever_it_is() {
+        let n_time: usize = 3;
+        let equilibrium: Equilibrium = equilibrium_with_pf_current(n_time);
+
+        let gathered: ArrayD<f64> = expect_float_array(
+            gather(
+                &equilibrium,
+                &[everything(), IndexSpec::Name("DIV".to_string())],
+                2,
+                time_slice_pf_current_lengths,
+                time_slice_pf_current_position_of_name,
+                project_pf_current_measured,
+            )
+            .expect("every time slice has one `DIV`"),
+        );
+        // shape = [n_time]
+        assert_eq!(gathered.shape(), &[n_time]);
+        for i_time in 0..n_time {
+            assert_eq!(gathered[[i_time]], (1000 * i_time + 1) as f64);
+        }
+
+        match gather(
+            &equilibrium,
+            &[IndexSpec::One(1), IndexSpec::Name("PSH".to_string())],
+            2,
+            time_slice_pf_current_lengths,
+            time_slice_pf_current_position_of_name,
+            project_pf_current_measured,
+        )
+        .expect("time slice 1 has one `PSH`")
+        {
+            Value::Flt0d(value) => assert_eq!(value, 1002.0),
+            _ => panic!("`time_slice[1].constraints.pf_current[\"PSH\"]` should give a scalar"),
+        }
+    }
+
+    /// A name which no element has, or more than one has, under any element above it, is an error naming it.
+    #[test]
+    fn a_missing_or_repeated_name_is_an_error_not_a_panic() {
+        let mut equilibrium: Equilibrium = equilibrium_with_pf_current(3);
+
+        let result: Result<Value, String> = gather(
+            &equilibrium,
+            &[everything(), IndexSpec::Name("SOL".to_string())],
+            2,
+            time_slice_pf_current_lengths,
+            time_slice_pf_current_position_of_name,
+            project_pf_current_measured,
+        );
+        let message: String = result.err().expect("no element is named `SOL`");
+        assert!(message.contains("no element is named `SOL`"), "unexpected message: {message}");
+
+        equilibrium.time_slice[2].constraints.pf_current[0].name = "DIV".to_string();
+        let result: Result<Value, String> = gather(
+            &equilibrium,
+            &[everything(), IndexSpec::Name("DIV".to_string())],
+            2,
+            time_slice_pf_current_lengths,
+            time_slice_pf_current_position_of_name,
+            project_pf_current_measured,
+        );
+        let message: String = result.err().expect("two elements of time slice 2 are named `DIV`");
+        assert!(message.contains("more than one element is named `DIV`"), "unexpected message: {message}");
     }
 }

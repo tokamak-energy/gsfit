@@ -251,7 +251,7 @@ impl Tf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::settings_tf::SettingsTfWorkflow;
+    use crate::settings::settings_workflow::SettingsWorkflow;
     use imas_rs::dd_support::parameters_input::ParametersInput;
 
     /// The XML schema the settings' structs are generated from
@@ -306,7 +306,7 @@ mod tests {
 
         assert_eq!(settings_tf.vacuum_toroidal_field_reference_radius, 0.4);
 
-        let workflow: &SettingsTfWorkflow = settings_tf.workflow.as_ref().expect("the settings link to workflow.xml");
+        let workflow: &SettingsWorkflow = settings_tf.workflow.as_ref().expect("the settings link to workflow.xml");
         assert_eq!(workflow.tree.len(), 2);
         assert_eq!(workflow.tree[0].tree_name, "PSU2COIL");
         assert_eq!(workflow.tree[0].pulseNo, None);

@@ -17,19 +17,28 @@ pub enum IndexSpec {
     },
     /// `path[[0, 2, 5]]` - keeps the dimension.
     Many(Vec<isize>),
+    /// `path["BVLT"]` - selects the one element with that `name` and drops that dimension, as `path[3]` does.
+    /// Only an array whose elements have a `name` can be indexed by one.
+    Name(String),
 }
 
 impl IndexSpec {
-    /// True when this selection drops the dimension (`path[3]` rather than `path[:]`).
+    /// True when this selection drops the dimension (`path[3]` or `path["BVLT"]` rather than `path[:]`).
     pub fn is_scalar(&self) -> bool {
-        matches!(self, IndexSpec::One(_))
+        matches!(self, IndexSpec::One(_) | IndexSpec::Name(_))
     }
 
     /// Expand this selection into concrete element indices.
-    pub fn resolve(&self, n_elements: usize) -> Result<Vec<usize>, String> {
+    ///
+    /// `position_of_name` gives the position of the element with a given `name`; only a `Name` calls it.
+    pub fn resolve(&self, n_elements: usize, position_of_name: impl FnOnce(&str) -> Result<usize, String>) -> Result<Vec<usize>, String> {
         match self {
             IndexSpec::One(index) => {
                 let resolved: usize = resolve_one_index(*index, n_elements)?;
+                Ok(vec![resolved])
+            }
+            IndexSpec::Name(name) => {
+                let resolved: usize = position_of_name(name)?;
                 Ok(vec![resolved])
             }
             IndexSpec::Many(requested) => {
@@ -145,7 +154,7 @@ mod tests {
 
         for (expected, n_elements, start, stop, step) in cases {
             let spec: IndexSpec = IndexSpec::Slice { start, stop, step };
-            let resolved: Vec<usize> = spec.resolve(n_elements).expect("slice should resolve");
+            let resolved: Vec<usize> = spec.resolve(n_elements, no_name).expect("slice should resolve");
             assert_eq!(resolved, expected, "[{start:?}:{stop:?}:{step:?}] over {n_elements} element(s)");
         }
     }
@@ -157,6 +166,28 @@ mod tests {
             stop: None,
             step: Some(0),
         };
-        assert!(spec.resolve(5).is_err());
+        assert!(spec.resolve(5, no_name).is_err());
+    }
+
+    /// A name is resolved by `position_of_name` alone, and drops the dimension as an integer does.
+    #[test]
+    fn a_name_is_resolved_by_its_position() {
+        let spec: IndexSpec = IndexSpec::Name("BVLT".to_string());
+        assert!(spec.is_scalar());
+        let resolved: Vec<usize> = spec
+            .resolve(5, |name: &str| {
+                if name == "BVLT" {
+                    Ok(3)
+                } else {
+                    Err(format!("no element is named `{name}`"))
+                }
+            })
+            .expect("the name should resolve");
+        assert_eq!(resolved, vec![3]);
+    }
+
+    /// For the selections which are not a name, so never look one up.
+    fn no_name(name: &str) -> Result<usize, String> {
+        panic!("only a `Name` looks up a name, but `{name}` was looked up")
     }
 }

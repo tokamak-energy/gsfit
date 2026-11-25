@@ -10,8 +10,8 @@
 
 #![allow(clippy::all)]
 
-use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels};
-use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D};
+use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels, no_names};
+use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D, index_of_name};
 use crate::ids::wall::Wall;
 use std::any::Any;
 
@@ -1171,6 +1171,598 @@ fn lengths_global_quantities_neutral_incident_species_element(wall: &Wall, level
 }
 
 // ============================================================================
+// Array-of-structures names
+// ============================================================================
+
+/// Position of the element named `name` at each array-of-structures level along `code_library` whose elements have a `name`.
+fn position_of_name_code_library(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&wall.code.library, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_2d_limiter_unit` whose elements have a `name`.
+fn position_of_name_description_2d_limiter_unit(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&wall.description_2d[at[0]].limiter.unit, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_2d_mobile_unit` whose elements have a `name`.
+fn position_of_name_description_2d_mobile_unit(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&wall.description_2d[at[0]].mobile.unit, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_2d_mobile_unit_outline` whose elements have a `name`.
+fn position_of_name_description_2d_mobile_unit_outline(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&wall.description_2d[at[0]].mobile.unit, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_2d_vessel_unit` whose elements have a `name`.
+fn position_of_name_description_2d_vessel_unit(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&wall.description_2d[at[0]].vessel.unit, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_2d_vessel_unit_element` whose elements have a `name`.
+fn position_of_name_description_2d_vessel_unit_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&wall.description_2d[at[0]].vessel.unit, name),
+        2 => return index_of_name(&wall.description_2d[at[0]].vessel.unit[at[1]].element, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_2d_vessel_unit_material` whose elements have a `name`.
+fn position_of_name_description_2d_vessel_unit_material(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&wall.description_2d[at[0]].vessel.unit, name),
+        2 => return index_of_name(&wall.description_2d[at[0]].vessel.unit[at[1]].material, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_ion` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_ion_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_ion_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_ion_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_ion_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_neutral` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_neutral_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_neutral_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_neutral_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_ion` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_ion_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_ion_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_ion_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_ion_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_ion_state_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_neutral` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_neutral_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_element(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_neutral_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_neutral_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_incident(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_neutral_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident(
+    wall: &Wall,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_ion` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_ion(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_ion_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_ion_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_ion_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_ion_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_ion_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_ion_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_ion_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_ion_state(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_ion_state_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_ion_state_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_ion_state_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_ion_state_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_neutral` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_neutral(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_neutral_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_neutral_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_neutral_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_neutral_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_neutral_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_neutral_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_neutral_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_neutral_state(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_neutral_state_emitted` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_emitted(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_particle_fluxes_neutral_state_incident` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_incident(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_ion` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_ion(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_ion_coefficient` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_ion_coefficient(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_ion_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_ion_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.ion, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_ion_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_ion_state(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_ion_state_coefficient` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_ion_state_coefficient(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.ion, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_neutral` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_neutral(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_neutral_coefficient` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_neutral_coefficient(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_neutral_element` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_neutral_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_neutral_state` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_neutral_state(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_ggd_recycling_neutral_state_coefficient` whose elements have a `name`.
+fn position_of_name_description_ggd_ggd_recycling_neutral_state_coefficient(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral, name),
+        3 => return index_of_name(&wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `description_ggd_grid_ggd_space_coordinates_type` whose elements have a `name`.
+fn position_of_name_description_ggd_grid_ggd_space_coordinates_type(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        3 => return index_of_name(&wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `global_quantities_neutral` whose elements have a `name`.
+fn position_of_name_global_quantities_neutral(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&wall.global_quantities.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `global_quantities_neutral_element` whose elements have a `name`.
+fn position_of_name_global_quantities_neutral_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&wall.global_quantities.neutral, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `global_quantities_neutral_incident_species` whose elements have a `name`.
+fn position_of_name_global_quantities_neutral_incident_species(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&wall.global_quantities.neutral, name),
+        1 => return index_of_name(&wall.global_quantities.neutral[at[0]].incident_species, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `global_quantities_neutral_incident_species_element` whose elements have a `name`.
+fn position_of_name_global_quantities_neutral_incident_species_element(wall: &Wall, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&wall.global_quantities.neutral, name),
+        1 => return index_of_name(&wall.global_quantities.neutral[at[0]].incident_species, name),
+        _ => return no_names(wall, level, at, name),
+    }
+}
+
+// ============================================================================
 // Nodes
 // ============================================================================
 
@@ -1183,7 +1775,7 @@ static NODES_TEMPERATURE_REFERENCE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.temperature_reference.description.clone()
                 })
             },
@@ -1197,7 +1789,7 @@ static NODES_TEMPERATURE_REFERENCE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_0D {
                     wall.temperature_reference.data.clone()
                 })
             },
@@ -1214,7 +1806,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak.data.clone()
                 })
             },
@@ -1228,7 +1820,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak.time.clone()
                 })
             },
@@ -1245,7 +1837,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK_OUTSIDE_DIVERTORS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak_outside_divertors.data.clone()
                 })
             },
@@ -1259,7 +1851,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK_OUTSIDE_DIVERTORS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak_outside_divertors.time.clone()
                 })
             },
@@ -1276,7 +1868,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.electrons.pumping_speed.clone()
                 })
             },
@@ -1290,7 +1882,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.electrons.particle_flux_from_plasma.clone()
                 })
             },
@@ -1304,7 +1896,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_2D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_2D {
                     wall.global_quantities.electrons.particle_flux_from_wall.clone()
                 })
             },
@@ -1318,7 +1910,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.electrons.gas_puff.clone()
                 })
             },
@@ -1340,6 +1932,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_element,
+                    position_of_name_global_quantities_neutral_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.global_quantities.neutral[at[0]].element[at[1]].a.clone() },
                 )
             },
@@ -1358,6 +1951,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_element,
+                    position_of_name_global_quantities_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].element[at[1]].z_n.clone() },
                 )
             },
@@ -1376,6 +1970,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_element,
+                    position_of_name_global_quantities_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].element[at[1]].atoms_n.clone() },
                 )
             },
@@ -1397,6 +1992,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_global_quantities_neutral_incident_species_element,
+                    position_of_name_global_quantities_neutral_incident_species_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].element[at[2]].a.clone() },
                 )
             },
@@ -1415,6 +2011,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_global_quantities_neutral_incident_species_element,
+                    position_of_name_global_quantities_neutral_incident_species_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].element[at[2]].z_n.clone() },
                 )
             },
@@ -1433,6 +2030,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_global_quantities_neutral_incident_species_element,
+                    position_of_name_global_quantities_neutral_incident_species_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].element[at[2]].atoms_n.clone() },
                 )
             },
@@ -1445,7 +2043,10 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule of the incident species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -1460,6 +2061,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
+                    position_of_name_global_quantities_neutral_incident_species,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].name.clone() },
                 )
             },
@@ -1478,6 +2080,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
+                    position_of_name_global_quantities_neutral_incident_species,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].angles.clone() },
                 )
             },
@@ -1496,6 +2099,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
+                    position_of_name_global_quantities_neutral_incident_species,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].energies.clone() },
                 )
             },
@@ -1514,6 +2118,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
+                    position_of_name_global_quantities_neutral_incident_species,
                     |wall: &Wall, at: &[usize]| -> FLT_3D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].sputtering_physical.clone() },
                 )
             },
@@ -1532,6 +2137,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
+                    position_of_name_global_quantities_neutral_incident_species,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].sputtering_chemical.clone() },
                 )
             },
@@ -1544,7 +2150,10 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -1554,9 +2163,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.global_quantities.neutral[at[0]].name.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.global_quantities.neutral[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -1568,9 +2182,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.global_quantities.neutral[at[0]].pumping_speed.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].pumping_speed.clone() },
+                )
             },
         }),
     },
@@ -1582,9 +2201,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.global_quantities.neutral[at[0]].particle_flux_from_plasma.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].particle_flux_from_plasma.clone() },
+                )
             },
         }),
     },
@@ -1596,9 +2220,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.global_quantities.neutral[at[0]].particle_flux_from_wall.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.global_quantities.neutral[at[0]].particle_flux_from_wall.clone() },
+                )
             },
         }),
     },
@@ -1610,9 +2239,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.global_quantities.neutral[at[0]].gas_puff.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].gas_puff.clone() },
+                )
             },
         }),
     },
@@ -1624,9 +2258,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.global_quantities.neutral[at[0]].wall_inventory.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].wall_inventory.clone() },
+                )
             },
         }),
     },
@@ -1638,9 +2277,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.global_quantities.neutral[at[0]].recycling_particles_coefficient.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.global_quantities.neutral[at[0]].recycling_particles_coefficient.clone() },
+                )
             },
         }),
     },
@@ -1652,9 +2296,14 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.global_quantities.neutral[at[0]].recycling_energy_coefficient.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_global_quantities_neutral,
+                    position_of_name_global_quantities_neutral,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.global_quantities.neutral[at[0]].recycling_energy_coefficient.clone() },
+                )
             },
         }),
     },
@@ -1662,7 +2311,10 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
         name: "incident_species",
         documentation: "Sputtering coefficients due to a set of incident species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -1677,7 +2329,10 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
         name: "neutral",
         documentation: "Quantities related to the various neutral species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GLOBAL_QUANTITIES_NEUTRAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GLOBAL_QUANTITIES_NEUTRAL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "temperature",
@@ -1687,7 +2342,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.temperature.clone()
                 })
             },
@@ -1701,7 +2356,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_incident.clone()
                 })
             },
@@ -1715,7 +2370,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_conducted.clone()
                 })
             },
@@ -1729,7 +2384,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_convected.clone()
                 })
             },
@@ -1743,7 +2398,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_radiated.clone()
                 })
             },
@@ -1757,7 +2412,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_black_body.clone()
                 })
             },
@@ -1771,7 +2426,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_neutrals.clone()
                 })
             },
@@ -1785,7 +2440,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_recombination_plasma.clone()
                 })
             },
@@ -1799,7 +2454,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_recombination_neutrals.clone()
                 })
             },
@@ -1813,7 +2468,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_currents.clone()
                 })
             },
@@ -1827,7 +2482,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_to_cooling.clone()
                 })
             },
@@ -1841,7 +2496,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.current_phi.clone()
                 })
             },
@@ -1858,7 +2513,7 @@ static NODES_DESCRIPTION_2D_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].r#type.name.clone()
                 })
             },
@@ -1872,7 +2527,7 @@ static NODES_DESCRIPTION_2D_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> INT_0D {
                     wall.description_2d[at[0]].r#type.index.clone()
                 })
             },
@@ -1886,7 +2541,7 @@ static NODES_DESCRIPTION_2D_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].r#type.description.clone()
                 })
             },
@@ -1903,7 +2558,7 @@ static NODES_DESCRIPTION_2D_LIMITER_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].limiter.r#type.name.clone()
                 })
             },
@@ -1917,7 +2572,7 @@ static NODES_DESCRIPTION_2D_LIMITER_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> INT_0D {
                     wall.description_2d[at[0]].limiter.r#type.index.clone()
                 })
             },
@@ -1931,7 +2586,7 @@ static NODES_DESCRIPTION_2D_LIMITER_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].limiter.r#type.description.clone()
                 })
             },
@@ -1948,9 +2603,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_COMPONENT_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].component_type.name.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].limiter.unit[at[1]].component_type.name.clone() },
+                )
             },
         }),
     },
@@ -1962,9 +2622,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_COMPONENT_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].component_type.index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_2d[at[0]].limiter.unit[at[1]].component_type.index.clone() },
+                )
             },
         }),
     },
@@ -1976,9 +2641,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_COMPONENT_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].component_type.description.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].limiter.unit[at[1]].component_type.description.clone() },
+                )
             },
         }),
     },
@@ -1993,9 +2663,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].outline.r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].limiter.unit[at[1]].outline.r.clone() },
+                )
             },
         }),
     },
@@ -2007,9 +2682,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].outline.z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].limiter.unit[at[1]].outline.z.clone() },
+                )
             },
         }),
     },
@@ -2024,9 +2704,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_MIDPLANE_POWER_DENSITY_NUCLEAR: &[Node]
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].midplane_power_density_nuclear.data.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].limiter.unit[at[1]].midplane_power_density_nuclear.data.clone() },
+                )
             },
         }),
     },
@@ -2038,9 +2723,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_MIDPLANE_POWER_DENSITY_NUCLEAR: &[Node]
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].midplane_power_density_nuclear.time.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].limiter.unit[at[1]].midplane_power_density_nuclear.time.clone() },
+                )
             },
         }),
     },
@@ -2055,9 +2745,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_POWER_NUCLEAR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].power_nuclear.data.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].limiter.unit[at[1]].power_nuclear.data.clone() },
+                )
             },
         }),
     },
@@ -2069,9 +2764,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_POWER_NUCLEAR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].power_nuclear.time.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].limiter.unit[at[1]].power_nuclear.time.clone() },
+                )
             },
         }),
     },
@@ -2086,9 +2786,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].name.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].limiter.unit[at[1]].name.clone() },
+                )
             },
         }),
     },
@@ -2100,9 +2805,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].description.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].limiter.unit[at[1]].description.clone() },
+                )
             },
         }),
     },
@@ -2126,9 +2836,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].phi_extensions.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_2d[at[0]].limiter.unit[at[1]].phi_extensions.clone() },
+                )
             },
         }),
     },
@@ -2140,9 +2855,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].resistivity.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].limiter.unit[at[1]].resistivity.clone() },
+                )
             },
         }),
     },
@@ -2154,9 +2874,14 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_2d[at[0]].limiter.unit[at[1]].midplane_thickness.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_limiter_unit,
+                    position_of_name_description_2d_limiter_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].limiter.unit[at[1]].midplane_thickness.clone() },
+                )
             },
         }),
     },
@@ -2185,7 +2910,10 @@ static NODES_DESCRIPTION_2D_LIMITER: &[Node] = &[
         name: "unit",
         documentation: "Set of limiter units. Whenever relevant, multiple units should be ordered so that they define contiguous sections, clockwise in the poloidal direction.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_2D_LIMITER_UNIT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_2D_LIMITER_UNIT,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -2198,7 +2926,7 @@ static NODES_DESCRIPTION_2D_MOBILE_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].mobile.r#type.name.clone()
                 })
             },
@@ -2212,7 +2940,7 @@ static NODES_DESCRIPTION_2D_MOBILE_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> INT_0D {
                     wall.description_2d[at[0]].mobile.r#type.index.clone()
                 })
             },
@@ -2226,7 +2954,7 @@ static NODES_DESCRIPTION_2D_MOBILE_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].mobile.r#type.description.clone()
                 })
             },
@@ -2248,6 +2976,7 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_mobile_unit_outline,
+                    position_of_name_description_2d_mobile_unit_outline,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].mobile.unit[at[1]].outline[at[2]].r.clone() },
                 )
             },
@@ -2266,6 +2995,7 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_mobile_unit_outline,
+                    position_of_name_description_2d_mobile_unit_outline,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].mobile.unit[at[1]].outline[at[2]].z.clone() },
                 )
             },
@@ -2284,6 +3014,7 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_mobile_unit_outline,
+                    position_of_name_description_2d_mobile_unit_outline,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].mobile.unit[at[1]].outline[at[2]].time.clone() },
                 )
             },
@@ -2300,9 +3031,14 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_mobile_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_2d[at[0]].mobile.unit[at[1]].name.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_mobile_unit,
+                    position_of_name_description_2d_mobile_unit,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].mobile.unit[at[1]].name.clone() },
+                )
             },
         }),
     },
@@ -2310,7 +3046,10 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT: &[Node] = &[
         name: "outline",
         documentation: "Irregular outline of the mobile unit, for a set of time slices. Repeat the first point in case of a closed contour",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "phi_extensions",
@@ -2320,9 +3059,14 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_mobile_unit, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_2d[at[0]].mobile.unit[at[1]].phi_extensions.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_mobile_unit,
+                    position_of_name_description_2d_mobile_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_2d[at[0]].mobile.unit[at[1]].phi_extensions.clone() },
+                )
             },
         }),
     },
@@ -2334,9 +3078,14 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_mobile_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_2d[at[0]].mobile.unit[at[1]].resistivity.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_mobile_unit,
+                    position_of_name_description_2d_mobile_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].mobile.unit[at[1]].resistivity.clone() },
+                )
             },
         }),
     },
@@ -2353,7 +3102,10 @@ static NODES_DESCRIPTION_2D_MOBILE: &[Node] = &[
         name: "unit",
         documentation: "Set of mobile units",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_2D_MOBILE_UNIT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_2D_MOBILE_UNIT,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -2366,7 +3118,7 @@ static NODES_DESCRIPTION_2D_VESSEL_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].vessel.r#type.name.clone()
                 })
             },
@@ -2380,7 +3132,7 @@ static NODES_DESCRIPTION_2D_VESSEL_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> INT_0D {
                     wall.description_2d[at[0]].vessel.r#type.index.clone()
                 })
             },
@@ -2394,7 +3146,7 @@ static NODES_DESCRIPTION_2D_VESSEL_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_2d, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_2d[at[0]].vessel.r#type.description.clone()
                 })
             },
@@ -2411,9 +3163,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_INNER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_inner.r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_inner.r.clone() },
+                )
             },
         }),
     },
@@ -2425,9 +3182,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_INNER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_inner.z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_inner.z.clone() },
+                )
             },
         }),
     },
@@ -2442,9 +3204,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_OUTER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_outer.r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_outer.r.clone() },
+                )
             },
         }),
     },
@@ -2456,9 +3223,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_OUTER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_outer.z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_outer.z.clone() },
+                )
             },
         }),
     },
@@ -2473,9 +3245,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_CENTRELINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.centreline.r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.centreline.r.clone() },
+                )
             },
         }),
     },
@@ -2487,9 +3264,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_CENTRELINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.centreline.z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.centreline.z.clone() },
+                )
             },
         }),
     },
@@ -2522,9 +3304,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.thickness.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.thickness.clone() },
+                )
             },
         }),
     },
@@ -2536,9 +3323,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.resistivity.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].annular.resistivity.clone() },
+                )
             },
         }),
     },
@@ -2558,6 +3350,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
+                    position_of_name_description_2d_vessel_unit_element,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].outline.r.clone() },
                 )
             },
@@ -2576,6 +3369,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
+                    position_of_name_description_2d_vessel_unit_element,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].outline.z.clone() },
                 )
             },
@@ -2597,6 +3391,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
+                    position_of_name_description_2d_vessel_unit_element,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].name.clone() },
                 )
             },
@@ -2621,6 +3416,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
+                    position_of_name_description_2d_vessel_unit_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].midplane_thickness.clone() },
                 )
             },
@@ -2639,6 +3435,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
+                    position_of_name_description_2d_vessel_unit_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].resistivity.clone() },
                 )
             },
@@ -2657,6 +3454,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
+                    position_of_name_description_2d_vessel_unit_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].resistance.clone() },
                 )
             },
@@ -2678,6 +3476,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_material,
+                    position_of_name_description_2d_vessel_unit_material,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].material[at[2]].name.clone() },
                 )
             },
@@ -2696,6 +3495,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_material,
+                    position_of_name_description_2d_vessel_unit_material,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].material[at[2]].index.clone() },
                 )
             },
@@ -2714,6 +3514,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_material,
+                    position_of_name_description_2d_vessel_unit_material,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].material[at[2]].description.clone() },
                 )
             },
@@ -2730,9 +3531,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].name.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].name.clone() },
+                )
             },
         }),
     },
@@ -2744,9 +3550,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].description.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].description.clone() },
+                )
             },
         }),
     },
@@ -2760,13 +3571,19 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT: &[Node] = &[
         name: "element",
         documentation: "Set of block elements",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "material",
         documentation: "Set of materials in this unit",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "material_volume_fraction",
@@ -2776,9 +3593,14 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_2d[at[0]].vessel.unit[at[1]].material_volume_fraction.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_2d_vessel_unit,
+                    position_of_name_description_2d_vessel_unit,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].material_volume_fraction.clone() },
+                )
             },
         }),
     },
@@ -2795,7 +3617,10 @@ static NODES_DESCRIPTION_2D_VESSEL: &[Node] = &[
         name: "unit",
         documentation: "Set of units",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_2D_VESSEL_UNIT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_2D_VESSEL_UNIT,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -2835,7 +3660,7 @@ static NODES_DESCRIPTION_GGD_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_ggd, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_ggd[at[0]].r#type.name.clone()
                 })
             },
@@ -2849,7 +3674,7 @@ static NODES_DESCRIPTION_GGD_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> INT_0D {
+                gather(wall, indices, 1, lengths_description_ggd, no_names, |wall: &Wall, at: &[usize]| -> INT_0D {
                     wall.description_ggd[at[0]].r#type.index.clone()
                 })
             },
@@ -2863,7 +3688,7 @@ static NODES_DESCRIPTION_GGD_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
+                gather(wall, indices, 1, lengths_description_ggd, no_names, |wall: &Wall, at: &[usize]| -> STR_0D {
                     wall.description_ggd[at[0]].r#type.description.clone()
                 })
             },
@@ -2880,9 +3705,14 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.name.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_grid_ggd,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.name.clone() },
+                )
             },
         }),
     },
@@ -2894,9 +3724,14 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_IDENTIFIER: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_grid_ggd,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.index.clone() },
+                )
             },
         }),
     },
@@ -2908,9 +3743,14 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.description.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_grid_ggd,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.description.clone() },
+                )
             },
         }),
     },
@@ -2930,6 +3770,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].identifier.name.clone() },
                 )
             },
@@ -2948,6 +3789,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].identifier.index.clone() },
                 )
             },
@@ -2966,6 +3808,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].identifier.description.clone() },
                 )
             },
@@ -2987,6 +3830,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].geometry_type.name.clone() },
                 )
             },
@@ -3005,6 +3849,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].geometry_type.index.clone() },
                 )
             },
@@ -3023,6 +3868,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].geometry_type.description.clone() },
                 )
             },
@@ -3044,6 +3890,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_coordinates_type,
+                    position_of_name_description_ggd_grid_ggd_space_coordinates_type,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type[at[3]].name.clone() },
                 )
             },
@@ -3062,6 +3909,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_coordinates_type,
+                    position_of_name_description_ggd_grid_ggd_space_coordinates_type,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type[at[3]].index.clone() },
                 )
             },
@@ -3080,6 +3928,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_coordinates_type,
+                    position_of_name_description_ggd_grid_ggd_space_coordinates_type,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type[at[3]]
                             .description
@@ -3105,6 +3954,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDAR
                     indices,
                     6,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object_boundary,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .index
@@ -3127,6 +3977,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDAR
                     indices,
                     6,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object_boundary,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_1D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .neighbours
@@ -3143,7 +3994,10 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
         name: "boundary",
         documentation: "Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "geometry",
@@ -3158,6 +4012,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry
@@ -3180,6 +4035,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_1D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .nodes
@@ -3202,6 +4058,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .measure
@@ -3224,6 +4081,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry_2d
@@ -3249,6 +4107,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTE
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
@@ -3272,6 +4131,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTE
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
@@ -3295,6 +4155,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTE
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
@@ -3312,7 +4173,10 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION: &[Node] = &[
         name: "object",
         documentation: "Set of objects for a given dimension",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "geometry_content",
@@ -3339,13 +4203,19 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE: &[Node] = &[
         name: "coordinates_type",
         documentation: "Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "objects_per_dimension",
         documentation: "Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -3363,6 +4233,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].identifier.name.clone() },
                 )
             },
@@ -3381,6 +4252,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].identifier.index.clone() },
                 )
             },
@@ -3399,6 +4271,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].identifier.description.clone() },
                 )
             },
@@ -3420,6 +4293,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_grid_subset_element_object,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .space
@@ -3442,6 +4316,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_grid_subset_element_object,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .dimension
@@ -3464,6 +4339,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_grid_subset_element_object,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .index
@@ -3479,7 +4355,10 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT: &[Node] = &[Node {
     name: "object",
     documentation: "Set of objects defining the element",
     units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT),
+    kind: NodeKind::ArrayOfStructures {
+        children: NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT,
+        elements_are_named: false,
+    },
 }];
 
 static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE: &[Node] = &[
@@ -3496,6 +4375,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_grid_subset_base,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].base[at[3]].jacobian.clone() },
                 )
             },
@@ -3514,6 +4394,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_grid_subset_base,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_3D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].base[at[3]]
                             .tensor_covariant
@@ -3536,6 +4417,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_grid_subset_base,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_3D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].base[at[3]]
                             .tensor_contravariant
@@ -3561,6 +4443,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].metric.jacobian.clone() },
                 )
             },
@@ -3579,6 +4462,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_3D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].metric.tensor_covariant.clone() },
                 )
             },
@@ -3597,6 +4481,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_3D {
                         wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]]
                             .metric
@@ -3629,6 +4514,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].dimension.clone() },
                 )
             },
@@ -3638,13 +4524,19 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET: &[Node] = &[
         name: "element",
         documentation: "Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "base",
         documentation: "Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "metric",
@@ -3669,9 +4561,14 @@ static NODES_DESCRIPTION_GGD_GRID_GGD: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.description_ggd[at[0]].grid_ggd[at[1]].path.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_grid_ggd,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].path.clone() },
+                )
             },
         }),
     },
@@ -3679,13 +4576,19 @@ static NODES_DESCRIPTION_GGD_GRID_GGD: &[Node] = &[
         name: "space",
         documentation: "Set of grid spaces",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_SPACE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_SPACE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "grid_subset",
         documentation: "Grid subsets",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time",
@@ -3695,9 +4598,14 @@ static NODES_DESCRIPTION_GGD_GRID_GGD: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_ggd[at[0]].grid_ggd[at[1]].time.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_grid_ggd,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].time.clone() },
+                )
             },
         }),
     },
@@ -3717,6 +4625,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET_IDENTIFIERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_1D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].identifiers.names.clone() },
                 )
             },
@@ -3735,6 +4644,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET_IDENTIFIERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_1D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].identifiers.indices.clone() },
                 )
             },
@@ -3753,6 +4663,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET_IDENTIFIERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_1D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].identifiers.descriptions.clone() },
                 )
             },
@@ -3774,6 +4685,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].grid_index.clone() },
                 )
             },
@@ -3792,6 +4704,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -3810,7 +4723,10 @@ static NODES_DESCRIPTION_GGD_MATERIAL: &[Node] = &[
         name: "grid_subset",
         documentation: "Material is described for various wall components (grid subsets), using the identifier convention below",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time",
@@ -3820,9 +4736,14 @@ static NODES_DESCRIPTION_GGD_MATERIAL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_material, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_ggd[at[0]].material[at[1]].time.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_material,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].material[at[1]].time.clone() },
+                )
             },
         }),
     },
@@ -3842,6 +4763,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].identifier.name.clone() },
                 )
             },
@@ -3860,6 +4782,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].identifier.index.clone() },
                 )
             },
@@ -3878,6 +4801,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].identifier.description.clone() },
                 )
             },
@@ -3899,6 +4823,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].grid_index.clone() },
                 )
             },
@@ -3917,6 +4842,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -3939,9 +4865,14 @@ static NODES_DESCRIPTION_GGD_COMPONENT: &[Node] = &[
             data_type: "STR_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_component, |wall: &Wall, at: &[usize]| -> STR_1D {
-                    wall.description_ggd[at[0]].component[at[1]].identifiers.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_component,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> STR_1D { wall.description_ggd[at[0]].component[at[1]].identifiers.clone() },
+                )
             },
         }),
     },
@@ -3949,7 +4880,10 @@ static NODES_DESCRIPTION_GGD_COMPONENT: &[Node] = &[
         name: "type",
         documentation: "The component type is given for various grid_subsets, using the identifier convention below",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_COMPONENT_TYPE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_COMPONENT_TYPE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time",
@@ -3959,9 +4893,14 @@ static NODES_DESCRIPTION_GGD_COMPONENT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_component, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_ggd[at[0]].component[at[1]].time.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_component,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].component[at[1]].time.clone() },
+                )
             },
         }),
     },
@@ -3981,6 +4920,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].grid_index.clone() },
                 )
             },
@@ -3999,6 +4939,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -4017,6 +4958,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].values.clone() },
                 )
             },
@@ -4035,6 +4977,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].coefficients.clone() },
                 )
             },
@@ -4047,7 +4990,10 @@ static NODES_DESCRIPTION_GGD_THICKNESS: &[Node] = &[
         name: "grid_subset",
         documentation: "The thickness is given for various wall components (grid subsets)",
         units: "m",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time",
@@ -4057,9 +5003,14 @@ static NODES_DESCRIPTION_GGD_THICKNESS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_thickness, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_ggd[at[0]].thickness[at[1]].time.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_thickness,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].thickness[at[1]].time.clone() },
+                )
             },
         }),
     },
@@ -4074,9 +5025,14 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE_IDENTIFIERS: &[Node] = &[
             data_type: "STR_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> STR_1D {
-                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.names.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_brdf_type,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> STR_1D { wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.names.clone() },
+                )
             },
         }),
     },
@@ -4088,9 +5044,14 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE_IDENTIFIERS: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> INT_1D {
-                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.indices.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_brdf_type,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_1D { wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.indices.clone() },
+                )
             },
         }),
     },
@@ -4102,9 +5063,14 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE_IDENTIFIERS: &[Node] = &[
             data_type: "STR_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> STR_1D {
-                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.descriptions.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_brdf_type,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> STR_1D { wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.descriptions.clone() },
+                )
             },
         }),
     },
@@ -4119,9 +5085,14 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].grid_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_brdf_type,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].grid_index.clone() },
+                )
             },
         }),
     },
@@ -4133,9 +5104,14 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].grid_subset_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_brdf_type,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].grid_subset_index.clone() },
+                )
             },
         }),
     },
@@ -4161,6 +5137,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].grid_index.clone() },
                 )
             },
@@ -4179,6 +5156,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -4197,6 +5175,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].values.clone() },
                 )
             },
@@ -4215,6 +5194,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_3D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].coefficients.clone() },
                 )
             },
@@ -4227,13 +5207,19 @@ static NODES_DESCRIPTION_GGD_BRDF: &[Node] = &[
         name: "type",
         documentation: "The BRDF model type is described for various wall components (grid subsets), using the identifier convention below",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_BRDF_TYPE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_BRDF_TYPE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "parameters",
         documentation: "Parameters of the BRDF model for various wall components (grid subsets)",
         units: "mixed",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_BRDF_PARAMETERS),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_BRDF_PARAMETERS,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time",
@@ -4243,9 +5229,14 @@ static NODES_DESCRIPTION_GGD_BRDF: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_brdf, |wall: &Wall, at: &[usize]| -> FLT_0D {
-                    wall.description_ggd[at[0]].brdf[at[1]].time.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    2,
+                    lengths_description_ggd_brdf,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].brdf[at[1]].time.clone() },
+                )
             },
         }),
     },
@@ -4265,6 +5256,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].grid_index.clone() },
                 )
             },
@@ -4283,6 +5275,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -4301,6 +5294,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].values.clone() },
                 )
             },
@@ -4319,6 +5313,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].coefficients.clone() },
                 )
             },
@@ -4340,6 +5335,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].grid_index.clone() },
                 )
             },
@@ -4358,6 +5354,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -4376,6 +5373,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].values.clone() },
                 )
             },
@@ -4394,6 +5392,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].coefficients.clone() },
                 )
             },
@@ -4410,9 +5409,14 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].grid_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_v_biasing,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].grid_index.clone() },
+                )
             },
         }),
     },
@@ -4424,9 +5428,14 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].grid_subset_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_v_biasing,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].grid_subset_index.clone() },
+                )
             },
         }),
     },
@@ -4438,9 +5447,14 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].values.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_v_biasing,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].values.clone() },
+                )
             },
         }),
     },
@@ -4452,9 +5466,14 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_v_biasing,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].coefficients.clone() },
+                )
             },
         }),
     },
@@ -4474,6 +5493,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_element,
+                    position_of_name_description_ggd_ggd_recycling_ion_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].element[at[3]].a.clone() },
                 )
             },
@@ -4492,6 +5512,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_element,
+                    position_of_name_description_ggd_ggd_recycling_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].element[at[3]].z_n.clone() },
                 )
             },
@@ -4510,6 +5531,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_element,
+                    position_of_name_description_ggd_ggd_recycling_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].element[at[3]].atoms_n.clone() },
                 )
             },
@@ -4531,6 +5553,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]]
                             .grid_index
@@ -4553,6 +5576,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]]
                             .grid_subset_index
@@ -4575,6 +5599,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]].values.clone() },
                 )
             },
@@ -4593,6 +5618,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]]
                             .coefficients
@@ -4618,6 +5644,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_index
@@ -4640,6 +5667,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_subset_index
@@ -4662,6 +5690,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .values
@@ -4684,6 +5713,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_ion_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .coefficients
@@ -4709,6 +5739,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
+                    position_of_name_description_ggd_ggd_recycling_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].z_min.clone() },
                 )
             },
@@ -4727,6 +5758,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
+                    position_of_name_description_ggd_ggd_recycling_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].z_max.clone() },
                 )
             },
@@ -4745,6 +5777,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
+                    position_of_name_description_ggd_ggd_recycling_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].name.clone() },
                 )
             },
@@ -4763,6 +5796,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
+                    position_of_name_description_ggd_ggd_recycling_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]]
                             .vibrational_level
@@ -4785,6 +5819,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
+                    position_of_name_description_ggd_ggd_recycling_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]]
                             .vibrational_mode
@@ -4807,6 +5842,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
+                    position_of_name_description_ggd_ggd_recycling_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]]
                             .electron_configuration
@@ -4820,7 +5856,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
         name: "coefficient",
         documentation: "Recycling coefficient for various wall components (grid subsets)",
         units: "1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -4829,7 +5868,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "z_ion",
@@ -4844,6 +5886,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
+                    position_of_name_description_ggd_ggd_recycling_ion,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].z_ion.clone() },
                 )
             },
@@ -4862,6 +5905,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
+                    position_of_name_description_ggd_ggd_recycling_ion,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].name.clone() },
                 )
             },
@@ -4880,6 +5924,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
+                    position_of_name_description_ggd_ggd_recycling_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].neutral_index.clone() },
                 )
             },
@@ -4889,7 +5934,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
         name: "coefficient",
         documentation: "Recycling coefficient for various wall components (grid subsets)",
         units: "1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -4904,6 +5952,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
+                    position_of_name_description_ggd_ggd_recycling_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].multiple_states_flag.clone() },
                 )
             },
@@ -4913,7 +5962,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -4931,6 +5983,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_element,
+                    position_of_name_description_ggd_ggd_recycling_neutral_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].element[at[3]].a.clone() },
                 )
             },
@@ -4949,6 +6002,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_element,
+                    position_of_name_description_ggd_ggd_recycling_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].element[at[3]].z_n.clone() },
                 )
             },
@@ -4967,6 +6021,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_element,
+                    position_of_name_description_ggd_ggd_recycling_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].element[at[3]].atoms_n.clone() },
                 )
             },
@@ -4988,6 +6043,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .grid_index
@@ -5010,6 +6066,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .grid_subset_index
@@ -5032,6 +6089,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .values
@@ -5054,6 +6112,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .coefficients
@@ -5079,6 +6138,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_NEUTRAL_TYPE: &[Node] =
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -5102,6 +6162,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_NEUTRAL_TYPE: &[Node] =
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -5125,6 +6186,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_NEUTRAL_TYPE: &[Node] =
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -5151,6 +6213,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_index
@@ -5173,6 +6236,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_subset_index
@@ -5195,6 +6259,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .values
@@ -5217,6 +6282,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state_coefficient,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .coefficients
@@ -5242,6 +6308,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].name.clone() },
                 )
             },
@@ -5260,6 +6327,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .vibrational_level
@@ -5282,6 +6350,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .vibrational_mode
@@ -5310,6 +6379,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
+                    position_of_name_description_ggd_ggd_recycling_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .electron_configuration
@@ -5323,7 +6393,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
         name: "coefficient",
         documentation: "Recycling coefficient for various wall components (grid subsets)",
         units: "1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -5332,7 +6405,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -5347,6 +6423,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_neutral,
+                    position_of_name_description_ggd_ggd_recycling_neutral,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].name.clone() },
                 )
             },
@@ -5365,6 +6442,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_neutral,
+                    position_of_name_description_ggd_ggd_recycling_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].ion_index.clone() },
                 )
             },
@@ -5374,7 +6452,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
         name: "coefficient",
         documentation: "Recycling coefficient for various wall components (grid subsets)",
         units: "1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -5389,6 +6470,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_neutral,
+                    position_of_name_description_ggd_ggd_recycling_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].multiple_states_flag.clone() },
                 )
             },
@@ -5398,7 +6480,10 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -5407,13 +6492,19 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING: &[Node] = &[
         name: "ion",
         documentation: "Recycling coefficients for the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "neutral",
         documentation: "Recycling coefficients for the various neutral species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -5431,6 +6522,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]]
                             .grid_index
@@ -5453,6 +6545,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]]
                             .grid_subset_index
@@ -5475,6 +6568,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]].values.clone() },
                 )
             },
@@ -5493,6 +6587,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]]
                             .coefficients
@@ -5518,6 +6613,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]]
                             .grid_index
@@ -5540,6 +6636,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]]
                             .grid_subset_index
@@ -5562,6 +6659,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]].values.clone() },
                 )
             },
@@ -5580,6 +6678,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]]
                             .coefficients
@@ -5596,13 +6695,19 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -5620,6 +6725,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_element,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].element[at[3]].a.clone() },
                 )
             },
@@ -5638,6 +6744,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_element,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].element[at[3]].z_n.clone() },
                 )
             },
@@ -5656,6 +6763,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_element,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].element[at[3]].atoms_n.clone() },
                 )
             },
@@ -5677,6 +6785,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]]
                             .grid_index
@@ -5699,6 +6808,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]]
                             .grid_subset_index
@@ -5721,6 +6831,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]].values.clone() },
                 )
             },
@@ -5739,6 +6850,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]]
                             .coefficients
@@ -5764,6 +6876,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]]
                             .grid_index
@@ -5786,6 +6899,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]]
                             .grid_subset_index
@@ -5808,6 +6922,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]].values.clone() },
                 )
             },
@@ -5826,6 +6941,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]]
                             .coefficients
@@ -5851,6 +6967,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
@@ -5873,6 +6990,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
@@ -5895,6 +7013,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .values
@@ -5917,6 +7036,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
@@ -5942,6 +7062,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
@@ -5964,6 +7085,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
@@ -5986,6 +7108,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .values
@@ -6008,6 +7131,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
@@ -6033,6 +7157,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].z_min.clone() },
                 )
             },
@@ -6051,6 +7176,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].z_max.clone() },
                 )
             },
@@ -6069,6 +7195,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].name.clone() },
                 )
             },
@@ -6087,6 +7214,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]]
                             .vibrational_level
@@ -6109,6 +7237,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]]
                             .vibrational_mode
@@ -6131,6 +7260,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]]
                             .electron_configuration
@@ -6144,13 +7274,19 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -6159,7 +7295,10 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "z_ion",
@@ -6174,6 +7313,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].z_ion.clone() },
                 )
             },
@@ -6192,6 +7332,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].name.clone() },
                 )
             },
@@ -6210,6 +7351,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].neutral_index.clone() },
                 )
             },
@@ -6219,13 +7361,19 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -6240,6 +7388,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
+                    position_of_name_description_ggd_ggd_particle_fluxes_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].multiple_states_flag.clone() },
                 )
             },
@@ -6249,7 +7398,10 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -6267,6 +7419,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_element,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].element[at[3]].a.clone() },
                 )
             },
@@ -6285,6 +7438,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_element,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].element[at[3]].z_n.clone() },
                 )
             },
@@ -6303,6 +7457,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_element,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].element[at[3]]
                             .atoms_n
@@ -6328,6 +7483,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .grid_index
@@ -6350,6 +7506,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .grid_subset_index
@@ -6372,6 +7529,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .values
@@ -6394,6 +7552,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .coefficients
@@ -6419,6 +7578,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .grid_index
@@ -6441,6 +7601,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .grid_subset_index
@@ -6463,6 +7624,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .values
@@ -6485,6 +7647,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .coefficients
@@ -6510,6 +7673,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_NEUTRAL_TYPE: &[N
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -6533,6 +7697,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_NEUTRAL_TYPE: &[N
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -6556,6 +7721,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_NEUTRAL_TYPE: &[N
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -6582,6 +7748,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
@@ -6604,6 +7771,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
@@ -6626,6 +7794,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .values
@@ -6648,6 +7817,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
@@ -6673,6 +7843,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
@@ -6695,6 +7866,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
@@ -6717,6 +7889,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .values
@@ -6739,6 +7912,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
@@ -6764,6 +7938,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].name.clone() },
                 )
             },
@@ -6782,6 +7957,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .vibrational_level
@@ -6804,6 +7980,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .vibrational_mode
@@ -6832,6 +8009,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .electron_configuration
@@ -6845,13 +8023,19 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -6860,7 +8044,10 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -6875,6 +8062,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_neutral,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].name.clone() },
                 )
             },
@@ -6893,6 +8081,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_neutral,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].ion_index.clone() },
                 )
             },
@@ -6902,13 +8091,19 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "m^-2.s^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -6923,6 +8118,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_neutral,
+                    position_of_name_description_ggd_ggd_particle_fluxes_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]]
                             .multiple_states_flag
@@ -6936,7 +8132,10 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -6951,13 +8150,19 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES: &[Node] = &[
         name: "ion",
         documentation: "Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "neutral",
         documentation: "Neutral species fluxes",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -6975,6 +8180,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]]
                             .grid_index
@@ -6997,6 +8203,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]]
                             .grid_subset_index
@@ -7019,6 +8226,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]].values.clone() },
                 )
             },
@@ -7037,6 +8245,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]]
                             .coefficients
@@ -7062,6 +8271,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]].grid_index.clone() },
                 )
             },
@@ -7080,6 +8290,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]]
                             .grid_subset_index
@@ -7102,6 +8313,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]].values.clone() },
                 )
             },
@@ -7120,6 +8332,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]]
                             .coefficients
@@ -7136,13 +8349,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -7160,6 +8379,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]].grid_index.clone() },
                 )
             },
@@ -7178,6 +8398,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]]
                             .grid_subset_index
@@ -7200,6 +8421,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]].values.clone() },
                 )
             },
@@ -7218,6 +8440,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]]
                             .coefficients
@@ -7243,6 +8466,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]].grid_index.clone() },
                 )
             },
@@ -7261,6 +8485,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]]
                             .grid_subset_index
@@ -7283,6 +8508,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]].values.clone() },
                 )
             },
@@ -7301,6 +8527,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]].coefficients.clone() },
                 )
             },
@@ -7313,13 +8540,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -7337,6 +8570,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].element[at[3]]
                             .a
@@ -7359,6 +8593,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].element[at[3]]
                             .z_n
@@ -7381,6 +8616,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].element[at[3]]
                             .atoms_n
@@ -7406,6 +8642,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .grid_index
@@ -7428,6 +8665,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .grid_subset_index
@@ -7450,6 +8688,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .values
@@ -7472,6 +8711,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .coefficients
@@ -7497,6 +8737,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .grid_index
@@ -7519,6 +8760,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .grid_subset_index
@@ -7541,6 +8783,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .values
@@ -7563,6 +8806,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .coefficients
@@ -7588,6 +8832,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
@@ -7610,6 +8855,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
@@ -7632,6 +8878,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .values
@@ -7654,6 +8901,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
@@ -7679,6 +8927,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
@@ -7701,6 +8950,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
@@ -7723,6 +8973,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .values
@@ -7745,6 +8996,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
@@ -7770,6 +9022,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .z_min
@@ -7792,6 +9045,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .z_max
@@ -7814,6 +9068,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .name
@@ -7836,6 +9091,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .vibrational_level
@@ -7858,6 +9114,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .vibrational_mode
@@ -7880,6 +9137,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .electron_configuration
@@ -7893,13 +9151,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -7908,7 +9172,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "z_ion",
@@ -7923,6 +9190,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].z_ion.clone() },
                 )
             },
@@ -7941,6 +9209,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].name.clone() },
                 )
             },
@@ -7959,6 +9228,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]]
                             .neutral_index
@@ -7972,13 +9242,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -7993,6 +9269,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]]
                             .multiple_states_flag
@@ -8006,7 +9283,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -8024,6 +9304,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].element[at[3]]
                             .a
@@ -8046,6 +9327,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].element[at[3]]
                             .z_n
@@ -8068,6 +9350,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].element[at[3]]
                             .atoms_n
@@ -8093,6 +9376,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .grid_index
@@ -8115,6 +9399,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .grid_subset_index
@@ -8137,6 +9422,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .values
@@ -8159,6 +9445,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .coefficients
@@ -8184,6 +9471,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .grid_index
@@ -8206,6 +9494,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .grid_subset_index
@@ -8228,6 +9517,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .values
@@ -8250,6 +9540,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .coefficients
@@ -8275,6 +9566,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_NEUTR
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -8298,6 +9590,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_NEUTR
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -8321,6 +9614,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_NEUTR
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -8347,6 +9641,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
@@ -8369,6 +9664,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
@@ -8391,6 +9687,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .values
@@ -8413,6 +9710,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
@@ -8438,6 +9736,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
@@ -8460,6 +9759,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
@@ -8482,6 +9782,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .values
@@ -8504,6 +9805,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
@@ -8529,6 +9831,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .name
@@ -8551,6 +9854,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .vibrational_level
@@ -8573,6 +9877,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .vibrational_mode
@@ -8601,6 +9906,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .electron_configuration
@@ -8614,13 +9920,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -8629,7 +9941,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -8644,6 +9959,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].name.clone() },
                 )
             },
@@ -8662,6 +9978,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]]
                             .ion_index
@@ -8675,13 +9992,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -8696,6 +10019,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral,
+                    position_of_name_description_ggd_ggd_energy_fluxes_recombination_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]]
                             .multiple_states_flag
@@ -8709,7 +10033,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -8718,13 +10045,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION: &[Node] = &[
         name: "ion",
         documentation: "Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "neutral",
         documentation: "Neutral species fluxes",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -8742,6 +10075,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .grid_index
@@ -8764,6 +10098,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .grid_subset_index
@@ -8786,6 +10121,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .values
@@ -8808,6 +10144,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .coefficients
@@ -8833,6 +10170,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .grid_index
@@ -8855,6 +10193,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .grid_subset_index
@@ -8877,6 +10216,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .values
@@ -8899,6 +10239,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .coefficients
@@ -8915,13 +10256,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -8939,6 +10286,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].element[at[3]].a.clone() },
                 )
             },
@@ -8957,6 +10305,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].element[at[3]]
                             .z_n
@@ -8979,6 +10328,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].element[at[3]]
                             .atoms_n
@@ -9004,6 +10354,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .grid_index
@@ -9026,6 +10377,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .grid_subset_index
@@ -9048,6 +10400,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .values
@@ -9070,6 +10423,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .coefficients
@@ -9095,6 +10449,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .grid_index
@@ -9117,6 +10472,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .grid_subset_index
@@ -9139,6 +10495,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .values
@@ -9161,6 +10518,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .coefficients
@@ -9186,6 +10544,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
@@ -9208,6 +10567,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
@@ -9230,6 +10590,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .values
@@ -9252,6 +10613,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
@@ -9277,6 +10639,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
@@ -9299,6 +10662,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
@@ -9321,6 +10685,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .values
@@ -9343,6 +10708,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
@@ -9368,6 +10734,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .z_min
@@ -9390,6 +10757,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .z_max
@@ -9412,6 +10780,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .name
@@ -9434,6 +10803,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .vibrational_level
@@ -9456,6 +10826,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .vibrational_mode
@@ -9478,6 +10849,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .electron_configuration
@@ -9491,13 +10863,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -9506,7 +10884,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "z_ion",
@@ -9521,6 +10902,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion,
                     |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].z_ion.clone() },
                 )
             },
@@ -9539,6 +10921,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].name.clone() },
                 )
             },
@@ -9557,6 +10940,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].neutral_index.clone() },
                 )
             },
@@ -9566,13 +10950,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -9587,6 +10977,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_ion,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]]
                             .multiple_states_flag
@@ -9600,7 +10991,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -9618,6 +11012,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].element[at[3]]
                             .a
@@ -9640,6 +11035,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].element[at[3]]
                             .z_n
@@ -9662,6 +11058,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].element[at[3]]
                             .atoms_n
@@ -9687,6 +11084,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .grid_index
@@ -9709,6 +11107,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .grid_subset_index
@@ -9731,6 +11130,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .values
@@ -9753,6 +11153,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .coefficients
@@ -9778,6 +11179,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .grid_index
@@ -9800,6 +11202,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .grid_subset_index
@@ -9822,6 +11225,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .values
@@ -9844,6 +11248,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .coefficients
@@ -9869,6 +11274,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_NEUTRAL_TYP
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -9892,6 +11298,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_NEUTRAL_TYP
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -9915,6 +11322,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_NEUTRAL_TYP
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .neutral_type
@@ -9941,6 +11349,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
@@ -9963,6 +11372,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
@@ -9985,6 +11395,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .values
@@ -10007,6 +11418,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
@@ -10032,6 +11444,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
@@ -10054,6 +11467,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
@@ -10076,6 +11490,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_1D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .values
@@ -10098,6 +11513,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
                     |wall: &Wall, at: &[usize]| -> FLT_2D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
@@ -10123,6 +11539,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .name
@@ -10145,6 +11562,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
                     |wall: &Wall, at: &[usize]| -> FLT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .vibrational_level
@@ -10167,6 +11585,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .vibrational_mode
@@ -10195,6 +11614,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
                     |wall: &Wall, at: &[usize]| -> STR_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .electron_configuration
@@ -10208,13 +11628,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -10223,7 +11649,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
         name: "element",
         documentation: "List of elements forming the atom or molecule",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "name",
@@ -10238,6 +11667,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral,
                     |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].name.clone() },
                 )
             },
@@ -10256,6 +11686,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].ion_index.clone() },
                 )
             },
@@ -10265,13 +11696,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
         name: "incident",
         documentation: "Incident fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "emitted",
         documentation: "Emitted fluxes for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "multiple_states_flag",
@@ -10286,6 +11723,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral,
+                    position_of_name_description_ggd_ggd_energy_fluxes_kinetic_neutral,
                     |wall: &Wall, at: &[usize]| -> INT_0D {
                         wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]]
                             .multiple_states_flag
@@ -10299,7 +11737,10 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
         name: "state",
         documentation: "Fluxes related to the different states of the species",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -10314,13 +11755,19 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC: &[Node] = &[
         name: "ion",
         documentation: "Fluxes related to the various ion species, in the sense of isonuclear or isomolecular sequences. Ionization states (and other types of states) must be differentiated at the state level below. Fluxes are given at the wall, after the sheath.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "neutral",
         documentation: "Neutral species fluxes",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -10360,9 +11807,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].grid_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].grid_index.clone() },
+                )
             },
         }),
     },
@@ -10374,9 +11826,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].grid_subset_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].grid_subset_index.clone() },
+                )
             },
         }),
     },
@@ -10388,9 +11845,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].r.clone() },
+                )
             },
         }),
     },
@@ -10402,9 +11864,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].r_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].r_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10416,9 +11883,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].phi.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].phi.clone() },
+                )
             },
         }),
     },
@@ -10430,9 +11902,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].phi_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].phi_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10444,9 +11921,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].z.clone() },
+                )
             },
         }),
     },
@@ -10458,9 +11940,14 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].z_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_j_total,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].z_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10475,9 +11962,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].grid_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].grid_index.clone() },
+                )
             },
         }),
     },
@@ -10489,9 +11981,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].grid_subset_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].grid_subset_index.clone() },
+                )
             },
         }),
     },
@@ -10503,9 +12000,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].r.clone() },
+                )
             },
         }),
     },
@@ -10517,9 +12019,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].r_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].r_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10531,9 +12038,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].phi.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].phi.clone() },
+                )
             },
         }),
     },
@@ -10545,9 +12057,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].phi_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].phi_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10559,9 +12076,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].z.clone() },
+                )
             },
         }),
     },
@@ -10573,9 +12095,14 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].z_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_b_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].z_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10595,6 +12122,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].grid_index.clone() },
                 )
             },
@@ -10613,6 +12141,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -10631,6 +12160,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].r.clone() },
                 )
             },
@@ -10649,6 +12179,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].r_coefficients.clone() },
                 )
             },
@@ -10667,6 +12198,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].phi.clone() },
                 )
             },
@@ -10685,6 +12217,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].phi_coefficients.clone() },
                 )
             },
@@ -10703,6 +12236,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].z.clone() },
                 )
             },
@@ -10721,6 +12255,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].z_coefficients.clone() },
                 )
             },
@@ -10737,9 +12272,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].grid_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].grid_index.clone() },
+                )
             },
         }),
     },
@@ -10751,9 +12291,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].grid_subset_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].grid_subset_index.clone() },
+                )
             },
         }),
     },
@@ -10765,9 +12310,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].r.clone() },
+                )
             },
         }),
     },
@@ -10779,9 +12329,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].r_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].r_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10793,9 +12348,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].phi.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].phi.clone() },
+                )
             },
         }),
     },
@@ -10807,9 +12367,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].phi_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].phi_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10821,9 +12386,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].z.clone() },
+                )
             },
         }),
     },
@@ -10835,9 +12405,14 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].z_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_e_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].z_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10852,9 +12427,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].grid_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].grid_index.clone() },
+                )
             },
         }),
     },
@@ -10866,9 +12446,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].grid_subset_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].grid_subset_index.clone() },
+                )
             },
         }),
     },
@@ -10880,9 +12465,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].r.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].r.clone() },
+                )
             },
         }),
     },
@@ -10894,9 +12484,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].r_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].r_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10908,9 +12503,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].phi.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].phi.clone() },
+                )
             },
         }),
     },
@@ -10922,9 +12522,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].phi_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].phi_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10936,9 +12541,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].z.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].z.clone() },
+                )
             },
         }),
     },
@@ -10950,9 +12560,14 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].z_coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_a_field,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].z_coefficients.clone() },
+                )
             },
         }),
     },
@@ -10967,9 +12582,14 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].grid_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_psi,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].grid_index.clone() },
+                )
             },
         }),
     },
@@ -10981,9 +12601,14 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> INT_0D {
-                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].grid_subset_index.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_psi,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].grid_subset_index.clone() },
+                )
             },
         }),
     },
@@ -10995,9 +12620,14 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> FLT_1D {
-                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].values.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_psi,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].values.clone() },
+                )
             },
         }),
     },
@@ -11009,9 +12639,14 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> FLT_2D {
-                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].coefficients.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    3,
+                    lengths_description_ggd_ggd_psi,
+                    no_names,
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].coefficients.clone() },
+                )
             },
         }),
     },
@@ -11031,6 +12666,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].grid_index.clone() },
                 )
             },
@@ -11049,6 +12685,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11067,6 +12704,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].values.clone() },
                 )
             },
@@ -11085,6 +12723,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].coefficients.clone() },
                 )
             },
@@ -11106,6 +12745,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].grid_index.clone() },
                 )
             },
@@ -11124,6 +12764,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11142,6 +12783,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].values.clone() },
                 )
             },
@@ -11160,6 +12802,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
+                    no_names,
                     |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].coefficients.clone() },
                 )
             },
@@ -11172,19 +12815,28 @@ static NODES_DESCRIPTION_GGD_GGD: &[Node] = &[
         name: "power_density",
         documentation: "Net power density arriving on the wall surface, for various wall components (grid subsets)",
         units: "W.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "temperature",
         documentation: "Temperature of the wall, for various wall components (grid subsets)",
         units: "K",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_TEMPERATURE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_TEMPERATURE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "v_biasing",
         documentation: "Electric potential applied to the wall element by outside means, for various wall components (grid subsets). Different from the plasma electric potential or the sheath potential drop.",
         units: "V",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_V_BIASING),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_V_BIASING,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "recycling",
@@ -11208,49 +12860,73 @@ static NODES_DESCRIPTION_GGD_GGD: &[Node] = &[
         name: "j_total",
         documentation: "Total current density, given on various grid subsets",
         units: "A.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_J_TOTAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_J_TOTAL,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "b_field",
         documentation: "Magnetic field, given on various grid subsets",
         units: "T",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_B_FIELD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_B_FIELD,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "em_force_density",
         documentation: "Electromagnetic force density computed by the cross-product of j_total x b_field and given on various grid subsets",
         units: "N.m^-3",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "e_field",
         documentation: "Electric field, given on various grid subsets",
         units: "V.m^-1",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_E_FIELD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_E_FIELD,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "a_field",
         documentation: "Magnetic vector potential, given on various grid subsets",
         units: "T.m",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_A_FIELD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_A_FIELD,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "psi",
         documentation: "Poloidal flux, given on various grid subsets. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary",
         units: "Wb",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PSI),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PSI,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "phi_potential",
         documentation: "Electric potential, given on various grid subsets",
         units: "V",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "resistivity",
         documentation: "Resistivity, given on various grid subsets",
         units: "ohm.m",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD_RESISTIVITY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD_RESISTIVITY,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time",
@@ -11260,7 +12936,7 @@ static NODES_DESCRIPTION_GGD_GGD: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_ggd, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                gather(wall, indices, 2, lengths_description_ggd_ggd, no_names, |wall: &Wall, at: &[usize]| -> FLT_0D {
                     wall.description_ggd[at[0]].ggd[at[1]].time.clone()
                 })
             },
@@ -11279,37 +12955,55 @@ static NODES_DESCRIPTION_GGD: &[Node] = &[
         name: "grid_ggd",
         documentation: "Wall geometry described using the Generic Grid Description, for various time slices (in case of mobile wall elements). The timebase of this array of structure must be a subset of the timebase on which physical quantities are described (../ggd structure). Grid_subsets are used to describe various  wall components in a modular way.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GRID_GGD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GRID_GGD,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "material",
         documentation: "Material of each grid_ggd object, given for each slice of the grid_ggd time base (the material is not supposed to change, but grid_ggd may evolve with time)",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_MATERIAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_MATERIAL,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "component",
         documentation: "Description of the components represented by various subsets, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_COMPONENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_COMPONENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "thickness",
         documentation: "In the case of a thin wall description, effective thickness of each surface element of grid_ggd, given for each slice of the grid_ggd time base (the thickness is not supposed to change, but grid_ggd may evolve with time)",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_THICKNESS),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_THICKNESS,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "brdf",
         documentation: "Bidirectional Reflectance Distribution Function, given for each slice of the grid_ggd time base (the component description is not supposed to change, but grid_ggd may evolve with time)",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_BRDF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_BRDF,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "ggd",
         documentation: "Wall physics quantities represented using the general grid description, for various time slices.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD_GGD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD_GGD,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -11322,9 +13016,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.code.library[at[0]].name.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.code.library[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -11336,9 +13035,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.code.library[at[0]].description.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.code.library[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -11350,9 +13054,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.code.library[at[0]].commit.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.code.library[at[0]].commit.clone() },
+                )
             },
         }),
     },
@@ -11364,9 +13073,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.code.library[at[0]].version.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.code.library[at[0]].version.clone() },
+                )
             },
         }),
     },
@@ -11378,9 +13092,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.code.library[at[0]].repository.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.code.library[at[0]].repository.clone() },
+                )
             },
         }),
     },
@@ -11392,9 +13111,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
-                    wall.code.library[at[0]].parameters.clone()
-                })
+                gather(
+                    wall,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.code.library[at[0]].parameters.clone() },
+                )
             },
         }),
     },
@@ -11409,7 +13133,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D { wall.code.name.clone() })
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> STR_0D {
+                    wall.code.name.clone()
+                })
             },
         }),
     },
@@ -11421,7 +13147,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.description.clone()
                 })
             },
@@ -11435,7 +13161,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D { wall.code.commit.clone() })
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> STR_0D {
+                    wall.code.commit.clone()
+                })
             },
         }),
     },
@@ -11447,7 +13175,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.version.clone()
                 })
             },
@@ -11461,7 +13189,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.repository.clone()
                 })
             },
@@ -11475,7 +13203,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.parameters.clone()
                 })
             },
@@ -11489,7 +13217,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> INT_1D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> INT_1D {
                     wall.code.output_flag.clone()
                 })
             },
@@ -11499,7 +13227,10 @@ static NODES_CODE: &[Node] = &[
         name: "library",
         documentation: "List of external libraries used by the code that has produced this IDS",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_CODE_LIBRARY,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -11518,7 +13249,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_0D {
                     wall.first_wall_surface_area.clone()
                 })
             },
@@ -11544,7 +13275,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_0D {
+                gather(wall, indices, 0, no_levels, no_names, |wall: &Wall, _at: &[usize]| -> FLT_0D {
                     wall.first_wall_enclosed_volume.clone()
                 })
             },
@@ -11560,13 +13291,19 @@ static NODES_ROOT: &[Node] = &[
         name: "description_2d",
         documentation: "Set of 2D wall descriptions, for each type of possible physics or engineering configurations necessary (gas tight vs wall with ports and holes, coarse vs fine representation, single contour limiter, disjoint gapped plasma facing components, ...). A simplified description of the toroidal extension of the 2D contours is also provided by using the phi_extensions nodes.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_2D),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_2D,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "description_ggd",
         documentation: "Set of 3D wall descriptions, described using the GGD, for each type of possible physics or engineering configurations necessary (gas tight vs wall with ports and holes, coarse vs fine representation, ...).",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_DESCRIPTION_GGD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_DESCRIPTION_GGD,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "code",

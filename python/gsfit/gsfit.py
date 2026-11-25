@@ -104,7 +104,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         7. Map the results to the MDSplus database structure and store in `self.results`
         8. Wait for the MDSplus nodes, then write the results into them
 
-        Steps 1 and 8 are skipped for the `imas` database_writer, which writes nothing.
+        Steps 1 and 8 are skipped unless a database_writer writes to MDSplus.
         """
 
         self.logger.info(f"Running Gsfit, for shot={self.pulseNo} run_name={self.run_name}")
@@ -137,15 +137,19 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         """
         Whether this run will write to MDSplus at all.
 
-        `write_to_mds` is the user's switch, but the `imas` database_writer does not write to
-        MDSplus whatever it is set to: it builds an IMAS `equilibrium` IDS instead. Asking this
-        rather than `write_to_mds` keeps the MDSplus node creation, which starts before anything
-        else in `run`, in step with the writing that happens at the end.
+        `write_to_mds` is the user's switch, but nothing is written to MDSplus unless at least one
+        database_writer writes to MDSplus; e.g. `imas` builds an IMAS `equilibrium` IDS and `geqdsk`
+        writes files instead. Asking this rather than `write_to_mds` keeps the MDSplus node creation,
+        which starts before anything else in `run`, in step with the writing that happens at the end.
         """
 
-        database_writer_method = self.settings_xml.database_reader.method
+        database_writer_methods = self.settings_xml.database_writer.method
+        any_mdsplus_database_writer = False
+        for database_writer_method in database_writer_methods:
+            if get_database_writer(database_writer_method).writes_to_mdsplus:
+                any_mdsplus_database_writer = True
 
-        return self.write_to_mds and database_writer_method != "imas"
+        return self.write_to_mds and any_mdsplus_database_writer
 
     def write_results_to_database(self) -> None:
         """
@@ -156,8 +160,9 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
            check that the creation did not fail. If `run` was not used, the nodes are created here.
         3. The results are then written to MDSplus.
 
-        The `imas` database_writer does neither 2 nor 3. It returns an IMAS `equilibrium` IDS,
-        which is kept on `self.equilibrium_ids` for the caller to use, and nothing is written.
+        Only the database_writers which write to MDSplus do 2 and 3. The `imas` database_writer
+        returns an IMAS `equilibrium` IDS, which is kept on `self.equilibrium_ids` for the caller
+        to use, and the `geqdsk` database_writer writes G EQDSK files.
         """
 
         # Map the results to the database structure.
@@ -172,8 +177,8 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
                 self.logger.info("IMAS IDS populated; access it via `self.equilibrium_ids`")
 
             # Do the writing to MDSplus
-            self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
-            if self.writes_to_mdsplus():
+            if database_writer.writes_to_mdsplus and self.write_to_mds:
+                self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
                 # The nodes must exist, and must have been created without error, before we write into them
                 self.wait_for_mds_node_creation(workflows=self.get_workflow_names())
 
@@ -190,18 +195,20 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         for example `["elmag", "mag", "psu2coil"]`.
 
         Which codes these are depends on the `database_reader`, and whether they are stored at all
-        depends on the `database_writer`, so the selected `database_writer` is asked. The answer
+        depends on the `database_writer`s, so every selected `database_writer` is asked. The answer
         comes from the settings alone, which means the `INPUT.WORKFLOW` MDSplus nodes can be
         created before GSFit has read any data.
         """
 
+        workflow_names: list[str] = []
         database_writer_methods = self.settings_xml.database_writer.method
-        # TODO: need to fix this for multiple database writers...
         for database_writer_method in database_writer_methods:
-            # import pdb; pdb.set_trace()
             database_writer = get_database_writer(database_writer_method)
+            for workflow_name in database_writer.get_workflow_names(self):
+                if workflow_name not in workflow_names:
+                    workflow_names.append(workflow_name)
 
-        return database_writer.get_workflow_names(self)
+        return workflow_names
 
     def set_environment_variables(self) -> None:
         """
@@ -224,7 +231,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
 
         self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
         # Note: the solution to the GS equation is stored inside `equilibrium`, which holds every constraint, including the isoflux,
-        # isoflux boundary and stationary point constraints, which `copy_from_magnetics_ids` copied in from the magnetics IDS
+        # isoflux boundary and stationary point constraints, which `copy_from_magnetics_ids` copied in from the Magnetics IDS
         tic = time_py.time()
         gsfit_rs.solve_grad_shafranov(equilibrium)
         toc = time_py.time()

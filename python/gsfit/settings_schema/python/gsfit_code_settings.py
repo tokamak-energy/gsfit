@@ -32,10 +32,10 @@ from .wall.wall import WallSettings
 @dataclass(kw_only=True)
 class GsfitCodeSettings:
     """
-    GSFit's settings. This file holds no settings itself; instead it links to different *.xml's.
+    GSFit's settings. This is the root file: every other settings file is linked from here.
 
     :param database_reader: The Python `database_reader` to use for the whole run.
-    :param database_writer: List of Python `database_writer`'s to call after the run completes.
+    :param database_writer: List of Python `database_writer`'s to call after the run completes. Results can be written to multiple databases, or to none.
     :param ids: Settings needed to build IDSs.
     :param rtgsfit_code_settings: RTGSFit's own settings, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer.
     :param rtgsfit_initial_conditions: The equilibrium RTGSFit starts from, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer.

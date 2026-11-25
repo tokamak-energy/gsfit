@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GSFit's custom (non-IMAS) keys for the Magnetics IDS: the keys GSFit needs which the IMAS Data Dictionary does not define.
+
+    `../build_ids.py` merges them into the IDS's structs, which it generates from the Data Dictionary's schema of the IDS,
+    `../IMAS-Data-Dictionary/schemas/magnetics/dd_magnetics.xsd`, so that they sit flat alongside the Data Dictionary's keys.
+    This schema is laid out as `dd_magnetics.xsd` is, and holds only GSFit's additions; `custom_equilibrium_keys.xsd` describes the
+    layout in full.
+
+    The keys are the "raw" data of the equilibrium's constraints at points which can move from one time to the next: the isoflux, the
+    isoflux boundary and the stationary point constraints. Each is stored as a magnetic sensor's signal is, on its own timebase, which
+    need not be the reconstruction times: `Equilibrium.copy_from_magnetics_ids` interpolates each one onto the reconstruction times, into
+    `equilibrium/time_slice(itime)/constraints/isoflux(i1)`, `.../isoflux_boundary(i1)` and `.../stationary_point(i1)`, for those in the
+    equilibrium's fit settings, found by `name`. As for the magnetic sensors, which of them are fitted, and their weights, are the
+    equilibrium's fit settings, not these keys.
+
+    These keys have no IMAS counterpart, so they cannot be written to an IMAS backend. Anything written out over the standard Data
+    Dictionary must skip them.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+    <xs:include schemaLocation="../IMAS-Data-Dictionary/schemas/utilities/dd_support.xsd"/>
+
+    <xs:complexType name="magnetics_isoflux">
+        <xs:annotation>
+            <xs:documentation>
+                An isoflux constraint: two points, `position_1` and `position_2`, which lie on the same flux surface, so that the poloidal flux at the first minus the poloidal flux at the second is zero.
+                The points can move, so each is a time trace, on the constraint's own timebase, `time`; a time where either point is NaN is not fitted
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Short string identifier, unique within the isoflux constraints, matching its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/name`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="description">
+                <xs:annotation>
+                    <xs:documentation>
+                        Description, e.g. where the two points are read from
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="position_1" type="magnetics_position_dynamic">
+                <xs:annotation>
+                    <xs:documentation>
+                        The first point, at each `time`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="position_2" type="magnetics_position_dynamic">
+                <xs:annotation>
+                    <xs:documentation>
+                        The second point, at each `time`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="validity_timed">
+                <xs:annotation>
+                    <xs:documentation>
+                        Indicator of the validity of the points at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).
+                        A time with a negative value is not fitted. Empty when every time is valid
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="INT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="validity">
+                <xs:annotation>
+                    <xs:documentation>
+                        Indicator of the validity of the points for the whole acquisition period, with the values of `validity_timed`.
+                        A negative value means the constraint is not fitted at all. Unset when the points are valid
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="INT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="time">
+                <xs:annotation>
+                    <xs:documentation>
+                        The constraint's timebase, which `position_1`, `position_2` and `validity_timed` are on
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>s</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="magnetics_isoflux_boundary">
+        <xs:annotation>
+            <xs:documentation>
+                An isoflux boundary constraint: a point, `position`, which lies on the plasma boundary, so that the poloidal flux there minus the poloidal flux at the boundary is zero.
+                The point can move, so it is a time trace, on the constraint's own timebase, `time`; a time where it is NaN is not fitted
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Short string identifier, unique within the isoflux boundary constraints, matching its fit settings, `equilibrium_settings/constraints/isoflux_boundary/isoflux_boundary(i1)/name`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="description">
+                <xs:annotation>
+                    <xs:documentation>
+                        Description, e.g. where the point is read from
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="position" type="magnetics_position_dynamic">
+                <xs:annotation>
+                    <xs:documentation>
+                        The point, at each `time`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="validity_timed">
+                <xs:annotation>
+                    <xs:documentation>
+                        Indicator of the validity of the point at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).
+                        A time with a negative value is not fitted. Empty when every time is valid
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="INT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="validity">
+                <xs:annotation>
+                    <xs:documentation>
+                        Indicator of the validity of the point for the whole acquisition period, with the values of `validity_timed`.
+                        A negative value means the constraint is not fitted at all. Unset when the point is valid
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="INT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="time">
+                <xs:annotation>
+                    <xs:documentation>
+                        The constraint's timebase, which `position` and `validity_timed` are on
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>s</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="magnetics_stationary_point">
+        <xs:annotation>
+            <xs:documentation>
+                A stationary point constraint: a point, `position`, where both derivatives of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, are zero, either an X-point or the magnetic axis.
+                The point can move, so it is a time trace, on the constraint's own timebase, `time`; a time where it is NaN is not fitted
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Short string identifier, unique within the stationary point constraints, e.g. `"MAGNETIC_AXIS"` or `"X_POINT_LOWER"`, matching its fit settings, `equilibrium_settings/constraints/stationary_point/stationary_point(i1)/name`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="description">
+                <xs:annotation>
+                    <xs:documentation>
+                        Description, e.g. whether the point is the magnetic axis or an X-point, and where it is read from
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="position" type="magnetics_position_dynamic">
+                <xs:annotation>
+                    <xs:documentation>
+                        The point, at each `time`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="validity_timed">
+                <xs:annotation>
+                    <xs:documentation>
+                        Indicator of the validity of the point at each `time`, as the data dictionary's `validity_timed` of a magnetic sensor's signal: 0: valid from automated processing, 1: valid and certified by the diagnostic RO; -1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity).
+                        A time with a negative value is not fitted. Empty when every time is valid
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="INT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="validity">
+                <xs:annotation>
+                    <xs:documentation>
+                        Indicator of the validity of the point for the whole acquisition period, with the values of `validity_timed`.
+                        A negative value means the constraint is not fitted at all. Unset when the point is valid
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="INT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="time">
+                <xs:annotation>
+                    <xs:documentation>
+                        The constraint's timebase, which `position` and `validity_timed` are on
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>s</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="magnetics_position_dynamic">
+        <xs:annotation>
+            <xs:documentation>
+                A point in the poloidal plane which can move: its major radius and height at each time of the structure holding it, `../time`
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius, at each `../time`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height, at each `../time`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:element name="magnetics">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="isoflux" type="magnetics_isoflux" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Set of isoflux constraints, each a pair of points which lie on the same flux surface.
+                            The data dictionary has no node for them
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="isoflux_boundary" type="magnetics_isoflux_boundary" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Set of isoflux boundary constraints, each a point which lies on the plasma boundary.
+                            The data dictionary has no node for them
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="stationary_point" type="magnetics_stationary_point" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Set of stationary point constraints, each a point where both derivatives of the poloidal flux are zero: an X-point or the magnetic axis.
+                            The data dictionary has no node for them
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The Guazzotto-Freidberg analytic solution's settings.
+
+    This file holds no settings itself: each element links to the file which holds them.
+    A path is relative to the file holding the link, so a file from another settings directory can be used,
+    e.g. href="../default/equilibrium/equilibrium.xml". See ../../settings_schema/xsd/GUAZZOTTO_FREIDBERG_code_settings.xsd.
+-->
+<guazzotto_freidberg_code_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/GUAZZOTTO_FREIDBERG_code_settings.xsd">
+    <ids>
+        <equilibrium href="equilibrium/equilibrium.xml"/>
+    </ids>
+</guazzotto_freidberg_code_settings>

@@ -30,7 +30,7 @@ class DatabaseReader:
     """
     The database reader the whole run uses, which builds the IDSs GSFit reads.
 
-    :param method: The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml.
+    :param method: The database reader to use.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

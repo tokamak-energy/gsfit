@@ -1,11 +1,13 @@
-use crate::greens::{Greens, mutual_inductance_finite_size_to_finite_size};
+use crate::equilibrium::Equilibrium;
+use crate::greens::{Conductor, ConductorModel, Greens};
 use crate::material_properties::copper_resistivity;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
+use crate::settings::settings_equilibrium::SettingsEquilibriumNumerics;
 use diffsol::{NalgebraMat, OdeBuilder, OdeSolverMethod, OdeSolverStopReason};
 use faer::linalg::solvers::Solve;
 use imas_rs::ids::pf_active::{PfCoils, SignalFlt1d};
-use imas_rs::ids::pf_passive::PfPassiveLoops;
+use imas_rs::ids::pf_passive::{ObliqueStatic, PfPassiveLoops};
 use ndarray::{Array1, Array2, ArrayView1, Axis, concatenate, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -58,7 +60,13 @@ struct CircuitEquationModel {
 
 impl CircuitEquationModel {
     /// Constructor for CircuitEquationModel
-    fn new(pf_active: &PfActive, pf_passive: &PfPassive) -> Self {
+    ///
+    /// # Arguments
+    /// * `pf_active` - The PF coils, each with its current prescribed, or its voltage when it has one (`coil(i1)/voltage`)
+    /// * `pf_passive` - The passive conductors, whose filaments, `loop(i1)/element(i2)`, carry eddy currents
+    /// * `settings_numerics` - The numerical settings, `equilibrium_settings/numerics`: `mutual_inductance_finite_size` is what the
+    ///   mutual inductances between the filaments are calculated with
+    fn new(pf_active: &PfActive, pf_passive: &PfPassive, settings_numerics: &SettingsEquilibriumNumerics) -> Self {
         // Find which PF coils have their current prescribed and which their voltage, by name and by position in `pf_active/coil`
         let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
         let n_pf: usize = pf_active_coils.len();
@@ -122,36 +130,47 @@ impl CircuitEquationModel {
             pf_current_prescribed_current_derivative_interpolators.push(current_derivatives_interpolator);
         }
 
-        // Every passive filament, in the order of `pf_passive/loop` and then of `loop(i1)/element`, described as the Greens functions
-        // describe them, with the resistivity of its passive conductor
+        // Every passive filament, in the order of `pf_passive/loop` and then of `loop(i1)/element`, with the resistivity of its passive
+        // conductor. The mutual inductances take each filament as the data dictionary describes it, `element(i2)/geometry/oblique`;
+        // the resistances take its centre, radial width and vertical height
         let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
         let n_loop: usize = pf_passive_loops.len();
         let mut passive_r_vec: Vec<f64> = Vec::new();
-        let mut passive_z_vec: Vec<f64> = Vec::new();
         let mut passive_d_r_vec: Vec<f64> = Vec::new();
         let mut passive_d_z_vec: Vec<f64> = Vec::new();
-        let mut passive_angle_1_vec: Vec<f64> = Vec::new();
-        let mut passive_angle_2_vec: Vec<f64> = Vec::new();
+        let mut passive_oblique_r_vec: Vec<f64> = Vec::new();
+        let mut passive_oblique_z_vec: Vec<f64> = Vec::new();
+        let mut passive_oblique_length_alpha_vec: Vec<f64> = Vec::new();
+        let mut passive_oblique_length_beta_vec: Vec<f64> = Vec::new();
+        let mut passive_oblique_alpha_vec: Vec<f64> = Vec::new();
+        let mut passive_oblique_beta_vec: Vec<f64> = Vec::new();
         let mut passive_resistivity_vec: Vec<f64> = Vec::new();
         for i_loop in 0..n_loop {
             let filaments: PassiveFilaments = passive_filaments(&pf_passive_loops[i_loop].element);
             passive_r_vec.extend(filaments.r.iter());
-            passive_z_vec.extend(filaments.z.iter());
             passive_d_r_vec.extend(filaments.d_r.iter());
             passive_d_z_vec.extend(filaments.d_z.iter());
-            passive_angle_1_vec.extend(filaments.angle_1.iter());
-            passive_angle_2_vec.extend(filaments.angle_2.iter());
             let n_element: usize = pf_passive_loops[i_loop].element.len();
-            for _i_element in 0..n_element {
+            for i_element in 0..n_element {
+                let oblique: &ObliqueStatic = &pf_passive_loops[i_loop].element[i_element].geometry.oblique;
+                passive_oblique_r_vec.push(oblique.r);
+                passive_oblique_z_vec.push(oblique.z);
+                passive_oblique_length_alpha_vec.push(oblique.length_alpha);
+                passive_oblique_length_beta_vec.push(oblique.length_beta);
+                passive_oblique_alpha_vec.push(oblique.alpha);
+                passive_oblique_beta_vec.push(oblique.beta);
                 passive_resistivity_vec.push(pf_passive_loops[i_loop].resistivity);
             }
         }
         let passive_r: Array1<f64> = Array1::from_vec(passive_r_vec);
-        let passive_z: Array1<f64> = Array1::from_vec(passive_z_vec);
         let passive_d_r: Array1<f64> = Array1::from_vec(passive_d_r_vec);
         let passive_d_z: Array1<f64> = Array1::from_vec(passive_d_z_vec);
-        let passive_angle_1: Array1<f64> = Array1::from_vec(passive_angle_1_vec);
-        let passive_angle_2: Array1<f64> = Array1::from_vec(passive_angle_2_vec);
+        let passive_oblique_r: Array1<f64> = Array1::from_vec(passive_oblique_r_vec);
+        let passive_oblique_z: Array1<f64> = Array1::from_vec(passive_oblique_z_vec);
+        let passive_oblique_length_alpha: Array1<f64> = Array1::from_vec(passive_oblique_length_alpha_vec);
+        let passive_oblique_length_beta: Array1<f64> = Array1::from_vec(passive_oblique_length_beta_vec);
+        let passive_oblique_alpha: Array1<f64> = Array1::from_vec(passive_oblique_alpha_vec);
+        let passive_oblique_beta: Array1<f64> = Array1::from_vec(passive_oblique_beta_vec);
         let passive_resistivity: Array1<f64> = Array1::from_vec(passive_resistivity_vec);
         let n_passive_filaments: usize = passive_r.len();
 
@@ -207,20 +226,21 @@ impl CircuitEquationModel {
 
         let mutual_31: Array2<f64>; // symmetric with mutual_13; shape = (n_passive_filaments, n_current_prescribed)
         let mutual_32: Array2<f64>; // symmetric with mutual_23; shape = (n_passive_filaments, n_voltage_prescribed)
-        let mutual_33: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
-            &passive_r,
-            &passive_z,
-            &passive_d_r,
-            &passive_d_z,
-            &passive_angle_1,
-            &passive_angle_2,
-            &passive_r,
-            &passive_z,
-            &passive_d_r,
-            &passive_d_z,
-            &passive_angle_1,
-            &passive_angle_2,
-        ); // shape = (n_passive_filaments, n_passive_filaments)
+        // Every passive filament, as the data dictionary describes it, `element(i2)/geometry/oblique`, and how the conductors are treated
+        let passive_conductor: Conductor = Conductor::from_oblique(
+            &passive_oblique_r,
+            &passive_oblique_z,
+            &passive_oblique_length_alpha,
+            &passive_oblique_length_beta,
+            &passive_oblique_alpha,
+            &passive_oblique_beta,
+        )
+        .expect("Failed to describe the passive filaments as conductors");
+        let conductor_model: ConductorModel =
+            ConductorModel::from_settings(&settings_numerics.greens).expect("Failed to read `equilibrium_settings/numerics/greens/conductor_model`");
+        let mutual_33: Array2<f64> = Greens::conductor_to_self(&passive_conductor, conductor_model.clone())
+            .and_then(|greens_calculator: Greens| greens_calculator.psi())
+            .expect("Failed to calculate the mutual inductances between the passive filaments"); // shape = (n_passive_filaments, n_passive_filaments)
         let mut mutual_34: Array2<f64> = Array2::from_elem((n_passive_filaments, n_plasma), f64::NAN); // plasma
 
         let mut mutual_41: Array2<f64> = Array2::from_elem((n_plasma, n_current_prescribed), f64::NAN);
@@ -233,22 +253,35 @@ impl CircuitEquationModel {
         let mut res_3: Array2<f64> = Array2::zeros((n_passive_filaments, n_passive_filaments)); // passives
         let mut res_4: Array2<f64> = Array2::zeros((n_plasma, n_plasma)); // plasma
 
-        // Mutual inductance between every pair of PF coils, [henry]: the flux at the filaments of one coil, per ampere in the
-        // other's filaments, summed over both. It is the method of `coil(i1)/inductance`, which the diagonal repeats
+        // Each PF coil's filaments, `element(i2)/geometry/rectangle`, described from their centres. As obliques they are described from
+        // their corners at the smallest r and z, with both angles zero
+        let mut coil_conductors: Vec<Conductor> = Vec::with_capacity(n_pf);
+        for i_pf in 0..n_pf {
+            let coil_width: Array1<f64> = pf_active_coils[i_pf].element(..).geometry.rectangle.width.to_array();
+            let coil_height: Array1<f64> = pf_active_coils[i_pf].element(..).geometry.rectangle.height.to_array();
+            let n_coil_filaments: usize = coil_width.len();
+            coil_conductors.push(
+                Conductor::from_oblique(
+                    &(pf_active_coils[i_pf].element(..).geometry.rectangle.r.to_array() - 0.5 * &coil_width),
+                    &(pf_active_coils[i_pf].element(..).geometry.rectangle.z.to_array() - 0.5 * &coil_height),
+                    &coil_width,
+                    &coil_height,
+                    &Array1::zeros(n_coil_filaments),
+                    &Array1::zeros(n_coil_filaments),
+                )
+                .expect("Failed to describe a PF coil's filaments as conductors"),
+            );
+        }
+
+        // Mutual inductance between every pair of PF coils, [henry]: the flux linking the filaments of one coil, per ampere in the
+        // other's filaments, summed over both
         let mut mutual_pf: Array2<f64> = Array2::from_elem((n_pf, n_pf), f64::NAN);
         for i_pf in 0..n_pf {
-            let coil_r: Array1<f64> = pf_active_coils[i_pf].element(..).geometry.rectangle.r.to_array();
-            let coil_z: Array1<f64> = pf_active_coils[i_pf].element(..).geometry.rectangle.z.to_array();
             for j_pf in 0..n_pf {
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    coil_r.clone(),
-                    coil_z.clone(),
-                    pf_active_coils[j_pf].element(..).geometry.rectangle.r.to_array(),
-                    pf_active_coils[j_pf].element(..).geometry.rectangle.z.to_array(),
-                    pf_active_coils[j_pf].element(..).geometry.rectangle.width.to_array(),
-                    pf_active_coils[j_pf].element(..).geometry.rectangle.height.to_array(),
-                );
-                mutual_pf[[i_pf, j_pf]] = greens_calculator.psi().sum();
+                mutual_pf[[i_pf, j_pf]] = Greens::conductor_to_conductor(&coil_conductors[i_pf], &coil_conductors[j_pf], conductor_model.clone())
+                    .and_then(|greens_calculator: Greens| greens_calculator.psi())
+                    .expect("Failed to calculate the mutual inductances between two PF coils")
+                    .sum();
             }
         }
 
@@ -301,30 +334,12 @@ impl CircuitEquationModel {
         // Mutual inductance between I_PF_I and passives
         // mutual_13.shape = (n_current_prescribed, n_passive_filaments)
         for i_current_prescribed in 0..n_current_prescribed {
-            // Get the coil geometry
-            let coil: &PfCoils = pf_active.pf_active_ids.coil(&pf_current_prescribed_names[i_current_prescribed]);
-            let coil_r: Array1<f64> = coil.element(..).geometry.rectangle.r.to_array();
-            let coil_z: Array1<f64> = coil.element(..).geometry.rectangle.z.to_array();
-            let coil_d_r: Array1<f64> = coil.element(..).geometry.rectangle.width.to_array();
-            let coil_d_z: Array1<f64> = coil.element(..).geometry.rectangle.height.to_array();
-            let n_coil_filaments: usize = coil_r.len();
-            let coil_angle_1: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
-            let coil_angle_2: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
-
-            let g_coil_filaments_passive_filaments: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
-                &coil_r,
-                &coil_z,
-                &coil_d_r,
-                &coil_d_z,
-                &coil_angle_1,
-                &coil_angle_2,
-                &passive_r,
-                &passive_z,
-                &passive_d_r,
-                &passive_d_z,
-                &passive_angle_1,
-                &passive_angle_2,
-            ); // shape = [n_coil_filaments, n_passive_filaments]
+            // The coil, found by its name in `pf_active/coil`
+            let i_pf: usize = pf_current_prescribed_indices[i_current_prescribed];
+            let g_coil_filaments_passive_filaments: Array2<f64> =
+                Greens::conductor_to_conductor(&coil_conductors[i_pf], &passive_conductor, conductor_model.clone())
+                    .and_then(|greens_calculator: Greens| greens_calculator.psi())
+                    .expect("Failed to calculate the mutual inductances between a PF coil's filaments and the passive filaments"); // shape = [n_coil_filaments, n_passive_filaments]
 
             // Sum over all coil filaments
             let g_coil_passive_filaments = g_coil_filaments_passive_filaments.sum_axis(Axis(0)); // shape = [n_passive_filaments]
@@ -338,30 +353,12 @@ impl CircuitEquationModel {
         // Mutual inductance between I_PF_V and passives
         // mutual_23.shape = (n_voltage_prescribed, n_passive_filaments)
         for i_voltage_prescribed in 0..n_voltage_prescribed {
-            // Get the coil geometry
-            let coil: &PfCoils = pf_active.pf_active_ids.coil(&pf_voltage_prescribed_names[i_voltage_prescribed]);
-            let coil_r: Array1<f64> = coil.element(..).geometry.rectangle.r.to_array();
-            let coil_z: Array1<f64> = coil.element(..).geometry.rectangle.z.to_array();
-            let coil_d_r: Array1<f64> = coil.element(..).geometry.rectangle.width.to_array();
-            let coil_d_z: Array1<f64> = coil.element(..).geometry.rectangle.height.to_array();
-            let n_coil_filaments: usize = coil_r.len();
-            let coil_angle_1: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
-            let coil_angle_2: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
-
-            let g_coil_filaments_passive_filaments: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
-                &coil_r,
-                &coil_z,
-                &coil_d_r,
-                &coil_d_z,
-                &coil_angle_1,
-                &coil_angle_2,
-                &passive_r,
-                &passive_z,
-                &passive_d_r,
-                &passive_d_z,
-                &passive_angle_1,
-                &passive_angle_2,
-            ); // shape = [n_coil_filaments, n_passive_filaments]
+            // The coil, found by its name in `pf_active/coil`
+            let i_pf: usize = pf_voltage_prescribed_indices[i_voltage_prescribed];
+            let g_coil_filaments_passive_filaments: Array2<f64> =
+                Greens::conductor_to_conductor(&coil_conductors[i_pf], &passive_conductor, conductor_model.clone())
+                    .and_then(|greens_calculator: Greens| greens_calculator.psi())
+                    .expect("Failed to calculate the mutual inductances between a PF coil's filaments and the passive filaments"); // shape = [n_coil_filaments, n_passive_filaments]
 
             // Sum over all coil filaments
             let g_coil_passive_filaments = g_coil_filaments_passive_filaments.sum_axis(Axis(0)); // shape = [n_passive_filaments]
@@ -615,6 +612,7 @@ impl CircuitEquationModel {
 /// # Arguments
 /// * `pf_active` - The PF coils, each with its current prescribed, or its voltage when it has one (`coil(i1)/voltage`)
 /// * `pf_passive` - The passive conductors, whose filaments, `loop(i1)/element(i2)`, carry eddy currents
+/// * `equilibrium` - The equilibrium, for its numerical settings, `equilibrium_settings/numerics`
 /// * `times_to_solve` - Times to solve the circuit equations at, [second]
 /// * `adaptive_time_stepping` - The calculation is always uses adaptive time stepping, this flat interpolates results onto `times_to_solve`
 ///
@@ -626,6 +624,7 @@ impl CircuitEquationModel {
 pub fn solve_circuit_equations(
     pf_active: PyRef<PfActive>,
     pf_passive: PyRef<PfPassive>,
+    equilibrium: PyRef<Equilibrium>,
     times_to_solve: PyReadonlyArray1<f64>,
     adaptive_time_stepping: bool,
 ) -> (PfActive, PfPassive) {
@@ -634,7 +633,7 @@ pub fn solve_circuit_equations(
     let time_end: f64 = times_to_solve_ndarray.last().unwrap().to_owned();
 
     // Construct the circuit equation model
-    let model: CircuitEquationModel = CircuitEquationModel::new(&pf_active, &pf_passive);
+    let model: CircuitEquationModel = CircuitEquationModel::new(&pf_active, &pf_passive, &equilibrium.settings_equilibrium.numerics);
 
     // Solver tolerances [dimensionless]
     let rtol: f64 = 0.005; // Relative tolerance = 0.5% [dimensionless]

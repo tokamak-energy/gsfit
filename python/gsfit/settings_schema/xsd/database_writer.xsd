@@ -39,18 +39,66 @@
             <xs:enumeration value="imas">
                 <xs:annotation>
                     <xs:documentation>
-                        An IMAS equilibrium IDS, built with imas-python and kept on `gsfit_controller.equilibrium_ids`; nothing is written to a database.
+                        An IMAS Equilibrium IDS, built with imas-python and kept on `gsfit_controller.equilibrium_ids`; nothing is written to a database.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="geqdsk">
                 <xs:annotation>
                     <xs:documentation>
-                        A G EQDSK file, EFIT's equilibrium file format. Not written yet (future work): `get_database_writer` has no geqdsk writer, so GSFit stops with an error when it comes to write the results.
+                        G EQDSK files, EFIT's equilibrium file format, in COCOS 1. One file per time-slice, written to the current working directory. Its settings are in `geqdsk`.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="GeqdskTimeslicesMethod">
+        <xs:annotation>
+            <xs:documentation>
+                The ways of choosing the time-slices written to G EQDSK files.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="all">
+                <xs:annotation>
+                    <xs:documentation>
+                        Every converged time-slice.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="user_defined">
+                <xs:annotation>
+                    <xs:documentation>
+                        A list of times, which can contain one time.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteDouble"/>
     </xs:simpleType>
 
     <!-- ================================= The settings file ================================= -->
@@ -63,12 +111,51 @@
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="method" type="DatabaseWriterMethod" maxOccurs="unbounded">
+                <xs:element name="method" type="DatabaseWriterMethod" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>
-                            A database writer to write the results with: one `method` for each place to write to, at least one. None of the writers has settings of its own.
+                            Write results to a database from: `gsfit/database_writers/`
                         </xs:documentation>
                     </xs:annotation>
+                </xs:element>
+                <xs:element name="geqdsk" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Settings for the geqdsk writer. A `gsfit_shot=&lt;pulseNo&gt;_time=&lt;time&gt;ms.geqdsk` file is written to the current working directory for each time-slice.
+                        </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="timeslices">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        The time-slices to write, one file each.
+                                    </xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="method" type="GeqdskTimeslicesMethod">
+                                            <xs:annotation>
+                                                <xs:documentation>
+                                                    How the time-slices to write are chosen.
+                                                </xs:documentation>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="user_defined" type="FiniteDoubleList">
+                                            <xs:annotation>
+                                                <xs:documentation>
+                                                    Times to write, as a space separated list, e.g. "0.12" or "0.08 0.12". The nearest reconstructed time-slice is used. A requested time outside the reconstructed times is skipped with a warning, unless it lands exactly on the first or last time-slice.
+                                                </xs:documentation>
+                                                <xs:appinfo>
+                                                    <units>second</units>
+                                                </xs:appinfo>
+                                            </xs:annotation>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>

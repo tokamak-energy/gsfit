@@ -8,8 +8,8 @@ use ndarray::Array1;
 /// Store the safety factor on the magnetic axis in the time-slice.
 ///
 /// This is the first point of the safety factor profile, which
-/// `profiles_1d::q::calculate` calculates from the curvature of `psi` at the axis
-/// rather than by a flux surface integral.
+/// `profiles_1d::q::calculate` calculates as the limit of the contour integrals over the
+/// surfaces about the axis, from the curvature of `psi` there; see `flux_surfaces`.
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `global_quantities/q_axis` is written into it

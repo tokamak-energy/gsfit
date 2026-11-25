@@ -10,6 +10,8 @@ pub(super) mod f;
 pub(super) mod f_df_dpsi;
 pub(super) mod j_phi;
 pub(super) mod pressure;
+#[expect(non_snake_case, reason = "double underscores separate IDS node names")]
+pub(super) mod psi__psi_norm;
 pub(super) mod q;
 
 #[cfg(test)]

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for constraints_j_parallel.xml: how each flux-surface averaged parallel current constraint is fitted.
+
+    Named as in the IMAS Data Dictionary: equilibrium time_slice[:]/constraints/j_parallel[:], whose `measured` is
+    `<J . B> / B0`, with `B0` the equilibrium's `vacuum_toroidal_field/b0`. A flux-surface average is a flux function, so each
+    constraint is on a flux surface, at its `psi_norm`, not at an (R, Z) point. Equilibrium::new puts each constraint here on the
+    equilibrium time-slice at its `time`.
+    The constraints are made outside GSFit, e.g. from the neoclassical currents on the flux surfaces of a previous equilibrium, which also
+    gives `f` and `gm5` there, which make the constraint linear in the source functions.
+    The root element is `constraints__j_parallel`, the path of this file's link in equilibrium.xml
+    with `__` for `/`, and each `j_parallel` element has the type `JParallel`. Neither these names nor the
+    Python classes generated from them then clash with those of the other constraints files.
+
+    Laid out as constraints_flux_loop.xsd, with one element per constraint, each with its own `expected_value`, `weight`, `include` and
+    `comment`; but the measurement is held here rather than read by the `database_reader`, so each constraint also has its `time`,
+    `psi_norm`, `measured`, `f` and `gm5`.
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="constraints__j_parallel">
+        <xs:annotation>
+            <xs:documentation>
+                Fitting settings for the flux-surface averaged parallel current constraints, with one `j_parallel` element per constraint.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="j_parallel" type="JParallel" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Fitting settings for one flux-surface averaged parallel current constraint.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+        <xs:key name="j_parallel_name_time_key">
+            <xs:annotation>
+                <xs:documentation>
+                    Each constraint's `name` must be unique at its `time`.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:selector xpath="j_parallel"/>
+            <xs:field xpath="name"/>
+            <xs:field xpath="time"/>
+        </xs:key>
+    </xs:element>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="Name">
+        <xs:annotation>
+            <xs:documentation>
+                A non-empty name without any whitespace.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Complex types ================================= -->
+
+    <xs:complexType name="JParallel">
+        <xs:annotation>
+            <xs:documentation>
+                Fitting settings for one flux-surface averaged parallel current constraint, on the flux surface at `psi_norm` of the equilibrium time-slice at `time`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="name" type="Name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the constraint, e.g. `J_PARALLEL01`, `time_slice(itime)/constraints/j_parallel(i1)/name`. Must be unique at its `time`.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="time" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        The time of the equilibrium time-slice the constraint is fitted on. A time-slice within 1e-6 second of it has it; the others do not.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>second</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="psi_norm" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        The flux surface of the constraint, its normalised poloidal flux, `time_slice(itime)/constraints/j_parallel(i1)/position/psi_norm`: from 0, the magnetic axis, to 1, the boundary.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="measured" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        The flux-surface averaged parallel current on the flux surface, `&lt;J . B&gt; / B0`, with `B0` the equilibrium's `vacuum_toroidal_field/b0` at `time`, `time_slice(itime)/constraints/j_parallel(i1)/measured`.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>ampere / metre ** 2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="f" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        The diamagnetic function, `F = R B_phi`, on the flux surface, of the equilibrium `measured` was calculated on, `time_slice(itime)/constraints/j_parallel(i1)/f`. With `gm5` it makes the constraint linear in the source functions: the fit takes `&lt;J . B&gt; = 2 pi (F p' + gm5 F F' / (mu_0 F))`, with them held at these values.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>tesla * metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="gm5" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        The flux-surface average of the magnetic field squared, `&lt;B ** 2&gt;`, on the flux surface, of the equilibrium `measured` was calculated on, `time_slice(itime)/constraints/j_parallel(i1)/gm5`; see `f`.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>tesla ** 2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="expected_value" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Expected magnitude of the measurement, used to normalise the measurement.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>ampere / metre ** 2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="weight" type="FiniteNonNegativeDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Relative weight of the constraint in the least-squares fit.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="include" type="TrueOrFalse">
+                <xs:annotation>
+                    <xs:documentation>
+                        Whether to include the constraint in the fit.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="comment" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Free-text comment, e.g. what the constraint was calculated from; may be empty.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+</xs:schema>

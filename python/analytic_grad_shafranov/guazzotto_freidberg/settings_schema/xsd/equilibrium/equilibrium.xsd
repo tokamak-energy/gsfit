@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for equilibrium.xml: the analytic solution's settings, which make the Equilibrium IDS.
+
+    The root element is `equilibrium_settings`, the IDS's name followed by `_settings`.
+    equilibrium.xml holds the time-slice's time, and links to the files holding the other settings, one element per file, with the
+    file's path in `href`, relative to equilibrium.xml.
+    See ../GUAZZOTTO_FREIDBERG_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= Types ================================= -->
+
+    <xs:simpleType name="XmlPath">
+        <xs:annotation>
+            <xs:documentation>
+                Path of an XML file, relative to the file holding the link.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:anyURI">
+            <xs:pattern value="\S+\.xml"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="Link">
+        <xs:annotation>
+            <xs:documentation>
+                A link to the file holding these settings.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="href" type="XmlPath" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    Path of the linked file, relative to equilibrium.xml, e.g. "grid.xml" or "../../default/equilibrium/grid.xml".
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="equilibrium_settings">
+        <xs:annotation>
+            <xs:documentation>
+                Settings to make the Equilibrium IDS.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="time" type="FiniteDouble">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Time of the Equilibrium IDS's time-slice.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <units>second</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="vacuum_toroidal_field" type="Link">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The vacuum toroidal field, b0 at the major radius r0.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <schema>vacuum_toroidal_field.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="configuration" type="Link">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The model surface, Guazzotto and Freidberg's shape of the plasma boundary.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <schema>configuration.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="profiles" type="Link">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Guazzotto and Freidberg's profile parameter, nu, and pressure normalisation, p_0, which give p' and ff'.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <schema>profiles.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="grid" type="Link">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The (R, Z) grid the Equilibrium IDS is filled on, with the PF coils on its boundary, and the psi_norm grid for its 1D profiles.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <schema>grid.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="numerics" type="Link">
+                    <xs:annotation>
+                        <xs:documentation>
+                            How the analytic solution is computed: the number of terms in its radial series.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <schema>numerics.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

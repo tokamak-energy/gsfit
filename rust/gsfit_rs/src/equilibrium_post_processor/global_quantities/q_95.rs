@@ -11,7 +11,7 @@ const Q_95_PSI_NORM: f64 = 0.95;
 
 /// Calculate the safety factor at `psi_norm = 0.95`, and store it in the time-slice.
 ///
-/// The `psi_norm = 0.95` contour is traced directly and integrated with the same quadrature as the
+/// The `psi_norm = 0.95` surface is found directly, along rays from the magnetic axis, and integrated with the same quadrature as the
 /// safety-factor profile. The poloidal-current function is evaluated at exactly 0.95 from the
 /// fitted FF' source function, so the result does not depend on the `profiles_1d` sampling grid.
 ///
@@ -24,7 +24,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     let flux_surface: FluxSurface = flux_surfaces::calculate_at_psi_norm(time_slice, Q_95_PSI_NORM);
     let f_95: f64 = profiles_1d::f::value_at_psi_norm(time_slice, ff_prime_source_function, i_rod, Q_95_PSI_NORM);
-    let q95: f64 = profiles_1d::q::calculate_on_flux_surface(time_slice, &flux_surface, f_95);
+    let q95: f64 = profiles_1d::q::q_on_flux_surface(&flux_surface, f_95);
 
     time_slice.global_quantities.q_95 = q95;
 }

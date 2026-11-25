@@ -20,7 +20,7 @@ from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 @dataclass(kw_only=True)
 class ConstraintsIsoflux:
     """
-    The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Each is fitted with the two points of the isoflux constraint of the same `name` in the magnetics IDS, `magnetics/isoflux`, a custom key, which the database reader adds, each on its own timebase; listing one which the magnetics IDS does not have is an error.
+    The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Each is fitted with the two points of the isoflux constraint of the same `name` in the Magnetics IDS, `magnetics/isoflux`, a custom key, which the database reader adds, each on its own timebase; listing one which the Magnetics IDS does not have is an error.
 
     :param isoflux: One isoflux constraint. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux[name]`
     """

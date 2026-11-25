@@ -20,7 +20,6 @@ mod contour_tree {
 mod convergence;
 mod dependency_sorter;
 mod equilibrium_post_processor;
-mod flux_surface_average;
 pub(crate) mod flux_surfaces;
 mod global_quantities;
 mod intermediate_values;
@@ -45,12 +44,14 @@ pub enum CalculatorIdentifier {
     boundary__gap__value,
     boundary__geometry,
     boundary__outline__r__z,
+    boundary__phi__phi_poloidal_current,
     boundary__psi_norm__rho_tor,
     constraints__b_field_pol_probe_reconstructed,
     constraints__diamagnetic_flux_reconstructed,
     constraints__flux_loop_reconstructed,
     constraints__isoflux_boundary_reconstructed,
     constraints__isoflux_reconstructed,
+    constraints__j_parallel_reconstructed,
     constraints__pressure_reconstructed,
     constraints__rogowski_coil_reconstructed,
     constraints__stationary_point_reconstructed,
@@ -100,6 +101,7 @@ pub enum CalculatorIdentifier {
     profiles_1d_r_midplane__f_df_dpsi,
     profiles_1d_r_midplane__j_phi,
     profiles_1d_r_midplane__pressure,
+    profiles_1d_r_midplane__psi__psi_norm,
     profiles_1d_r_midplane__q,
     profiles_1d_r_midplane_h__r__psi__psi_norm,
     profiles_2d__b_field_phi,

@@ -67,7 +67,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 /// `current_centre/z` in every time-slice.
 ///
 /// # Arguments
-/// * `equilibrium_ids` - the solved equilibrium IDS; `global_quantities/current_centre/velocity_z`
+/// * `equilibrium_ids` - the solved Equilibrium IDS; `global_quantities/current_centre/velocity_z`
 ///   is written into every time-slice
 ///
 /// A single time-slice has no derivative and is given `NaN`. A `NaN` in `current_centre/z` poisons

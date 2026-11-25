@@ -5,7 +5,6 @@ import sys
 import textwrap
 import traceback
 import typing
-from importlib import resources as resources_py  # BUXTON: this is deprecated and needs removing
 from multiprocessing.connection import Connection
 from pathlib import Path
 from time import time as time_py
@@ -15,6 +14,7 @@ import f90nml
 from . import version_storage
 from .nested_dictionary import NestedDict
 from .utility import logging as util_logging
+from .utility.make_best_links import make_best_links
 from .utility.make_settings_from_xml_xsd import make_settings_from_xml_xsd
 from .utility.make_settings_json import make_settings_json
 from .xml_reader_and_writer.read_to_python_dataclasses import read_xml_settings_to_dataclasses
@@ -29,10 +29,15 @@ def _create_script_nodes(
     workflows: list[str],
     link_best: bool,
 ) -> float:
-    """Creates the MDSplus nodes. Returns how long the creation took [second].
+    """Creates the MDSplus nodes, and, when `link_best`, links `BEST` to the run. Returns how long the creation took
+    [second].
 
     A module level function taking nothing but primitives, because it is also the body of the
     child process started by `start_mds_node_creation`, which must not reach back into the parent.
+
+    `BEST` is made by `make_best_links`, with the `LINK_TO_BEST` TDI function as `make_BEST_links2` in
+    `st40_mds_trees` makes it, not by `standard_utility`, whose `link_best` writes fixed references to the run's nodes
+    and keeps the nodes of the runs `BEST` was linked to before.
     """
 
     # Lazy loading of `standard_utility` because it's specific to Tokamak Energy.
@@ -46,8 +51,13 @@ def _create_script_nodes(
         run_name=run_name,
         run_info=run_description,
         workflows=workflows,
-        link_best=link_best,
+        link_best=False,
     )
+    if link_best:
+        # The MDSplus tree the analysis writes to, and the server `standard_utility` writes to
+        tree_name: str = util.load_script_data_from_json(analysis_name)["tree"]
+        server: str = util.mdswrapper.config.mdsplus_server_ip
+        make_best_links(server=server, tree_name=tree_name, pulseNo=pulseNo_write, run_name=run_name)
     toc = time_py()
 
     return toc - tic
@@ -79,7 +89,7 @@ class DiagnosticAndSimulationBase(typing.Generic[SettingsXmlT]):
 
     log_records: list[logging.LogRecord] = []
 
-    # The dataclass to read `GSFIT_code_settings.xml`, and the XML files it links to, into, with one field per link.
+    # The dataclass to read `<code_name>_code_settings.xml`, and the XML files it links to, into, with one field per link.
     # Every code must set it, e.g. `class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings])` with `settings_xml_class = GsfitCodeSettings`,
     # so that this package does not depend on any one code's settings
     settings_xml_class: type[SettingsXmlT] | None = None
@@ -124,8 +134,16 @@ class DiagnosticAndSimulationBase(typing.Generic[SettingsXmlT]):
         """
         self.analysis_time_start = time_py()
 
-        # code_name: is the package name from "pip list" in upper case (note, this includes "_")
-        code_name = self.__class__.__module__.split(".")[0].upper()  # BUXTON: I don't like this!!
+        # The code's directory: the directory of the module which defines the code's class, e.g. `gsfit/` for `Gsfit`.
+        # It holds the code's `settings/` and `settings_schema/xsd/`, and names the code
+        module_file_path: str | None = sys.modules[type(self).__module__].__file__
+        if module_file_path is None:
+            raise FileNotFoundError(f"The module `{type(self).__module__}`, which defines `{type(self).__name__}`, has no file")
+        self.code_directory_path: Path = Path(module_file_path).resolve().parent
+
+        # code_name: the code's directory name in upper case, e.g. "GSFIT" or "BUXTON_PROKOPYSZYN".
+        # Every settings directory's root *.xml file is `<code_name>_code_settings.xml`, e.g. `GSFIT_code_settings.xml`
+        code_name = self.code_directory_path.name.upper()
 
         # analysis_name
         if analysis_name is None:
@@ -172,10 +190,9 @@ class DiagnosticAndSimulationBase(typing.Generic[SettingsXmlT]):
         self.pulseNo_write = pulseNo_write
 
         # Test if "settings_path" is a directory.
-        # If directory doesn't exist, then treat as "relative path"
+        # If directory doesn't exist, then treat it as the name of one of the code's settings directories, e.g. "default"
         if not (Path(settings_path).is_dir()):
-            python_module = self.code_name.lower()
-            settings_path = f"{resources_py.files(python_module)}/settings/{settings_path}"
+            settings_path = str(self.code_directory_path / "settings" / settings_path)
 
         # Test if settings directory exists
         if not Path(settings_path).is_dir():
@@ -223,7 +240,7 @@ class DiagnosticAndSimulationBase(typing.Generic[SettingsXmlT]):
     def _load_settings_from_files(self) -> None:
         """Look in the "settings_path" directory and load all settings files.
         Will recursively load *.json and *.nml files.
-        Will also read `GSFIT_code_settings.xml`, which every settings directory must have, and the *.xml files
+        Will also read `<code_name>_code_settings.xml`, e.g. `GSFIT_code_settings.xml`, which every settings directory must have, and the *.xml files
         it links to, into `settings_xml_class`, stored as `self.settings_xml`, with the path of each *.xml file in
         `self.settings_xml_file_paths`, and the XML schemas, as text, in `self.settings_xsd`
 
@@ -257,18 +274,20 @@ class DiagnosticAndSimulationBase(typing.Generic[SettingsXmlT]):
                     raise exception_obj
 
         # Load *.xml settings, which every settings directory must have.
-        # `GSFIT_code_settings.xml` holds no settings itself: each element with an `href` links to the XML file which holds one group of them
-        gsfit_code_settings_path: Path = Path(settings_path) / "GSFIT_code_settings.xml"
+        # `<code_name>_code_settings.xml` holds no settings itself: each element with an `href` links to the XML file which holds one group of them
+        code_settings_path: Path = Path(settings_path) / f"{self.code_name}_code_settings.xml"
+        if not code_settings_path.is_file():
+            raise FileNotFoundError(f"Every settings directory of `{type(self).__name__}` must have {code_settings_path.name}: {code_settings_path}")
         if self.settings_xml_class is None:
-            raise TypeError(f"`{type(self).__name__}` sets no `settings_xml_class`, so cannot read {gsfit_code_settings_path}")
+            raise TypeError(f"`{type(self).__name__}` sets no `settings_xml_class`, so cannot read {code_settings_path}")
 
         # The XML schemas are part of the code, not of the settings, so the files are checked against what this version of the code reads
-        xsd_directory_path: Path = Path(f"{resources_py.files(self.code_name.lower())}/settings_schema/xsd")
+        xsd_directory_path: Path = self.code_directory_path / "settings_schema" / "xsd"
 
-        step_name: str = f'Loading settings from: "{gsfit_code_settings_path.name}", and the XML files it links to'
+        step_name: str = f'Loading settings from: "{code_settings_path.name}", and the XML files it links to'
 
         self.settings_xml, self.settings_xml_file_paths = read_xml_settings_to_dataclasses(
-            xml_file_path=gsfit_code_settings_path,
+            xml_file_path=code_settings_path,
             xsd_directory_path=xsd_directory_path,
             settings_class=self.settings_xml_class,
         )

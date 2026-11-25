@@ -1519,10 +1519,22 @@ class PathNode:
     data_type: str  # base type for leaves, e.g. "FLT_0D"
     dd_path: str  # full path from the root, e.g. "time_slice/global_quantities/ip"
     children: list["PathNode"] = field(default_factory=list)
+    # Arrays of structures only:
+    elements_are_named: bool = False  # whether its elements have a `name`, so that one can be selected by it
     # Leaves only:
     projection: str = ""  # Rust expression reading the leaf, given `equilibrium` and `at`
     lengths_function: str = ""  # name of the generated lengths function
+    position_of_name_function: str = ""  # name of the generated function finding an element by its `name`
     n_levels: int = 0  # number of array-of-structures levels above this leaf
+
+
+@dataclass(frozen=True)
+class ArrayLevel:
+    """One array-of-structures level on a path, as the generated functions reach it."""
+
+    dd_path: str  # full path from the root, e.g. "time_slice/constraints/pf_current"
+    expression: str  # Rust expression reaching the array, given the root and the indices above it, `at`
+    elements_are_named: bool  # whether its elements have a `name`, so that one can be selected by it
 
 
 def rust_string_literal(text: str) -> str:
@@ -1563,17 +1575,16 @@ def build_path_tree(
     *,
     dd_path: str,
     rust_expression: str,
-    vec_expressions: list[str],
-    vec_dd_paths: list[str],
+    array_levels: list[ArrayLevel],
     ancestry: tuple[str, ...],
-    lengths_registry: dict[tuple[str, ...], str],
+    chain_registry: dict[tuple[ArrayLevel, ...], str],
 ) -> list[PathNode]:
     """
     Walk one structure and return its children as `PathNode`s.
 
     `rust_expression` is the Rust expression that reaches this structure given the
-    index list `at`; `vec_expressions` is the expression for each array-of-structures
-    level above it, which is what the generated lengths function needs.
+    index list `at`; `array_levels` are the array-of-structures levels above it, which
+    is what the generated lengths and name functions need.
 
     `ancestry` stops a self-referential schema from recursing forever, matching the
     guard in `generate_view_for_struct`.
@@ -1590,12 +1601,12 @@ def build_path_tree(
         if f.is_array and f.inner_type in type_map:
             # An array of structures: a new index level.
             vec_expression = f"{rust_expression}.{rust_name}"
-            child_vec_expressions = vec_expressions + [vec_expression]
-            child_vec_dd_paths = vec_dd_paths + [child_dd_path]
+            elements_are_named: bool = element_has_name(type_map[f.inner_type])
+            child_array_levels = array_levels + [ArrayLevel(dd_path=child_dd_path, expression=vec_expression, elements_are_named=elements_are_named)]
             # `gather` resolves every index against the real length before calling the
             # projection, so plain indexing cannot go out of range here. A single element is
             # always `.field[i]`; the round-bracket form is reserved for the slice view
-            element_expression = f"{vec_expression}[at[{len(vec_expressions)}]]"
+            element_expression = f"{vec_expression}[at[{len(array_levels)}]]"
 
             if f.inner_type in ancestry:
                 continue  # self-referential schema; stop rather than recurse forever
@@ -1614,11 +1625,11 @@ def build_path_tree(
                         type_map,
                         dd_path=child_dd_path,
                         rust_expression=element_expression,
-                        vec_expressions=child_vec_expressions,
-                        vec_dd_paths=child_vec_dd_paths,
+                        array_levels=child_array_levels,
                         ancestry=ancestry + (f.inner_type,),
-                        lengths_registry=lengths_registry,
+                        chain_registry=chain_registry,
                     ),
+                    elements_are_named=elements_are_named,
                 )
             )
 
@@ -1630,7 +1641,16 @@ def build_path_tree(
                     "implementation in src/python/mod.rs."
                 )
 
-            lengths_function = register_lengths_function(vec_expressions, vec_dd_paths, lengths_registry)
+            # A leaf with no array of structures above it has no lengths, and one with no level whose elements have a
+            # `name` above it has no names
+            lengths_function: str = "no_levels"
+            position_of_name_function: str = "no_names"
+            if array_levels:
+                chain_name: str = register_chain(array_levels, chain_registry)
+                lengths_function = f"lengths_{chain_name}"
+                for array_level in array_levels:
+                    if array_level.elements_are_named:
+                        position_of_name_function = f"position_of_name_{chain_name}"
             nodes.append(
                 PathNode(
                     name=f.name,
@@ -1642,7 +1662,8 @@ def build_path_tree(
                     dd_path=child_dd_path,
                     projection=f"{rust_expression}.{rust_name}.clone()",
                     lengths_function=lengths_function,
-                    n_levels=len(vec_expressions),
+                    position_of_name_function=position_of_name_function,
+                    n_levels=len(array_levels),
                 )
             )
 
@@ -1663,10 +1684,9 @@ def build_path_tree(
                         type_map,
                         dd_path=child_dd_path,
                         rust_expression=f"{rust_expression}.{rust_name}",
-                        vec_expressions=vec_expressions,
-                        vec_dd_paths=vec_dd_paths,
+                        array_levels=array_levels,
                         ancestry=ancestry + (f.rust_type,),
-                        lengths_registry=lengths_registry,
+                        chain_registry=chain_registry,
                     ),
                 )
             )
@@ -1678,13 +1698,10 @@ def build_path_tree(
     return nodes
 
 
-def register_lengths_function(
-    vec_expressions: list[str],
-    vec_dd_paths: list[str],
-    lengths_registry: dict[tuple[str, ...], str],
-) -> str:
+def register_chain(array_levels: list[ArrayLevel], chain_registry: dict[tuple[ArrayLevel, ...], str]) -> str:
     """
-    Name the function giving the length of each array-of-structures level on a path.
+    Name the chain of array-of-structures levels on a path, which names its generated functions: `lengths_<chain>`
+    and, where a level's elements have a `name`, `position_of_name_<chain>`.
 
     Chains are shared between every leaf below them, so the same chain is only ever
     emitted once.
@@ -1693,33 +1710,54 @@ def register_lengths_function(
     trailing segments: `description_2d/limiter/unit` and `description_2d/mobile/unit` both
     end in `unit` and would otherwise collide.
     """
-    if not vec_expressions:
-        return "no_levels"
+    key = tuple(array_levels)
+    if key in chain_registry:
+        return chain_registry[key]
 
-    key = tuple(vec_expressions)
-    if key in lengths_registry:
-        return lengths_registry[key]
+    chain_name = array_levels[-1].dd_path.replace("/", "_")
+    if chain_name in chain_registry.values():
+        raise ValueError(f"two array-of-structures chains both want the name `{chain_name}`")
 
-    name = "lengths_" + vec_dd_paths[-1].replace("/", "_")
-    if name in lengths_registry.values():
-        raise ValueError(f"two array-of-structures chains both want the name `{name}`")
-
-    lengths_registry[key] = name
-    return name
+    chain_registry[key] = chain_name
+    return chain_name
 
 
-def generate_lengths_functions(lengths_registry: dict[tuple[str, ...], str], root_variable: str, ids_pascal: str) -> list[str]:
-    """Emit one function per array-of-structures chain."""
+def generate_lengths_functions(chain_registry: dict[tuple[ArrayLevel, ...], str], root_variable: str, ids_pascal: str) -> list[str]:
+    """Emit one function per array-of-structures chain, giving the length of each of its levels."""
     lines: list[str] = []
-    for vec_expressions, name in sorted(lengths_registry.items(), key=lambda item: item[1]):
+    for array_levels, chain_name in sorted(chain_registry.items(), key=lambda item: item[1]):
         # `at` is only read when there is more than one level.
-        at_parameter = "at" if len(vec_expressions) > 1 else "_at"
-        lines.append(f"/// Length of each array-of-structures level along `{name[len('lengths_') :]}`.")
-        lines.append(f"fn {name}({root_variable}: &{ids_pascal}, level: usize, {at_parameter}: &[usize]) -> Option<usize> {{")
+        at_parameter = "at" if len(array_levels) > 1 else "_at"
+        lines.append(f"/// Length of each array-of-structures level along `{chain_name}`.")
+        lines.append(f"fn lengths_{chain_name}({root_variable}: &{ids_pascal}, level: usize, {at_parameter}: &[usize]) -> Option<usize> {{")
         lines.append("    match level {")
-        for i_level, expression in enumerate(vec_expressions):
-            lines.append(f"        {i_level} => return Some({expression}.len()),")
+        for i_level, array_level in enumerate(array_levels):
+            lines.append(f"        {i_level} => return Some({array_level.expression}.len()),")
         lines.append("        _ => return None,")
+        lines.append("    }")
+        lines.append("}")
+        lines.append("")
+    return lines
+
+
+def generate_position_of_name_functions(chain_registry: dict[tuple[ArrayLevel, ...], str], root_variable: str, ids_pascal: str) -> list[str]:
+    """Emit one function per array-of-structures chain with a level whose elements have a `name`, giving the position of
+    the element with a given name at that level, by the rule the Rust accessors select by name with, `index_of_name`."""
+    lines: list[str] = []
+    for array_levels, chain_name in sorted(chain_registry.items(), key=lambda item: item[1]):
+        named_level_lines: list[str] = []
+        n_levels: int = len(array_levels)
+        for i_level in range(n_levels):
+            if array_levels[i_level].elements_are_named:
+                named_level_lines.append(f"        {i_level} => return index_of_name(&{array_levels[i_level].expression}, name),")
+        if not named_level_lines:
+            continue
+
+        lines.append(f"/// Position of the element named `name` at each array-of-structures level along `{chain_name}` whose elements have a `name`.")
+        lines.append(f"fn position_of_name_{chain_name}({root_variable}: &{ids_pascal}, level: usize, at: &[usize], name: &str) -> Result<usize, String> {{")
+        lines.append("    match level {")
+        lines.extend(named_level_lines)
+        lines.append(f"        _ => return no_names({root_variable}, level, at, name),")
         lines.append("    }")
         lines.append("}")
         lines.append("")
@@ -1754,26 +1792,28 @@ def collect_types_from_path_tree(nodes: list[PathNode], collected: dict[str, lis
 
 def generate_python_paths_body(
     root_nodes: list[PathNode],
-    lengths_registry: dict[tuple[str, ...], str],
+    chain_registry: dict[tuple[ArrayLevel, ...], str],
     root_ct: ComplexType,
     ids_name: str,
     root_kind: str,
 ) -> tuple[list[str], list[str], list[str]]:
     """Generate the body of the static description the Rust navigator walks: a function per array-of-structures chain giving its
-    lengths, the nodes, and the root, `<NAME>_ROOT`.
+    lengths, and one per chain with a level whose elements have a `name` finding an element by it, the nodes, and the root,
+    `<NAME>_ROOT`.
 
     Shared by an IDS's `src/python/<ids>_paths.rs`, see `generate_python_paths_rust`, and a structure's, see `build_structure`, which
     differ only in their header and in where they import from.
 
     Args:
         root_nodes: The root's children, from `build_path_tree`
-        lengths_registry: The array-of-structures chains, from `build_path_tree`
+        chain_registry: The array-of-structures chains, from `build_path_tree`
         root_ct: The root struct
         ids_name: The root's name, e.g. "equilibrium", which names the root and the variable each reader takes
         root_kind: What the root is, "IDS" or "structure", for the readers' error and the root's documentation
 
     Returns:
-        The lines; the names they use from the Python bindings' module, `imas_rs::python`; and the base types they use
+        The lines; the names they use from the Python bindings' module, `imas_rs::python`; and the names they use from
+        `dd_base_types`: the base types and, where an array's elements have a `name`, `index_of_name`
     """
     ids_pascal = snake_to_pascal_case(ids_name)
 
@@ -1796,6 +1836,7 @@ def generate_python_paths_body(
                     "                        indices,\n"
                     f"                        {node.n_levels},\n"
                     f"                        {node.lengths_function},\n"
+                    f"                        {node.position_of_name_function},\n"
                     f"                    |{ids_name}: &{ids_pascal}, {at_parameter}: &[usize]| -> {node.data_type} {{\n"
                     f"                            {node.projection}\n"
                     "                        },\n"
@@ -1805,8 +1846,11 @@ def generate_python_paths_body(
                 )
             else:
                 child_name = emit_children(node.children, node.dd_path)
-                variant = "Structure" if node.kind == "structure" else "ArrayOfStructures"
-                kind = f"NodeKind::{variant}({child_name})"
+                if node.kind == "structure":
+                    kind = f"NodeKind::Structure({child_name})"
+                else:
+                    elements_are_named = "true" if node.elements_are_named else "false"
+                    kind = f"NodeKind::ArrayOfStructures {{ children: {child_name}, elements_are_named: {elements_are_named} }}"
 
             entries.append(
                 "    Node {\n"
@@ -1823,17 +1867,34 @@ def generate_python_paths_body(
 
     root_children_name = emit_children(root_nodes, "")
 
+    position_of_name_lines: list[str] = generate_position_of_name_functions(chain_registry, ids_name, ids_pascal)
+
     imports = ["IndexSpec", "Leaf", "Node", "NodeKind", "gather"]
     if any(node.kind == "leaf" and node.n_levels == 0 for node in iterate_path_tree(root_nodes)):
         imports.append("no_levels")
+    # `no_names` is also the name functions' answer for a level whose elements have no `name`
+    uses_no_names: bool = len(position_of_name_lines) > 0
+    for node in iterate_path_tree(root_nodes):
+        if node.kind == "leaf" and node.position_of_name_function == "no_names":
+            uses_no_names = True
+    if uses_no_names:
+        imports.append("no_names")
     used_base_types = sorted({node.data_type for node in iterate_path_tree(root_nodes) if node.kind == "leaf"})
+    if position_of_name_lines:
+        used_base_types.append("index_of_name")
 
     lines: list[str] = []
     lines.append("// " + "=" * 76)
     lines.append("// Array-of-structures lengths")
     lines.append("// " + "=" * 76)
     lines.append("")
-    lines.extend(generate_lengths_functions(lengths_registry, ids_name, ids_pascal))
+    lines.extend(generate_lengths_functions(chain_registry, ids_name, ids_pascal))
+    if position_of_name_lines:
+        lines.append("// " + "=" * 76)
+        lines.append("// Array-of-structures names")
+        lines.append("// " + "=" * 76)
+        lines.append("")
+        lines.extend(position_of_name_lines)
     lines.append("// " + "=" * 76)
     lines.append("// Nodes")
     lines.append("// " + "=" * 76)
@@ -1855,13 +1916,13 @@ def generate_python_paths_body(
 
 def generate_python_paths_rust(
     root_nodes: list[PathNode],
-    lengths_registry: dict[tuple[str, ...], str],
+    chain_registry: dict[tuple[ArrayLevel, ...], str],
     root_ct: ComplexType,
     ids_name: str,
 ) -> str:
     """Generate an IDS's static data dictionary description, `src/python/<ids>_paths.rs`, which the Rust navigator walks."""
     ids_pascal = snake_to_pascal_case(ids_name)
-    body_lines, imports, used_base_types = generate_python_paths_body(root_nodes, lengths_registry, root_ct, ids_name, "IDS")
+    body_lines, imports, used_base_types = generate_python_paths_body(root_nodes, chain_registry, root_ct, ids_name, "IDS")
 
     lines: list[str] = []
     lines.append(f"//! Static description of the {ids_name} data dictionary, used to build and resolve paths.")
@@ -2134,11 +2195,11 @@ def generate_python_stub_section(
     lines.append("    def get(self, path: Path[_T]) -> _T:")
     lines.append(f'        """Read the data at `path` out of this {root_kind}.')
     lines.append("")
-    lines.append("        The shape of the result follows the shape of the index: an integer index")
-    lines.append("        gives one value, a slice gathers. The dimensions are gained from left to right:")
-    lines.append("        one per sliced level, in the order they appear on the path, then the leaf's own")
-    lines.append("        dimensions. A sliced level which selects a different number of elements under")
-    lines.append("        different elements above it would be jagged, and raises `IndexError`.")
+    lines.append("        The shape of the result follows the shape of the index: an integer index, or the")
+    lines.append("        `name` of one element, gives one value, a slice gathers. The dimensions are gained")
+    lines.append("        from left to right: one per sliced level, in the order they appear on the path,")
+    lines.append("        then the leaf's own dimensions. A sliced level which selects a different number of")
+    lines.append("        elements under different elements above it would be jagged, and raises `IndexError`.")
     lines.append("")
     lines.append("        An unset leaf reads back as the IMAS empty value: NaN for a float,")
     lines.append("        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.")
@@ -2171,18 +2232,25 @@ def generate_python_stub_section(
     lines.append("# " + "-" * 74)
     lines.append("")
 
-    array_types = sorted({node.dd_type for node in iterate_path_tree(root_nodes) if node.kind == "array_of_structures"})
-    for dd_type in array_types:
+    # Whether the elements of each array-of-structures type have a `name`, which is a property of the type, as the stub's
+    # classes are, so is the same wherever the type appears
+    array_elements_are_named: dict[str, bool] = {}
+    for node in iterate_path_tree(root_nodes):
+        if node.kind == "array_of_structures":
+            array_elements_are_named[node.dd_type] = node.elements_are_named
+    for dd_type in sorted(array_elements_are_named):
+        # The `name` of one element selects it as an integer does
+        one_index = "int | str" if array_elements_are_named[dd_type] else "int"
         lines.append(f"class {array_class_name(dd_type, False)}:")
         lines.append("    @overload")
-        lines.append(f"    def __getitem__(self, index: int) -> {class_name(dd_type, False)}: ...")
+        lines.append(f"    def __getitem__(self, index: {one_index}) -> {class_name(dd_type, False)}: ...")
         lines.append("    @overload")
         lines.append(f"    def __getitem__(self, index: slice | list[int]) -> {class_name(dd_type, True)}: ...")
         lines.append("")
         lines.append(f"class {array_class_name(dd_type, True)}:")
         lines.append("    # A level above has already been sliced, so whatever this one is indexed with,")
         lines.append("    # the values are still gathered.")
-        lines.append(f"    def __getitem__(self, index: int | slice | list[int]) -> {class_name(dd_type, True)}: ...")
+        lines.append(f"    def __getitem__(self, index: {one_index} | slice | list[int]) -> {class_name(dd_type, True)}: ...")
         lines.append("")
 
     lines.append("# " + "-" * 74)
@@ -2465,25 +2533,24 @@ def build_ids(
     all_types = complex_types + [root_element]
     type_map = {snake_to_pascal_case(ct.name): ct for ct in all_types}
 
-    lengths_registry: dict[tuple[str, ...], str] = {}
+    chain_registry: dict[tuple[ArrayLevel, ...], str] = {}
     root_nodes = build_path_tree(
         root_element,
         type_map,
         dd_path="",
         rust_expression=ids_name,
-        vec_expressions=[],
-        vec_dd_paths=[],
+        array_levels=[],
         ancestry=(snake_to_pascal_case(root_element.name),),
-        lengths_registry=lengths_registry,
+        chain_registry=chain_registry,
     )
     n_nodes = sum(1 for _ in iterate_path_tree(root_nodes))
     n_leaves = sum(1 for node in iterate_path_tree(root_nodes) if node.kind == "leaf")
-    print(f"Path tree: {n_nodes} nodes, {n_leaves} leaves, {len(lengths_registry)} array-of-structures chains")
+    print(f"Path tree: {n_nodes} nodes, {n_leaves} leaves, {len(chain_registry)} array-of-structures chains")
 
     if path_to_rust_paths_file is not None:
         paths_path = Path(path_to_rust_paths_file)
         paths_path.parent.mkdir(parents=True, exist_ok=True)
-        paths_path.write_text(generate_python_paths_rust(root_nodes, lengths_registry, root_element, ids_name))
+        paths_path.write_text(generate_python_paths_rust(root_nodes, chain_registry, root_element, ids_name))
         print(f"Generated: {paths_path}")
         subprocess.run(
             [
@@ -2725,19 +2792,18 @@ def build_structure(path_to_schema: Path, path_to_rust_file: Path) -> str:
     type_map: dict[str, ComplexType] = {}
     for ct in complex_types + [root_element]:
         type_map[snake_to_pascal_case(ct.name)] = ct
-    lengths_registry: dict[tuple[str, ...], str] = {}
+    chain_registry: dict[tuple[ArrayLevel, ...], str] = {}
     root_nodes: list[PathNode] = build_path_tree(
         root_element,
         type_map,
         dd_path="",
         rust_expression=root_name,
-        vec_expressions=[],
-        vec_dd_paths=[],
+        array_levels=[],
         ancestry=(root_struct_name,),
-        lengths_registry=lengths_registry,
+        chain_registry=chain_registry,
     )
     paths_lines, paths_python_imports, paths_dd_base_types_imports = generate_python_paths_body(
-        root_nodes, lengths_registry, root_element, root_name, "structure"
+        root_nodes, chain_registry, root_element, root_name, "structure"
     )
 
     # `__repr__` gives the length of each array of structures at the root
@@ -2778,7 +2844,8 @@ def build_structure(path_to_schema: Path, path_to_rust_file: Path) -> str:
         f"impl {python_class_name} {{",
         f"    /// Read the data at `path`, a path from `gsfit_rs.imas.{root_name}_paths`, out of this copy.",
         "    ///",
-        "    /// The shape of the result follows the shape of the index: an integer index gives one value, a slice gathers.",
+        "    /// The shape of the result follows the shape of the index: an integer index, or the `name` of one element, gives one",
+        "    /// value, a slice gathers.",
         "    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {",
         f"        read_path(py, &self.inner, {rust_string_literal(root_name)}, path)",
         "    }",

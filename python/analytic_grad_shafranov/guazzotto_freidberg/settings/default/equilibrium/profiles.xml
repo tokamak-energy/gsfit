@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Guazzotto and Freidberg's elongated D's nu = 0.3 (Table 1) -->
+<profiles xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/profiles.xsd">
+    <nu>0.3</nu>
+    <p_0>1.0e5</p_0>
+</profiles>

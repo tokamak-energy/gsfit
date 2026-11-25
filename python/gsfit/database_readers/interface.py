@@ -82,7 +82,8 @@ class DatabaseReaderProtocol(Protocol):
         **`current` is signed**: positive means counter-clockwise viewed from above.
 
         **Each filament's `width` and `height` must be positive.**
-        They give the coil's self-inductance, `coil(i1)/inductance`, which the circuit equations use; a reconstruction does not use them.
+        The Greens functions treat each filament as a conductor of that size, unless the equilibrium's `numerics/greens/conductor_model` is
+        `point`, and the circuit equations calculate the inductances between the coils from them.
 
         Different machines will use different data stores for the coil geometry and currents.
         This Protocol allows different database readers to be selected.
@@ -270,7 +271,7 @@ class DatabaseReaderProtocol(Protocol):
 
         Every sensor is added, whether or not it is fitted: which sensors are fitted, and their weights, are the equilibrium's constraints.
 
-        The constraints at points which can move are added here too, as custom keys of the magnetics IDS: the isoflux constraints, two points
+        The constraints at points which can move are added here too, as custom keys of the Magnetics IDS: the isoflux constraints, two points
         on the same flux surface, the isoflux boundary constraints, a point on the plasma boundary, and the stationary point constraints, an
         X-point or the magnetic axis. Each point is a time trace on the constraint's own timebase, which need not be the reconstruction
         times; NaN where it is not known. A reader with none of them adds none.
@@ -434,7 +435,7 @@ class DatabaseReaderProtocol(Protocol):
         A gap is a reference point and a direction, and its value is the distance from the reference point to the plasma boundary along that direction.
         `Equilibrium.copy_from_pulse_schedule_ids` copies the definitions onto every time-slice's `equilibrium/time_slice(itime)/boundary/gap`, and the equilibrium post-processor calculates each value.
 
-        **The angle is clockwise from `grad(R)`**, in the usual plot with `R` to the right and `Z` upwards, which is the equilibrium IDS's convention.
+        **The angle is clockwise from `grad(R)`**, in the usual plot with `R` to the right and `Z` upwards, which is the Equilibrium IDS's convention.
         So an angle of `pi / 2` points towards `-Z`.
         A machine which stores the angle counter-clockwise has to negate it.
 

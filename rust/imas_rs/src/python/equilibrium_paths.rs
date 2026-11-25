@@ -10,8 +10,8 @@
 
 #![allow(clippy::all)]
 
-use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels};
-use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, FLT_3D, FLT_4D, INT_0D, INT_1D, INT_2D, STR_0D};
+use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels, no_names};
+use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, FLT_3D, FLT_4D, INT_0D, INT_1D, INT_2D, STR_0D, index_of_name};
 use crate::ids::equilibrium::Equilibrium;
 use std::any::Any;
 
@@ -553,6 +553,267 @@ fn lengths_time_slice_profiles_2d(equilibrium: &Equilibrium, level: usize, at: &
 }
 
 // ============================================================================
+// Array-of-structures names
+// ============================================================================
+
+/// Position of the element named `name` at each array-of-structures level along `code_library` whose elements have a `name`.
+fn position_of_name_code_library(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&equilibrium.code.library, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `grids_ggd_grid_space_coordinates_type` whose elements have a `name`.
+fn position_of_name_grids_ggd_grid_space_coordinates_type(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        3 => return index_of_name(&equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `limiter_unit` whose elements have a `name`.
+fn position_of_name_limiter_unit(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&equilibrium.limiter.unit, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_boundary_gap` whose elements have a `name`.
+fn position_of_name_time_slice_boundary_gap(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].boundary.gap, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_b_field_pol_probe` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_b_field_pol_probe(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.b_field_pol_probe, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_b_field_tor_vacuum_r_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_b_field_tor_vacuum_r_dof(
+    equilibrium: &Equilibrium,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_faraday_angle` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_faraday_angle(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.faraday_angle, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_faraday_angle_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_faraday_angle_dof(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.faraday_angle, name),
+        2 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_flux_loop` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_flux_loop(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.flux_loop, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_flux_loop_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_flux_loop_dof(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.flux_loop, name),
+        2 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_iron_core_segment_magnetization_r_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_iron_core_segment_magnetization_r_dof(
+    equilibrium: &Equilibrium,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_iron_core_segment_magnetization_z_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_iron_core_segment_magnetization_z_dof(
+    equilibrium: &Equilibrium,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        2 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_isoflux` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_isoflux(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.isoflux, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_isoflux_boundary` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_isoflux_boundary(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.isoflux_boundary, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_j_parallel` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_j_parallel(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.j_parallel, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_j_phi` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_j_phi(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.j_phi, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_mse_polarization_angle` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_mse_polarization_angle(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.mse_polarization_angle, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_mse_polarization_angle_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_mse_polarization_angle_dof(
+    equilibrium: &Equilibrium,
+    level: usize,
+    at: &[usize],
+    name: &str,
+) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.mse_polarization_angle, name),
+        2 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_n_e` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_n_e(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.n_e, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_n_e_line` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_n_e_line(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.n_e_line, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_n_e_line_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_n_e_line_dof(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.n_e_line, name),
+        2 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_pf_current` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_pf_current(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.pf_current, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_pf_passive_current` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_pf_passive_current(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.pf_passive_current, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_pf_passive_current_dof` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_pf_passive_current_dof(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.pf_passive_current, name),
+        2 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_pressure` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_pressure(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.pressure, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_pressure_rotational` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_pressure_rotational(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.pressure_rotational, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_q` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_q(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.q, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_rogowski_coil` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_rogowski_coil(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.rogowski_coil, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `time_slice_constraints_stationary_point` whose elements have a `name`.
+fn position_of_name_time_slice_constraints_stationary_point(equilibrium: &Equilibrium, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        1 => return index_of_name(&equilibrium.time_slice[at[0]].constraints.stationary_point, name),
+        _ => return no_names(equilibrium, level, at, name),
+    }
+}
+
+// ============================================================================
 // Nodes
 // ============================================================================
 
@@ -565,9 +826,14 @@ static NODES_VACUUM_TOROIDAL_FIELD: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.vacuum_toroidal_field.r0.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D { equilibrium.vacuum_toroidal_field.r0.clone() },
+                )
             },
         }),
     },
@@ -579,9 +845,14 @@ static NODES_VACUUM_TOROIDAL_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
-                    equilibrium.vacuum_toroidal_field.b0.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D { equilibrium.vacuum_toroidal_field.b0.clone() },
+                )
             },
         }),
     },
@@ -601,6 +872,7 @@ static NODES_GRIDS_GGD_GRID_IDENTIFIER: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].identifier.name.clone() },
                 )
             },
@@ -619,6 +891,7 @@ static NODES_GRIDS_GGD_GRID_IDENTIFIER: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].identifier.index.clone() },
                 )
             },
@@ -637,6 +910,7 @@ static NODES_GRIDS_GGD_GRID_IDENTIFIER: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].identifier.description.clone() },
                 )
             },
@@ -658,6 +932,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].identifier.name.clone() },
                 )
             },
@@ -676,6 +951,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].identifier.index.clone() },
                 )
             },
@@ -694,6 +970,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].identifier.description.clone()
                     },
@@ -717,6 +994,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].geometry_type.name.clone() },
                 )
             },
@@ -735,6 +1013,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].geometry_type.index.clone() },
                 )
             },
@@ -753,6 +1032,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].geometry_type.description.clone()
                     },
@@ -776,6 +1056,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_coordinates_type,
+                    position_of_name_grids_ggd_grid_space_coordinates_type,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type[at[3]].name.clone()
                     },
@@ -796,6 +1077,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_coordinates_type,
+                    position_of_name_grids_ggd_grid_space_coordinates_type,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type[at[3]].index.clone()
                     },
@@ -816,6 +1098,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_coordinates_type,
+                    position_of_name_grids_ggd_grid_space_coordinates_type,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type[at[3]]
                             .description
@@ -841,6 +1124,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY: &[Node]
                     indices,
                     6,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object_boundary,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .index
@@ -863,6 +1147,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY: &[Node]
                     indices,
                     6,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object_boundary,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_1D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .neighbours
@@ -879,7 +1164,10 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
         name: "boundary",
         documentation: "Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "geometry",
@@ -894,6 +1182,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry
@@ -916,6 +1205,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_1D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .nodes
@@ -938,6 +1228,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .measure
@@ -960,6 +1251,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry_2d
@@ -985,6 +1277,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_objects_per_dimension,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
@@ -1008,6 +1301,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_objects_per_dimension,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
@@ -1031,6 +1325,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_objects_per_dimension,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
@@ -1048,7 +1343,10 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION: &[Node] = &[
         name: "object",
         documentation: "Set of objects for a given dimension",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "geometry_content",
@@ -1075,13 +1373,19 @@ static NODES_GRIDS_GGD_GRID_SPACE: &[Node] = &[
         name: "coordinates_type",
         documentation: "Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "objects_per_dimension",
         documentation: "Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -1099,6 +1403,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].identifier.name.clone() },
                 )
             },
@@ -1117,6 +1422,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].identifier.index.clone()
                     },
@@ -1137,6 +1443,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].identifier.description.clone()
                     },
@@ -1160,6 +1467,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_grid_subset_element_object,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .space
@@ -1182,6 +1490,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_grid_subset_element_object,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .dimension
@@ -1204,6 +1513,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_grid_subset_element_object,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .index
@@ -1219,7 +1529,10 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT: &[Node] = &[Node {
     name: "object",
     documentation: "Set of objects defining the element",
     units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT),
+    kind: NodeKind::ArrayOfStructures {
+        children: NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT,
+        elements_are_named: false,
+    },
 }];
 
 static NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE: &[Node] = &[
@@ -1236,6 +1549,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_grid_subset_base,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].base[at[3]].jacobian.clone()
                     },
@@ -1256,6 +1570,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_grid_subset_base,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].base[at[3]].tensor_covariant.clone()
                     },
@@ -1276,6 +1591,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_grid_subset_base,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].base[at[3]]
                             .tensor_contravariant
@@ -1301,6 +1617,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].metric.jacobian.clone() },
                 )
             },
@@ -1319,6 +1636,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].metric.tensor_covariant.clone()
                     },
@@ -1339,6 +1657,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
                         equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].metric.tensor_contravariant.clone()
                     },
@@ -1368,6 +1687,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].dimension.clone() },
                 )
             },
@@ -1377,13 +1697,19 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET: &[Node] = &[
         name: "element",
         documentation: "Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "base",
         documentation: "Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "metric",
@@ -1413,6 +1739,7 @@ static NODES_GRIDS_GGD_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].path.clone() },
                 )
             },
@@ -1422,13 +1749,19 @@ static NODES_GRIDS_GGD_GRID: &[Node] = &[
         name: "space",
         documentation: "Set of grid spaces",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_SPACE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_SPACE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "grid_subset",
         documentation: "Grid subsets",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID_GRID_SUBSET),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID_GRID_SUBSET,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -1437,7 +1770,10 @@ static NODES_GRIDS_GGD: &[Node] = &[
         name: "grid",
         documentation: "Set of GGD grids for describing the equilibrium, at a given time slice",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD_GRID),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD_GRID,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time",
@@ -1452,6 +1788,7 @@ static NODES_GRIDS_GGD: &[Node] = &[
                     indices,
                     1,
                     lengths_grids_ggd,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.grids_ggd[at[0]].time.clone() },
                 )
             },
@@ -1473,6 +1810,7 @@ static NODES_TIME_SLICE_BOUNDARY_OUTLINE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].boundary.outline.r.clone() },
                 )
             },
@@ -1491,6 +1829,7 @@ static NODES_TIME_SLICE_BOUNDARY_OUTLINE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].boundary.outline.z.clone() },
                 )
             },
@@ -1512,6 +1851,7 @@ static NODES_TIME_SLICE_BOUNDARY_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.geometric_axis.r.clone() },
                 )
             },
@@ -1530,6 +1870,7 @@ static NODES_TIME_SLICE_BOUNDARY_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.geometric_axis.z.clone() },
                 )
             },
@@ -1551,6 +1892,7 @@ static NODES_TIME_SLICE_BOUNDARY_CLOSEST_WALL_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.closest_wall_point.r.clone() },
                 )
             },
@@ -1569,6 +1911,7 @@ static NODES_TIME_SLICE_BOUNDARY_CLOSEST_WALL_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.closest_wall_point.z.clone() },
                 )
             },
@@ -1587,6 +1930,7 @@ static NODES_TIME_SLICE_BOUNDARY_CLOSEST_WALL_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.closest_wall_point.distance.clone() },
                 )
             },
@@ -1608,6 +1952,7 @@ static NODES_TIME_SLICE_BOUNDARY_DR_DZ_ZERO_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.dr_dz_zero_point.r.clone() },
                 )
             },
@@ -1626,6 +1971,7 @@ static NODES_TIME_SLICE_BOUNDARY_DR_DZ_ZERO_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.dr_dz_zero_point.z.clone() },
                 )
             },
@@ -1647,6 +1993,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
+                    position_of_name_time_slice_boundary_gap,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].name.clone() },
                 )
             },
@@ -1665,6 +2012,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
+                    position_of_name_time_slice_boundary_gap,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].description.clone() },
                 )
             },
@@ -1683,6 +2031,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
+                    position_of_name_time_slice_boundary_gap,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].r.clone() },
                 )
             },
@@ -1701,6 +2050,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
+                    position_of_name_time_slice_boundary_gap,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].z.clone() },
                 )
             },
@@ -1719,6 +2069,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
+                    position_of_name_time_slice_boundary_gap,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].angle.clone() },
                 )
             },
@@ -1737,6 +2088,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
+                    position_of_name_time_slice_boundary_gap,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].value.clone() },
                 )
             },
@@ -1758,6 +2110,7 @@ static NODES_TIME_SLICE_BOUNDARY_BOUNDING: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.bounding.r.clone() },
                 )
             },
@@ -1776,6 +2129,7 @@ static NODES_TIME_SLICE_BOUNDARY_BOUNDING: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.bounding.z.clone() },
                 )
             },
@@ -1797,6 +2151,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].boundary.r#type.clone() },
                 )
             },
@@ -1821,6 +2176,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.psi_norm.clone() },
                 )
             },
@@ -1839,6 +2195,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.psi.clone() },
                 )
             },
@@ -1863,6 +2220,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.minor_radius.clone() },
                 )
             },
@@ -1881,6 +2239,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.elongation.clone() },
                 )
             },
@@ -1899,6 +2258,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.triangularity.clone() },
                 )
             },
@@ -1917,6 +2277,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.triangularity_upper.clone() },
                 )
             },
@@ -1935,6 +2296,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.triangularity_lower.clone() },
                 )
             },
@@ -1953,6 +2315,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_upper_inner.clone() },
                 )
             },
@@ -1971,6 +2334,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_upper_outer.clone() },
                 )
             },
@@ -1989,6 +2353,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_lower_inner.clone() },
                 )
             },
@@ -2007,6 +2372,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_lower_outer.clone() },
                 )
             },
@@ -2028,7 +2394,10 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
         name: "gap",
         documentation: "Set of gaps, defined by a reference point and a direction.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_BOUNDARY_GAP),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_BOUNDARY_GAP,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "rho_tor",
@@ -2043,6 +2412,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.rho_tor.clone() },
                 )
             },
@@ -2061,6 +2431,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.phi.clone() },
                 )
             },
@@ -2079,6 +2450,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.phi_poloidal_current.clone() },
                 )
             },
@@ -2106,6 +2478,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_NODE_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].node_type.name.clone() },
                 )
             },
@@ -2124,6 +2497,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_NODE_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].node_type.index.clone() },
                 )
             },
@@ -2142,6 +2516,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_NODE_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].contour_tree.node[at[1]].node_type.description.clone()
                     },
@@ -2165,6 +2540,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_LEVELSET: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_contour_tree_node_levelset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].levelset[at[2]].r.clone() },
                 )
             },
@@ -2183,6 +2559,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_LEVELSET: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_contour_tree_node_levelset,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].levelset[at[2]].z.clone() },
                 )
             },
@@ -2204,6 +2581,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].critical_type.clone() },
                 )
             },
@@ -2228,6 +2606,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].r.clone() },
                 )
             },
@@ -2246,6 +2625,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].z.clone() },
                 )
             },
@@ -2264,6 +2644,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].psi.clone() },
                 )
             },
@@ -2273,7 +2654,10 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
         name: "levelset",
         documentation: "Poloidal flux contour segments at the node's psi value that are topologically connected to the node. Each element of the array of structures stores one distinct contour segment. Only segments whose contour passes through the node are included; disconnected contours that share the same psi value but are spatially remote must be excluded. For O-points (flux extrema), no contour passes through the extremum and this field must contain a single entry with empty r and z arrays. For limiter points, the levelset contains the last closed flux surface (LCFS) that passes through the limiter point. For X-points, the segments are ordered as follows: segment 0 is the last closed flux surface (LCFS), the closed contour bounding the confined plasma that passes through the X-point. Segments 1..N are divertor or scrape-off layer leg contours, ordered by their departure angle from the X-point measured counterclockwise from the outboard midplane (theta=0 at R_max, Z of the X-point) in the standard (R, Z) poloidal plane. A standard single-null divertor (SND) X-point has 2 segments: the LCFS and the divertor legs. A double-null divertor (DND) has 2 segments per X-point; the primary X-point (lower psi_norm, closer to the magnetic axis) is stored at a lower node index than the secondary, so their levelsets are unambiguously associated. An exact snowflake, where two X-points merge into a single higher-order null with 6 separatrix branches, produces 3 segments: the LCFS and 2 distinct divertor channel contours.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONTOUR_TREE_NODE_LEVELSET),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONTOUR_TREE_NODE_LEVELSET,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -2282,7 +2666,10 @@ static NODES_TIME_SLICE_CONTOUR_TREE: &[Node] = &[
         name: "node",
         documentation: "Set of critical points and limiter points of the poloidal flux. Each node is defined by its critical type (see critical_type), node type (see node_type), and position within the poloidal plane. All ordering rules below are defined in terms of normalised poloidal flux, psi_norm = (psi - psi_axis) / (psi_boundary - psi_axis), which is 0 at the magnetic axis and 1 at the plasma boundary. Nodes are partitioned into two groups: critical points (critical_type 0, 1, 2) occupy the leading indices, followed by limiter points (critical_type 3). Within each partition, nodes are ordered by ascending psi_norm; ties are broken by ascending R, then ascending Z. Node 0 must contain the primary O-point (magnetic axis), which has psi_norm = 0. Node 1 must contain the primary X-point, defined as the X-point with the lowest psi_norm value. For double-null divertor (DND) configurations, the secondary X-point has a higher psi_norm value and must be stored at a higher node index than the primary; the two psi_norm values are always distinct in practice. For limiter-bounded plasmas where no X-point defines the LCFS, node 1 should contain the X-point with the lowest psi_norm value (nearest to the plasma boundary), if any X-point exists. If no X-points exist, nodes are ordered by ascending psi_norm starting from node 1. For doublet or multi-region plasmas, each confined plasma region has its own O-point; additional O-points follow the same ascending psi_norm ordering. When limiter points are absent, only the critical point partition is present and the ordering is unchanged from earlier versions. The node_type identifier distinguishes O-points that represent confined plasma regions (node_type = plasma) from vacuum field extrema (node_type = vacuum).",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONTOUR_TREE_NODE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONTOUR_TREE_NODE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "edges",
@@ -2297,6 +2684,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_2D { equilibrium.time_slice[at[0]].contour_tree.edges.clone() },
                 )
             },
@@ -2318,6 +2706,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_tor_vacuum_r_dof,
+                    position_of_name_time_slice_constraints_b_field_tor_vacuum_r_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof[at[1]].name.clone()
                     },
@@ -2338,6 +2727,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_tor_vacuum_r_dof,
+                    position_of_name_time_slice_constraints_b_field_tor_vacuum_r_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof[at[1]]
                             .current_distribution
@@ -2360,6 +2750,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_tor_vacuum_r_dof,
+                    position_of_name_time_slice_constraints_b_field_tor_vacuum_r_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.dof[at[1]].time_constant.clone()
                     },
@@ -2383,6 +2774,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.measured.clone() },
                 )
             },
@@ -2401,6 +2793,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.source.clone() },
                 )
             },
@@ -2419,6 +2812,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.time_measurement.clone()
                     },
@@ -2439,6 +2833,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.exact.clone() },
                 )
             },
@@ -2457,6 +2852,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.weight.clone() },
                 )
             },
@@ -2475,6 +2871,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.sigma.clone() },
                 )
             },
@@ -2493,6 +2890,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.reconstructed.clone()
                     },
@@ -2513,6 +2911,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.chi_squared.clone() },
                 )
             },
@@ -2531,6 +2930,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.name.clone() },
                 )
             },
@@ -2549,6 +2949,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.expected_value.clone()
                     },
@@ -2560,7 +2961,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -2575,6 +2979,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.regularisations.clone()
                     },
@@ -2595,6 +3000,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.regularisations_weight.clone()
                     },
@@ -2618,6 +3024,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].measured.clone() },
                 )
             },
@@ -2636,6 +3043,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].source.clone() },
                 )
             },
@@ -2654,6 +3062,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].time_measurement.clone()
                     },
@@ -2674,6 +3083,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].exact.clone() },
                 )
             },
@@ -2692,6 +3102,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].weight.clone() },
                 )
             },
@@ -2710,6 +3121,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].sigma.clone() },
                 )
             },
@@ -2728,6 +3140,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].reconstructed.clone()
                     },
@@ -2748,6 +3161,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].chi_squared.clone()
                     },
@@ -2768,6 +3182,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].name.clone() },
                 )
             },
@@ -2786,6 +3201,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
+                    position_of_name_time_slice_constraints_b_field_pol_probe,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].expected_value.clone()
                     },
@@ -2809,6 +3225,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.measured.clone() },
                 )
             },
@@ -2827,6 +3244,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.source.clone() },
                 )
             },
@@ -2845,6 +3263,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.time_measurement.clone() },
                 )
             },
@@ -2863,6 +3282,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.exact.clone() },
                 )
             },
@@ -2881,6 +3301,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.weight.clone() },
                 )
             },
@@ -2899,6 +3320,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.sigma.clone() },
                 )
             },
@@ -2917,6 +3339,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.reconstructed.clone() },
                 )
             },
@@ -2935,6 +3358,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.chi_squared.clone() },
                 )
             },
@@ -2953,6 +3377,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.expected_value.clone() },
                 )
             },
@@ -2974,6 +3399,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_faraday_angle_dof,
+                    position_of_name_time_slice_constraints_faraday_angle_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof[at[2]].name.clone()
                     },
@@ -2994,6 +3420,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_faraday_angle_dof,
+                    position_of_name_time_slice_constraints_faraday_angle_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof[at[2]]
                             .current_distribution
@@ -3016,6 +3443,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_faraday_angle_dof,
+                    position_of_name_time_slice_constraints_faraday_angle_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].dof[at[2]].time_constant.clone()
                     },
@@ -3039,6 +3467,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].measured.clone() },
                 )
             },
@@ -3057,6 +3486,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].source.clone() },
                 )
             },
@@ -3075,6 +3505,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].time_measurement.clone()
                     },
@@ -3095,6 +3526,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].exact.clone() },
                 )
             },
@@ -3113,6 +3545,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].weight.clone() },
                 )
             },
@@ -3131,6 +3564,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].sigma.clone() },
                 )
             },
@@ -3149,6 +3583,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].reconstructed.clone()
                     },
@@ -3169,6 +3604,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].chi_squared.clone() },
                 )
             },
@@ -3187,6 +3623,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].name.clone() },
                 )
             },
@@ -3205,6 +3642,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].expected_value.clone()
                     },
@@ -3216,7 +3654,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -3231,6 +3672,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].regularisations.clone()
                     },
@@ -3251,6 +3693,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
+                    position_of_name_time_slice_constraints_faraday_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].regularisations_weight.clone()
                     },
@@ -3274,6 +3717,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_mse_polarization_angle_dof,
+                    position_of_name_time_slice_constraints_mse_polarization_angle_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof[at[2]].name.clone()
                     },
@@ -3294,6 +3738,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_mse_polarization_angle_dof,
+                    position_of_name_time_slice_constraints_mse_polarization_angle_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof[at[2]]
                             .current_distribution
@@ -3316,6 +3761,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_mse_polarization_angle_dof,
+                    position_of_name_time_slice_constraints_mse_polarization_angle_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].dof[at[2]]
                             .time_constant
@@ -3341,6 +3787,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].measured.clone()
                     },
@@ -3361,6 +3808,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].source.clone()
                     },
@@ -3381,6 +3829,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].time_measurement.clone()
                     },
@@ -3401,6 +3850,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].exact.clone()
                     },
@@ -3421,6 +3871,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].weight.clone()
                     },
@@ -3441,6 +3892,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].sigma.clone()
                     },
@@ -3461,6 +3913,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].reconstructed.clone()
                     },
@@ -3481,6 +3934,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].chi_squared.clone()
                     },
@@ -3501,6 +3955,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].name.clone()
                     },
@@ -3521,6 +3976,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].expected_value.clone()
                     },
@@ -3532,7 +3988,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -3547,6 +4006,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].regularisations.clone()
                     },
@@ -3567,6 +4027,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
+                    position_of_name_time_slice_constraints_mse_polarization_angle,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]]
                             .regularisations_weight
@@ -3592,6 +4053,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_flux_loop_dof,
+                    position_of_name_time_slice_constraints_flux_loop_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof[at[2]].name.clone() },
                 )
             },
@@ -3610,6 +4072,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_flux_loop_dof,
+                    position_of_name_time_slice_constraints_flux_loop_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof[at[2]]
                             .current_distribution
@@ -3632,6 +4095,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_flux_loop_dof,
+                    position_of_name_time_slice_constraints_flux_loop_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].dof[at[2]].time_constant.clone()
                     },
@@ -3655,6 +4119,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].measured.clone() },
                 )
             },
@@ -3673,6 +4138,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].source.clone() },
                 )
             },
@@ -3691,6 +4157,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].time_measurement.clone() },
                 )
             },
@@ -3709,6 +4176,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].exact.clone() },
                 )
             },
@@ -3727,6 +4195,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].weight.clone() },
                 )
             },
@@ -3745,6 +4214,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].sigma.clone() },
                 )
             },
@@ -3763,6 +4233,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].reconstructed.clone() },
                 )
             },
@@ -3781,6 +4252,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].chi_squared.clone() },
                 )
             },
@@ -3799,6 +4271,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].name.clone() },
                 )
             },
@@ -3817,6 +4290,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].expected_value.clone() },
                 )
             },
@@ -3826,7 +4300,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -3841,6 +4318,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].regularisations.clone() },
                 )
             },
@@ -3859,6 +4337,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
+                    position_of_name_time_slice_constraints_flux_loop,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].regularisations_weight.clone()
                     },
@@ -3882,6 +4361,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.measured.clone() },
                 )
             },
@@ -3900,6 +4380,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.ip.source.clone() },
                 )
             },
@@ -3918,6 +4399,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.time_measurement.clone() },
                 )
             },
@@ -3936,6 +4418,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.ip.exact.clone() },
                 )
             },
@@ -3954,6 +4437,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.weight.clone() },
                 )
             },
@@ -3972,6 +4456,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.sigma.clone() },
                 )
             },
@@ -3990,6 +4475,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.reconstructed.clone() },
                 )
             },
@@ -4008,6 +4494,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.chi_squared.clone() },
                 )
             },
@@ -4026,6 +4513,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.ip.name.clone() },
                 )
             },
@@ -4044,6 +4532,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.expected_value.clone() },
                 )
             },
@@ -4065,6 +4554,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF: &[Nod
                     indices,
                     3,
                     lengths_time_slice_constraints_iron_core_segment_magnetization_r_dof,
+                    position_of_name_time_slice_constraints_iron_core_segment_magnetization_r_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof[at[2]]
                             .name
@@ -4087,6 +4577,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF: &[Nod
                     indices,
                     3,
                     lengths_time_slice_constraints_iron_core_segment_magnetization_r_dof,
+                    position_of_name_time_slice_constraints_iron_core_segment_magnetization_r_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof[at[2]]
                             .current_distribution
@@ -4109,6 +4600,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF: &[Nod
                     indices,
                     3,
                     lengths_time_slice_constraints_iron_core_segment_magnetization_r_dof,
+                    position_of_name_time_slice_constraints_iron_core_segment_magnetization_r_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.dof[at[2]]
                             .time_constant
@@ -4134,6 +4626,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4157,6 +4650,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4180,6 +4674,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4203,6 +4698,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.exact.clone()
                     },
@@ -4223,6 +4719,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4246,6 +4743,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.sigma.clone()
                     },
@@ -4266,6 +4764,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4289,6 +4788,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4312,6 +4812,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.name.clone()
                     },
@@ -4332,6 +4833,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4346,7 +4848,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -4361,6 +4866,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4384,6 +4890,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
@@ -4410,6 +4917,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF: &[Nod
                     indices,
                     3,
                     lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof,
+                    position_of_name_time_slice_constraints_iron_core_segment_magnetization_z_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof[at[2]]
                             .name
@@ -4432,6 +4940,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF: &[Nod
                     indices,
                     3,
                     lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof,
+                    position_of_name_time_slice_constraints_iron_core_segment_magnetization_z_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof[at[2]]
                             .current_distribution
@@ -4454,6 +4963,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF: &[Nod
                     indices,
                     3,
                     lengths_time_slice_constraints_iron_core_segment_magnetization_z_dof,
+                    position_of_name_time_slice_constraints_iron_core_segment_magnetization_z_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.dof[at[2]]
                             .time_constant
@@ -4479,6 +4989,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4502,6 +5013,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4525,6 +5037,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4548,6 +5061,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.exact.clone()
                     },
@@ -4568,6 +5082,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4591,6 +5106,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.sigma.clone()
                     },
@@ -4611,6 +5127,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4634,6 +5151,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4657,6 +5175,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.name.clone()
                     },
@@ -4677,6 +5196,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4691,7 +5211,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -4706,6 +5229,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4729,6 +5253,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
@@ -4770,6 +5295,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.r.clone() },
                 )
             },
@@ -4788,6 +5314,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.phi.clone() },
                 )
             },
@@ -4806,6 +5333,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.z.clone() },
                 )
             },
@@ -4824,6 +5352,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.rho_tor_norm.clone() },
                 )
             },
@@ -4842,7 +5371,27 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.psi_norm.clone() },
                 )
             },
         }),
@@ -4863,6 +5412,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].measured.clone() },
                 )
             },
@@ -4887,6 +5437,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].source.clone() },
                 )
             },
@@ -4905,6 +5456,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].time_measurement.clone() },
                 )
             },
@@ -4923,6 +5475,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].exact.clone() },
                 )
             },
@@ -4941,6 +5494,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].weight.clone() },
                 )
             },
@@ -4959,6 +5513,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].sigma.clone() },
                 )
             },
@@ -4977,6 +5532,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].reconstructed.clone() },
                 )
             },
@@ -4995,6 +5551,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].chi_squared.clone() },
                 )
             },
@@ -5013,6 +5570,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].name.clone() },
                 )
             },
@@ -5031,7 +5589,46 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f",
+        documentation: "For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of\nthe equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the\nsource functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values",
+        units: "T.m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].f.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "gm5",
+        documentation: "For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux\nsurface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`",
+        units: "T^2",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_n_e,
+                    position_of_name_time_slice_constraints_n_e,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].gm5.clone() },
                 )
             },
         }),
@@ -5052,6 +5649,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_n_e_line_dof,
+                    position_of_name_time_slice_constraints_n_e_line_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof[at[2]].name.clone() },
                 )
             },
@@ -5070,6 +5668,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_n_e_line_dof,
+                    position_of_name_time_slice_constraints_n_e_line_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof[at[2]]
                             .current_distribution
@@ -5092,6 +5691,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_n_e_line_dof,
+                    position_of_name_time_slice_constraints_n_e_line_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].dof[at[2]].time_constant.clone()
                     },
@@ -5115,6 +5715,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].measured.clone() },
                 )
             },
@@ -5133,6 +5734,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].source.clone() },
                 )
             },
@@ -5151,6 +5753,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].time_measurement.clone() },
                 )
             },
@@ -5169,6 +5772,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].exact.clone() },
                 )
             },
@@ -5187,6 +5791,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].weight.clone() },
                 )
             },
@@ -5205,6 +5810,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].sigma.clone() },
                 )
             },
@@ -5223,6 +5829,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].reconstructed.clone() },
                 )
             },
@@ -5241,6 +5848,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].chi_squared.clone() },
                 )
             },
@@ -5259,6 +5867,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].name.clone() },
                 )
             },
@@ -5277,6 +5886,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].expected_value.clone() },
                 )
             },
@@ -5286,7 +5896,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -5301,6 +5914,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].regularisations.clone() },
                 )
             },
@@ -5319,6 +5933,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
+                    position_of_name_time_slice_constraints_n_e_line,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].regularisations_weight.clone()
                     },
@@ -5342,6 +5957,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].measured.clone() },
                 )
             },
@@ -5360,6 +5976,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].source.clone() },
                 )
             },
@@ -5378,6 +5995,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].time_measurement.clone()
                     },
@@ -5398,6 +6016,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].exact.clone() },
                 )
             },
@@ -5416,6 +6035,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].weight.clone() },
                 )
             },
@@ -5434,6 +6054,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].sigma.clone() },
                 )
             },
@@ -5452,6 +6073,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].reconstructed.clone() },
                 )
             },
@@ -5470,6 +6092,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].chi_squared.clone() },
                 )
             },
@@ -5488,6 +6111,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].name.clone() },
                 )
             },
@@ -5506,6 +6130,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
+                    position_of_name_time_slice_constraints_pf_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].expected_value.clone() },
                 )
             },
@@ -5527,6 +6152,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_pf_passive_current_dof,
+                    position_of_name_time_slice_constraints_pf_passive_current_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof[at[2]].name.clone()
                     },
@@ -5547,6 +6173,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_pf_passive_current_dof,
+                    position_of_name_time_slice_constraints_pf_passive_current_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof[at[2]]
                             .current_distribution
@@ -5569,6 +6196,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_constraints_pf_passive_current_dof,
+                    position_of_name_time_slice_constraints_pf_passive_current_dof,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].dof[at[2]]
                             .time_constant
@@ -5594,6 +6222,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].measured.clone()
                     },
@@ -5614,6 +6243,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].source.clone() },
                 )
             },
@@ -5632,6 +6262,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].time_measurement.clone()
                     },
@@ -5652,6 +6283,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].exact.clone() },
                 )
             },
@@ -5670,6 +6302,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].weight.clone() },
                 )
             },
@@ -5688,6 +6321,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].sigma.clone() },
                 )
             },
@@ -5706,6 +6340,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].reconstructed.clone()
                     },
@@ -5726,6 +6361,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].chi_squared.clone()
                     },
@@ -5746,6 +6382,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].name.clone() },
                 )
             },
@@ -5764,6 +6401,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].expected_value.clone()
                     },
@@ -5775,7 +6413,10 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
         name: "dof",
         documentation: "The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT_DOF,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "regularisations",
@@ -5790,6 +6431,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].regularisations.clone()
                     },
@@ -5810,6 +6452,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
+                    position_of_name_time_slice_constraints_pf_passive_current,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
                         equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]]
                             .regularisations_weight
@@ -5835,6 +6478,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.r.clone() },
                 )
             },
@@ -5853,6 +6497,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.phi.clone() },
                 )
             },
@@ -5871,6 +6516,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.z.clone() },
                 )
             },
@@ -5889,6 +6535,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.rho_tor_norm.clone()
                     },
@@ -5909,7 +6556,27 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.psi_norm.clone() },
                 )
             },
         }),
@@ -5930,6 +6597,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].measured.clone() },
                 )
             },
@@ -5954,6 +6622,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].source.clone() },
                 )
             },
@@ -5972,6 +6641,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].time_measurement.clone() },
                 )
             },
@@ -5990,6 +6660,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].exact.clone() },
                 )
             },
@@ -6008,6 +6679,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].weight.clone() },
                 )
             },
@@ -6026,6 +6698,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].sigma.clone() },
                 )
             },
@@ -6044,6 +6717,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].reconstructed.clone() },
                 )
             },
@@ -6062,6 +6736,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].chi_squared.clone() },
                 )
             },
@@ -6080,6 +6755,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].name.clone() },
                 )
             },
@@ -6098,7 +6774,46 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f",
+        documentation: "For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of\nthe equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the\nsource functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values",
+        units: "T.m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].f.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "gm5",
+        documentation: "For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux\nsurface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`",
+        units: "T^2",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure,
+                    position_of_name_time_slice_constraints_pressure,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].gm5.clone() },
                 )
             },
         }),
@@ -6119,6 +6834,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.r.clone()
                     },
@@ -6139,6 +6855,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.phi.clone()
                     },
@@ -6159,6 +6876,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.z.clone()
                     },
@@ -6179,6 +6897,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]]
                             .position
@@ -6202,8 +6921,30 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.psi.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.psi_norm.clone()
                     },
                 )
             },
@@ -6225,6 +6966,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].measured.clone()
                     },
@@ -6251,6 +6993,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].source.clone() },
                 )
             },
@@ -6269,6 +7012,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].time_measurement.clone()
                     },
@@ -6289,6 +7033,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].exact.clone() },
                 )
             },
@@ -6307,6 +7052,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].weight.clone() },
                 )
             },
@@ -6325,6 +7071,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].sigma.clone() },
                 )
             },
@@ -6343,6 +7090,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].reconstructed.clone()
                     },
@@ -6363,6 +7111,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].chi_squared.clone()
                     },
@@ -6383,6 +7132,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].name.clone() },
                 )
             },
@@ -6401,9 +7151,48 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].expected_value.clone()
                     },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f",
+        documentation: "For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of\nthe equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the\nsource functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values",
+        units: "T.m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].f.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "gm5",
+        documentation: "For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux\nsurface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`",
+        units: "T^2",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_pressure_rotational,
+                    position_of_name_time_slice_constraints_pressure_rotational,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].gm5.clone() },
                 )
             },
         }),
@@ -6424,6 +7213,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.r.clone() },
                 )
             },
@@ -6442,6 +7232,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.phi.clone() },
                 )
             },
@@ -6460,6 +7251,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.z.clone() },
                 )
             },
@@ -6478,6 +7270,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.rho_tor_norm.clone() },
                 )
             },
@@ -6496,7 +7289,27 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.psi_norm.clone() },
                 )
             },
         }),
@@ -6517,6 +7330,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].measured.clone() },
                 )
             },
@@ -6541,6 +7355,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].source.clone() },
                 )
             },
@@ -6559,6 +7374,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].time_measurement.clone() },
                 )
             },
@@ -6577,6 +7393,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].exact.clone() },
                 )
             },
@@ -6595,6 +7412,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].weight.clone() },
                 )
             },
@@ -6613,6 +7431,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].sigma.clone() },
                 )
             },
@@ -6631,6 +7450,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].reconstructed.clone() },
                 )
             },
@@ -6649,6 +7469,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].chi_squared.clone() },
                 )
             },
@@ -6667,6 +7488,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].name.clone() },
                 )
             },
@@ -6685,7 +7507,46 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f",
+        documentation: "For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of\nthe equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the\nsource functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values",
+        units: "T.m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].f.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "gm5",
+        documentation: "For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux\nsurface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`",
+        units: "T^2",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_q,
+                    position_of_name_time_slice_constraints_q,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].gm5.clone() },
                 )
             },
         }),
@@ -6706,6 +7567,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.r.clone() },
                 )
             },
@@ -6724,6 +7586,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.phi.clone() },
                 )
             },
@@ -6742,6 +7605,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.z.clone() },
                 )
             },
@@ -6760,6 +7624,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.rho_tor_norm.clone()
                     },
@@ -6780,7 +7645,27 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.psi_norm.clone() },
                 )
             },
         }),
@@ -6801,6 +7686,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].measured.clone() },
                 )
             },
@@ -6825,6 +7711,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].source.clone() },
                 )
             },
@@ -6843,6 +7730,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].time_measurement.clone() },
                 )
             },
@@ -6861,6 +7749,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].exact.clone() },
                 )
             },
@@ -6879,6 +7768,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].weight.clone() },
                 )
             },
@@ -6897,6 +7787,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].sigma.clone() },
                 )
             },
@@ -6915,6 +7806,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].reconstructed.clone() },
                 )
             },
@@ -6933,6 +7825,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].chi_squared.clone() },
                 )
             },
@@ -6951,6 +7844,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].name.clone() },
                 )
             },
@@ -6969,7 +7863,46 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f",
+        documentation: "For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of\nthe equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the\nsource functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values",
+        units: "T.m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].f.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "gm5",
+        documentation: "For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux\nsurface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`",
+        units: "T^2",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_phi,
+                    position_of_name_time_slice_constraints_j_phi,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].gm5.clone() },
                 )
             },
         }),
@@ -6990,6 +7923,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.r.clone() },
                 )
             },
@@ -7008,6 +7942,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.phi.clone() },
                 )
             },
@@ -7026,6 +7961,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.z.clone() },
                 )
             },
@@ -7044,6 +7980,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.rho_tor_norm.clone()
                     },
@@ -7064,7 +8001,29 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.psi_norm.clone()
+                    },
                 )
             },
         }),
@@ -7085,6 +8044,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].measured.clone() },
                 )
             },
@@ -7109,6 +8069,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].source.clone() },
                 )
             },
@@ -7127,6 +8088,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].time_measurement.clone()
                     },
@@ -7147,6 +8109,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].exact.clone() },
                 )
             },
@@ -7165,6 +8128,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].weight.clone() },
                 )
             },
@@ -7183,6 +8147,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].sigma.clone() },
                 )
             },
@@ -7201,6 +8166,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].reconstructed.clone() },
                 )
             },
@@ -7219,6 +8185,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].chi_squared.clone() },
                 )
             },
@@ -7237,6 +8204,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].name.clone() },
                 )
             },
@@ -7255,7 +8223,46 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].expected_value.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f",
+        documentation: "For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of\nthe equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the\nsource functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values",
+        units: "T.m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].f.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "gm5",
+        documentation: "For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux\nsurface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`",
+        units: "T^2",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_j_parallel,
+                    position_of_name_time_slice_constraints_j_parallel,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].gm5.clone() },
                 )
             },
         }),
@@ -7276,6 +8283,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_measured.r.clone()
                     },
@@ -7296,6 +8304,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_measured.z.clone()
                     },
@@ -7319,6 +8328,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_RECONSTRUCTED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_reconstructed.r.clone()
                     },
@@ -7339,6 +8349,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_RECONSTRUCTED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_reconstructed.z.clone()
                     },
@@ -7368,6 +8379,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].source.clone() },
                 )
             },
@@ -7386,6 +8398,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].time_measurement.clone() },
                 )
             },
@@ -7404,6 +8417,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].exact.clone() },
                 )
             },
@@ -7422,6 +8436,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].weight.clone() },
                 )
             },
@@ -7440,6 +8455,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].sigma.clone() },
                 )
             },
@@ -7464,6 +8480,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].chi_squared_r.clone() },
                 )
             },
@@ -7482,6 +8499,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].chi_squared_z.clone() },
                 )
             },
@@ -7503,6 +8521,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_measured.r.clone()
                     },
@@ -7523,6 +8542,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_measured.z.clone()
                     },
@@ -7546,6 +8566,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_RECONSTRUCTED: &[Node]
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_reconstructed.r.clone()
                     },
@@ -7566,6 +8587,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_RECONSTRUCTED: &[Node]
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_reconstructed.z.clone()
                     },
@@ -7595,6 +8617,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].source.clone() },
                 )
             },
@@ -7613,6 +8636,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].time_measurement.clone()
                     },
@@ -7633,6 +8657,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].exact.clone() },
                 )
             },
@@ -7651,6 +8676,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].weight.clone() },
                 )
             },
@@ -7669,6 +8695,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].sigma.clone() },
                 )
             },
@@ -7693,6 +8720,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].chi_squared_r.clone() },
                 )
             },
@@ -7711,6 +8739,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].chi_squared_z.clone() },
                 )
             },
@@ -7732,6 +8761,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].measured.clone() },
                 )
             },
@@ -7750,6 +8780,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].source.clone() },
                 )
             },
@@ -7768,6 +8799,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].time_measurement.clone()
                     },
@@ -7788,6 +8820,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].exact.clone() },
                 )
             },
@@ -7806,6 +8839,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].weight.clone() },
                 )
             },
@@ -7824,6 +8858,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].sigma.clone() },
                 )
             },
@@ -7842,6 +8877,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].reconstructed.clone()
                     },
@@ -7862,6 +8898,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].chi_squared.clone() },
                 )
             },
@@ -7880,6 +8917,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].name.clone() },
                 )
             },
@@ -7898,6 +8936,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_rogowski_coil,
+                    position_of_name_time_slice_constraints_rogowski_coil,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.rogowski_coil[at[1]].expected_value.clone()
                     },
@@ -7921,6 +8960,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_1: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.r.clone() },
                 )
             },
@@ -7939,6 +8979,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_1: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.phi.clone() },
                 )
             },
@@ -7957,6 +8998,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_1: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.z.clone() },
                 )
             },
@@ -7975,6 +9017,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_1: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.rho_tor_norm.clone()
                     },
@@ -7995,7 +9038,29 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_1: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_1.psi_norm.clone()
+                    },
                 )
             },
         }),
@@ -8016,6 +9081,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_2: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.r.clone() },
                 )
             },
@@ -8034,6 +9100,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_2: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.phi.clone() },
                 )
             },
@@ -8052,6 +9119,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_2: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.z.clone() },
                 )
             },
@@ -8070,6 +9138,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_2: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.rho_tor_norm.clone()
                     },
@@ -8090,7 +9159,29 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_POSITION_2: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].position_2.psi_norm.clone()
+                    },
                 )
             },
         }),
@@ -8111,6 +9202,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].name.clone() },
                 )
             },
@@ -8141,6 +9233,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].measured.clone() },
                 )
             },
@@ -8159,6 +9252,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].source.clone() },
                 )
             },
@@ -8177,6 +9271,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].time_measurement.clone() },
                 )
             },
@@ -8195,6 +9290,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].weight.clone() },
                 )
             },
@@ -8213,6 +9309,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].expected_value.clone() },
                 )
             },
@@ -8231,6 +9328,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].reconstructed.clone() },
                 )
             },
@@ -8249,6 +9347,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux,
+                    position_of_name_time_slice_constraints_isoflux,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux[at[1]].chi_squared.clone() },
                 )
             },
@@ -8270,6 +9369,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.r.clone()
                     },
@@ -8290,6 +9390,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.phi.clone()
                     },
@@ -8310,6 +9411,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.z.clone()
                     },
@@ -8330,6 +9432,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.rho_tor_norm.clone()
                     },
@@ -8350,8 +9453,30 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.psi.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].position.psi_norm.clone()
                     },
                 )
             },
@@ -8373,6 +9498,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].name.clone() },
                 )
             },
@@ -8397,6 +9523,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].measured.clone() },
                 )
             },
@@ -8415,6 +9542,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].source.clone() },
                 )
             },
@@ -8433,6 +9561,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].time_measurement.clone()
                     },
@@ -8453,6 +9582,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].weight.clone() },
                 )
             },
@@ -8471,6 +9601,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].expected_value.clone()
                     },
@@ -8491,6 +9622,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].reconstructed.clone()
                     },
@@ -8511,6 +9643,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_isoflux_boundary,
+                    position_of_name_time_slice_constraints_isoflux_boundary,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.isoflux_boundary[at[1]].chi_squared.clone()
                     },
@@ -8534,6 +9667,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.r.clone()
                     },
@@ -8554,6 +9688,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.phi.clone()
                     },
@@ -8574,6 +9709,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.z.clone()
                     },
@@ -8594,6 +9730,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.rho_tor_norm.clone()
                     },
@@ -8614,8 +9751,30 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.psi.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic\naxis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux\nfunction: the fit applies it on the surface with this `psi_norm` of each iteration's flux",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    2,
+                    lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].position.psi_norm.clone()
                     },
                 )
             },
@@ -8637,6 +9796,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_R: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_r.measured.clone()
                     },
@@ -8657,6 +9817,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_R: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]]
                             .d_psi_d_r
@@ -8680,6 +9841,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_R: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_r.chi_squared.clone()
                     },
@@ -8703,6 +9865,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_Z: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_z.measured.clone()
                     },
@@ -8723,6 +9886,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_Z: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]]
                             .d_psi_d_z
@@ -8746,6 +9910,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT_D_PSI_D_Z: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].d_psi_d_z.chi_squared.clone()
                     },
@@ -8769,6 +9934,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].name.clone() },
                 )
             },
@@ -8793,6 +9959,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].source.clone() },
                 )
             },
@@ -8811,6 +9978,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].time_measurement.clone()
                     },
@@ -8831,6 +9999,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].weight.clone() },
                 )
             },
@@ -8849,6 +10018,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_stationary_point,
+                    position_of_name_time_slice_constraints_stationary_point,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
                         equilibrium.time_slice[at[0]].constraints.stationary_point[at[1]].expected_value.clone()
                     },
@@ -8881,7 +10051,10 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
         name: "b_field_pol_probe",
         documentation: "Set of poloidal field probes",
         units: "T",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "diamagnetic_flux",
@@ -8893,19 +10066,28 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
         name: "faraday_angle",
         documentation: "Set of faraday angles",
         units: "rad",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "mse_polarization_angle",
         documentation: "Set of MSE polarization angles",
         units: "rad",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "flux_loop",
         documentation: "Set of flux loops",
         units: "Wb",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "ip",
@@ -8917,73 +10099,109 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
         name: "iron_core_segment",
         documentation: "Magnetization M of a set of iron core segments",
         units: "T",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "n_e",
         documentation: "Set of local density measurements",
         units: "m^-3",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_N_E),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_N_E,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "n_e_line",
         documentation: "Set of line integrated density measurements",
         units: "m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "pf_current",
         documentation: "Current in a set of poloidal field coils",
         units: "A",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "pf_passive_current",
         documentation: "Current in a set of axisymmetric passive conductors",
         units: "A",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "pressure",
         documentation: "Set of total pressure estimates",
         units: "Pa",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_PRESSURE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_PRESSURE,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "pressure_rotational",
         documentation: "Set of rotational pressure estimates. The rotational pressure is defined as R0^2*rho*omega^2 / 2, where omega is the toroidal rotation frequency, rho=ne(R0,psi)*m, and m is the plasma equivalent mass.",
         units: "Pa",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "q",
         documentation: "Set of safety factor estimates at various positions",
         units: "1",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_Q),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_Q,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "j_phi",
         documentation: "Set of flux-surface averaged toroidal current density approximations at various positions  (= average(j_tor/R) / average(1/R))",
         units: "A.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_J_PHI),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_J_PHI,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "j_parallel",
         documentation: "Set of flux-surface averaged parallel current density approximations at various positions (= average(j.B) / B0, where B0 = /vacuum_toroidal_field/b0)",
         units: "A.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "x_point",
         documentation: "Array of X-points, for each of them the RZ position is given",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_X_POINT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_X_POINT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "strike_point",
         documentation: "Array of strike points, for each of them the RZ position is given",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "chi_squared_reduced",
@@ -8998,6 +10216,7 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.chi_squared_reduced.clone() },
                 )
             },
@@ -9016,6 +10235,7 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.freedom_degrees_n.clone() },
                 )
             },
@@ -9034,6 +10254,7 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.constraints_n.clone() },
                 )
             },
@@ -9043,25 +10264,37 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
         name: "rogowski_coil",
         documentation: "Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`.\nThe data dictionary has no constraint for them",
         units: "A",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_ROGOWSKI_COIL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "isoflux",
         documentation: "Set of isoflux constraints, each making a pair of points lie on the same flux surface, one for each isoflux in the fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)`.\nThe data dictionary has no constraint for them",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "isoflux_boundary",
         documentation: "Set of isoflux boundary constraints, each making a point lie on the plasma boundary.\nThe data dictionary has no constraint for them",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_ISOFLUX_BOUNDARY,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "stationary_point",
         documentation: "Set of stationary point constraints, each making both derivatives of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, zero at a point: an X-point or the magnetic axis.\nThe data dictionary has no constraint for them: its `x_point(i1)` constrains the position of an X-point, not the flux there",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_CONSTRAINTS_STATIONARY_POINT,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -9079,6 +10312,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_MAGNETIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.magnetic_axis.r.clone() },
                 )
             },
@@ -9097,6 +10331,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_MAGNETIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.magnetic_axis.z.clone() },
                 )
             },
@@ -9115,6 +10350,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_MAGNETIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.magnetic_axis.b_field_phi.clone() },
                 )
             },
@@ -9136,6 +10372,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_CURRENT_CENTRE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.current_centre.r.clone() },
                 )
             },
@@ -9154,6 +10391,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_CURRENT_CENTRE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.current_centre.z.clone() },
                 )
             },
@@ -9172,6 +10410,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_CURRENT_CENTRE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.current_centre.velocity_z.clone() },
                 )
             },
@@ -9193,6 +10432,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.value.clone() },
                 )
             },
@@ -9211,6 +10451,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.rho_tor_norm.clone() },
                 )
             },
@@ -9229,6 +10470,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.psi_norm.clone() },
                 )
             },
@@ -9247,6 +10489,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.psi.clone() },
                 )
             },
@@ -9268,6 +10511,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol.clone() },
                 )
             },
@@ -9286,6 +10530,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_tor.clone() },
                 )
             },
@@ -9304,6 +10549,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_tor_norm.clone() },
                 )
             },
@@ -9322,6 +10568,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.ip.clone() },
                 )
             },
@@ -9340,6 +10587,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.li_3.clone() },
                 )
             },
@@ -9358,6 +10606,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.volume.clone() },
                 )
             },
@@ -9376,6 +10625,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.area.clone() },
                 )
             },
@@ -9394,6 +10644,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.surface.clone() },
                 )
             },
@@ -9412,6 +10663,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.length_pol.clone() },
                 )
             },
@@ -9430,6 +10682,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.psi_magnetic_axis.clone() },
                 )
             },
@@ -9460,6 +10713,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_axis.clone() },
                 )
             },
@@ -9478,6 +10732,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_95.clone() },
                 )
             },
@@ -9502,6 +10757,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.energy_mhd.clone() },
                 )
             },
@@ -9520,6 +10776,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.psi_external_average.clone() },
                 )
             },
@@ -9538,6 +10795,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.v_external.clone() },
                 )
             },
@@ -9556,6 +10814,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.plasma_inductance.clone() },
                 )
             },
@@ -9574,6 +10833,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.plasma_resistance.clone() },
                 )
             },
@@ -9592,6 +10852,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol_1.clone() },
                 )
             },
@@ -9610,6 +10871,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol_2.clone() },
                 )
             },
@@ -9628,6 +10890,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol_3.clone() },
                 )
             },
@@ -9646,6 +10909,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.bp_omp.clone() },
                 )
             },
@@ -9664,6 +10928,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.bt_vac_at_r_geo.clone() },
                 )
             },
@@ -9682,6 +10947,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.li_1.clone() },
                 )
             },
@@ -9700,6 +10966,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.li_2.clone() },
                 )
             },
@@ -9718,6 +10985,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.delta_r_sep.clone() },
                 )
             },
@@ -9736,6 +11004,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.f_x.clone() },
                 )
             },
@@ -9754,6 +11023,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.v_loop.clone() },
                 )
             },
@@ -9775,6 +11045,7 @@ static NODES_TIME_SLICE_PROFILES_1D_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.geometric_axis.r.clone() },
                 )
             },
@@ -9793,6 +11064,7 @@ static NODES_TIME_SLICE_PROFILES_1D_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.geometric_axis.z.clone() },
                 )
             },
@@ -9814,6 +11086,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.psi.clone() },
                 )
             },
@@ -9832,6 +11105,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.psi_norm.clone() },
                 )
             },
@@ -9850,6 +11124,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.phi.clone() },
                 )
             },
@@ -9868,6 +11143,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.pressure.clone() },
                 )
             },
@@ -9886,6 +11162,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.f.clone() },
                 )
             },
@@ -9904,6 +11181,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dpressure_dpsi.clone() },
                 )
             },
@@ -9922,6 +11200,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.f_df_dpsi.clone() },
                 )
             },
@@ -9940,6 +11219,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.j_phi.clone() },
                 )
             },
@@ -9958,6 +11238,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.j_parallel.clone() },
                 )
             },
@@ -9976,6 +11257,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.q.clone() },
                 )
             },
@@ -9994,6 +11276,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.magnetic_shear.clone() },
                 )
             },
@@ -10012,6 +11295,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_inboard.clone() },
                 )
             },
@@ -10030,6 +11314,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_outboard.clone() },
                 )
             },
@@ -10048,6 +11333,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_tor.clone() },
                 )
             },
@@ -10066,6 +11352,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_tor_norm.clone() },
                 )
             },
@@ -10084,6 +11371,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dpsi_drho_tor.clone() },
                 )
             },
@@ -10108,6 +11396,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.elongation.clone() },
                 )
             },
@@ -10126,6 +11415,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.triangularity.clone() },
                 )
             },
@@ -10144,6 +11434,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.triangularity_upper.clone() },
                 )
             },
@@ -10162,6 +11453,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.triangularity_lower.clone() },
                 )
             },
@@ -10180,6 +11472,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_upper_inner.clone() },
                 )
             },
@@ -10198,6 +11491,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_upper_outer.clone() },
                 )
             },
@@ -10216,6 +11510,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_lower_inner.clone() },
                 )
             },
@@ -10234,6 +11529,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_lower_outer.clone() },
                 )
             },
@@ -10252,6 +11548,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.volume.clone() },
                 )
             },
@@ -10270,6 +11567,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_volume_norm.clone() },
                 )
             },
@@ -10288,6 +11586,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dvolume_dpsi.clone() },
                 )
             },
@@ -10306,6 +11605,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dvolume_drho_tor.clone() },
                 )
             },
@@ -10324,6 +11624,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.area.clone() },
                 )
             },
@@ -10342,6 +11643,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.darea_dpsi.clone() },
                 )
             },
@@ -10360,6 +11662,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.darea_drho_tor.clone() },
                 )
             },
@@ -10378,6 +11681,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.surface.clone() },
                 )
             },
@@ -10396,6 +11700,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.trapped_fraction.clone() },
                 )
             },
@@ -10414,6 +11719,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm1.clone() },
                 )
             },
@@ -10432,6 +11738,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm2.clone() },
                 )
             },
@@ -10450,6 +11757,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm3.clone() },
                 )
             },
@@ -10468,6 +11776,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm4.clone() },
                 )
             },
@@ -10486,6 +11795,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm5.clone() },
                 )
             },
@@ -10504,6 +11814,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm6.clone() },
                 )
             },
@@ -10522,6 +11833,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm7.clone() },
                 )
             },
@@ -10540,6 +11852,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm8.clone() },
                 )
             },
@@ -10558,6 +11871,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm9.clone() },
                 )
             },
@@ -10576,6 +11890,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.b_field_average.clone() },
                 )
             },
@@ -10594,6 +11909,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.b_field_min.clone() },
                 )
             },
@@ -10612,6 +11928,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.b_field_max.clone() },
                 )
             },
@@ -10630,6 +11947,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.beta_pol.clone() },
                 )
             },
@@ -10648,7 +11966,27 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.mass_density.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "dvolume_dpsi_norm",
+        documentation: "Radial derivative of the volume enclosed in the flux surface with respect to the normalised poloidal flux, `psi_norm`.\nThis is the data dictionary's `dvolume_dpsi` multiplied by `psi_boundary - psi_axis`, so unlike it, it does not depend on the poloidal flux sign convention",
+        units: "m^3",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    no_names,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dvolume_dpsi_norm.clone() },
                 )
             },
         }),
@@ -10666,6 +12004,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_inboard_z_0.clone() },
                 )
             },
@@ -10684,6 +12023,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_outboard_z_0.clone() },
                 )
             },
@@ -10702,6 +12042,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_pol.clone() },
                 )
             },
@@ -10723,6 +12064,7 @@ static NODES_TIME_SLICE_PROFILES_2D_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r#type.name.clone() },
                 )
             },
@@ -10741,6 +12083,7 @@ static NODES_TIME_SLICE_PROFILES_2D_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r#type.index.clone() },
                 )
             },
@@ -10759,6 +12102,7 @@ static NODES_TIME_SLICE_PROFILES_2D_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r#type.description.clone() },
                 )
             },
@@ -10780,6 +12124,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid_type.name.clone() },
                 )
             },
@@ -10798,6 +12143,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid_type.index.clone() },
                 )
             },
@@ -10816,6 +12162,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid_type.description.clone() },
                 )
             },
@@ -10837,6 +12184,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.dim1.clone() },
                 )
             },
@@ -10855,6 +12203,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.dim2.clone() },
                 )
             },
@@ -10873,6 +12222,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.volume_element.clone() },
                 )
             },
@@ -10891,6 +12241,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.d_area.clone() },
                 )
             },
@@ -10930,6 +12281,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r.clone() },
                 )
             },
@@ -10948,6 +12300,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].z.clone() },
                 )
             },
@@ -10966,6 +12319,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].psi.clone() },
                 )
             },
@@ -10984,6 +12338,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].theta.clone() },
                 )
             },
@@ -11002,6 +12357,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].phi.clone() },
                 )
             },
@@ -11020,6 +12376,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].j_phi.clone() },
                 )
             },
@@ -11038,6 +12395,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].j_parallel.clone() },
                 )
             },
@@ -11056,6 +12414,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].b_field_r.clone() },
                 )
             },
@@ -11074,6 +12433,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].b_field_phi.clone() },
                 )
             },
@@ -11092,6 +12452,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].b_field_z.clone() },
                 )
             },
@@ -11110,6 +12471,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d_psi_d_r.clone() },
                 )
             },
@@ -11128,6 +12490,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d_psi_d_z.clone() },
                 )
             },
@@ -11146,6 +12509,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d2_psi_d_r2.clone() },
                 )
             },
@@ -11164,6 +12528,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d2_psi_d_r_d_z.clone() },
                 )
             },
@@ -11182,6 +12547,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d2_psi_d_z2.clone() },
                 )
             },
@@ -11200,6 +12566,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].mask.clone() },
                 )
             },
@@ -11218,6 +12585,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].psi_norm.clone() },
                 )
             },
@@ -11236,6 +12604,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].psi_coils.clone() },
                 )
             },
@@ -11254,6 +12623,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].pressure.clone() },
                 )
             },
@@ -11272,6 +12642,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d_b_field_z_d_z.clone() },
                 )
             },
@@ -11293,6 +12664,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].grid_index.clone() },
                 )
             },
@@ -11311,6 +12683,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11329,6 +12702,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].values.clone() },
                 )
             },
@@ -11347,6 +12721,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].coefficients.clone() },
                 )
             },
@@ -11368,6 +12743,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].grid_index.clone() },
                 )
             },
@@ -11386,6 +12762,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11404,6 +12781,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].values.clone() },
                 )
             },
@@ -11422,6 +12800,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].coefficients.clone() },
                 )
             },
@@ -11443,6 +12822,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].grid_index.clone() },
                 )
             },
@@ -11461,6 +12841,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11479,6 +12860,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].values.clone() },
                 )
             },
@@ -11497,6 +12879,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].coefficients.clone() },
                 )
             },
@@ -11518,6 +12901,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].grid_index.clone() },
                 )
             },
@@ -11536,6 +12920,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11554,6 +12939,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].values.clone() },
                 )
             },
@@ -11572,6 +12958,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].coefficients.clone() },
                 )
             },
@@ -11593,6 +12980,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].grid_index.clone() },
                 )
             },
@@ -11611,6 +12999,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11629,6 +13018,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].values.clone() },
                 )
             },
@@ -11647,6 +13037,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].coefficients.clone() },
                 )
             },
@@ -11668,6 +13059,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].grid_index.clone() },
                 )
             },
@@ -11686,6 +13078,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11704,6 +13097,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].values.clone() },
                 )
             },
@@ -11722,6 +13116,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].coefficients.clone() },
                 )
             },
@@ -11743,6 +13138,7 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].grid_index.clone() },
                 )
             },
@@ -11761,6 +13157,7 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].grid_subset_index.clone()
                     },
@@ -11781,6 +13178,7 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].values.clone() },
                 )
             },
@@ -11799,6 +13197,7 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].coefficients.clone() },
                 )
             },
@@ -11820,6 +13219,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].grid_index.clone() },
                 )
             },
@@ -11838,6 +13238,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -11856,6 +13257,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].values.clone() },
                 )
             },
@@ -11874,6 +13276,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].coefficients.clone() },
                 )
             },
@@ -11895,6 +13298,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].grid_index.clone() },
                 )
             },
@@ -11913,6 +13317,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].grid_subset_index.clone()
                     },
@@ -11933,6 +13338,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].values.clone() },
                 )
             },
@@ -11951,6 +13357,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].coefficients.clone() },
                 )
             },
@@ -11972,6 +13379,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].grid_index.clone() },
                 )
             },
@@ -11990,6 +13398,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].grid_subset_index.clone() },
                 )
             },
@@ -12008,6 +13417,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].values.clone() },
                 )
             },
@@ -12026,6 +13436,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].coefficients.clone() },
                 )
             },
@@ -12038,61 +13449,91 @@ static NODES_TIME_SLICE_GGD: &[Node] = &[
         name: "r",
         documentation: "Values of the major radius on various grid subsets",
         units: "m",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_R),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_R,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "z",
         documentation: "Values of the Height on various grid subsets",
         units: "m",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_Z),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_Z,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "psi",
         documentation: "Values of the poloidal flux, given on various grid subsets. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary",
         units: "Wb",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_PSI),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_PSI,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "phi",
         documentation: "Values of the toroidal flux, given on various grid subsets. Positive sign means counter-clockwise when viewed from above",
         units: "Wb",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_PHI),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_PHI,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "theta",
         documentation: "Values of the poloidal angle, given on various grid subsets. The poloidal angle is centered on the magnetic axis and oriented such that (grad rho_tor_norm, grad theta, grad phi) form a right-handed set where grad rho_tor_norm points away from the magnetic axis.",
         units: "rad",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_THETA),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_THETA,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "j_phi",
         documentation: "Toroidal plasma current density, given on various grid subsets",
         units: "A.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_J_PHI),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_J_PHI,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "j_parallel",
         documentation: "Parallel (to magnetic field) plasma current density, given on various grid subsets",
         units: "A.m^-2",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_J_PARALLEL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_J_PARALLEL,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "b_field_r",
         documentation: "R component of the poloidal magnetic field, given on various grid subsets",
         units: "T",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_B_FIELD_R),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_B_FIELD_R,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "b_field_phi",
         documentation: "Toroidal component of the magnetic field, given on various grid subsets",
         units: "T",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_B_FIELD_PHI),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_B_FIELD_PHI,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "b_field_z",
         documentation: "Z component of the magnetic field, given on various grid subsets",
         units: "T",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD_B_FIELD_Z),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD_B_FIELD_Z,
+            elements_are_named: false,
+        },
     },
 ];
 
@@ -12110,6 +13551,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].coordinate_system.grid_type.name.clone() },
                 )
             },
@@ -12128,6 +13570,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].coordinate_system.grid_type.index.clone() },
                 )
             },
@@ -12146,6 +13589,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].coordinate_system.grid_type.description.clone() },
                 )
             },
@@ -12167,6 +13611,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].coordinate_system.grid.dim1.clone() },
                 )
             },
@@ -12185,6 +13630,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].coordinate_system.grid.dim2.clone() },
                 )
             },
@@ -12203,6 +13649,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.grid.volume_element.clone() },
                 )
             },
@@ -12221,6 +13668,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].coordinate_system.grid.d_area.clone() },
                 )
             },
@@ -12254,6 +13702,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.r.clone() },
                 )
             },
@@ -12272,6 +13721,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.z.clone() },
                 )
             },
@@ -12290,6 +13740,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.jacobian.clone() },
                 )
             },
@@ -12308,6 +13759,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_4D { equilibrium.time_slice[at[0]].coordinate_system.tensor_covariant.clone() },
                 )
             },
@@ -12326,6 +13778,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_4D { equilibrium.time_slice[at[0]].coordinate_system.tensor_contravariant.clone() },
                 )
             },
@@ -12347,6 +13800,7 @@ static NODES_TIME_SLICE_CONVERGENCE_GRAD_SHAFRANOV_DEVIATION_EXPRESSION: &[Node]
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]].convergence.grad_shafranov_deviation_expression.name.clone()
                     },
@@ -12367,6 +13821,7 @@ static NODES_TIME_SLICE_CONVERGENCE_GRAD_SHAFRANOV_DEVIATION_EXPRESSION: &[Node]
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
                         equilibrium.time_slice[at[0]].convergence.grad_shafranov_deviation_expression.index.clone()
                     },
@@ -12387,6 +13842,7 @@ static NODES_TIME_SLICE_CONVERGENCE_GRAD_SHAFRANOV_DEVIATION_EXPRESSION: &[Node]
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
                         equilibrium.time_slice[at[0]]
                             .convergence
@@ -12414,6 +13870,7 @@ static NODES_TIME_SLICE_CONVERGENCE_RESULT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].convergence.result.name.clone() },
                 )
             },
@@ -12432,6 +13889,7 @@ static NODES_TIME_SLICE_CONVERGENCE_RESULT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].convergence.result.index.clone() },
                 )
             },
@@ -12450,6 +13908,7 @@ static NODES_TIME_SLICE_CONVERGENCE_RESULT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].convergence.result.description.clone() },
                 )
             },
@@ -12471,6 +13930,7 @@ static NODES_TIME_SLICE_CONVERGENCE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].convergence.iterations_n.clone() },
                 )
             },
@@ -12495,6 +13955,7 @@ static NODES_TIME_SLICE_CONVERGENCE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].convergence.grad_shafranov_deviation_value.clone() },
                 )
             },
@@ -12519,6 +13980,7 @@ static NODES_TIME_SLICE_CONVERGENCE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].convergence.delta_z.clone() },
                 )
             },
@@ -12537,6 +13999,7 @@ static NODES_TIME_SLICE_CONVERGENCE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].convergence.flux_evaluations_n.clone() },
                 )
             },
@@ -12557,6 +14020,7 @@ static NODES_TIME_SLICE_SOURCE_FUNCTIONS_P_PRIME: &[Node] = &[Node {
                 indices,
                 1,
                 lengths_time_slice,
+                no_names,
                 |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].source_functions.p_prime.coefficients.clone() },
             )
         },
@@ -12576,6 +14040,7 @@ static NODES_TIME_SLICE_SOURCE_FUNCTIONS_FF_PRIME: &[Node] = &[Node {
                 indices,
                 1,
                 lengths_time_slice,
+                no_names,
                 |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].source_functions.ff_prime.coefficients.clone() },
             )
         },
@@ -12611,6 +14076,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.r.clone() },
                 )
             },
@@ -12629,6 +14095,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.dpressure_dpsi.clone() },
                 )
             },
@@ -12647,6 +14114,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.f.clone() },
                 )
             },
@@ -12665,6 +14133,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.f_df_dpsi.clone() },
                 )
             },
@@ -12683,6 +14152,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.j_phi.clone() },
                 )
             },
@@ -12701,7 +14171,46 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.pressure.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi",
+        documentation: "Poloidal flux along the mid-plane: the solved grid's own values along its middle row, `profiles_2d/psi`, inside and outside the plasma boundary",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    no_names,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux along the mid-plane, `(psi - psi_axis) / (psi_boundary - psi_axis)`, which is 1 on the plasma boundary.\nUnlike `profiles_2d/psi_norm` this is **not** masked to the plasma: it carries on past 1 outside the plasma boundary",
+        units: "1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    no_names,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.psi_norm.clone() },
                 )
             },
         }),
@@ -12719,6 +14228,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.q.clone() },
                 )
             },
@@ -12740,6 +14250,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE_H: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane_h.r.clone() },
                 )
             },
@@ -12758,6 +14269,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE_H: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane_h.psi.clone() },
                 )
             },
@@ -12776,6 +14288,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE_H: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane_h.psi_norm.clone() },
                 )
             },
@@ -12797,6 +14310,7 @@ static NODES_TIME_SLICE_SOL_HFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.hfs.contour.r.clone() },
                 )
             },
@@ -12815,6 +14329,7 @@ static NODES_TIME_SLICE_SOL_HFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.hfs.contour.z.clone() },
                 )
             },
@@ -12836,6 +14351,7 @@ static NODES_TIME_SLICE_SOL_HFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.hfs.strike_point.r.clone() },
                 )
             },
@@ -12854,6 +14370,7 @@ static NODES_TIME_SLICE_SOL_HFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.hfs.strike_point.z.clone() },
                 )
             },
@@ -12890,6 +14407,7 @@ static NODES_TIME_SLICE_SOL_LFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.lfs.contour.r.clone() },
                 )
             },
@@ -12908,6 +14426,7 @@ static NODES_TIME_SLICE_SOL_LFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.lfs.contour.z.clone() },
                 )
             },
@@ -12929,6 +14448,7 @@ static NODES_TIME_SLICE_SOL_LFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.lfs.strike_point.r.clone() },
                 )
             },
@@ -12947,6 +14467,7 @@ static NODES_TIME_SLICE_SOL_LFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.lfs.strike_point.z.clone() },
                 )
             },
@@ -13019,13 +14540,19 @@ static NODES_TIME_SLICE: &[Node] = &[
         name: "profiles_2d",
         documentation: "Equilibrium 2D profiles in the poloidal plane. Multiple 2D representations of the equilibrium can be stored here.",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_PROFILES_2D),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_PROFILES_2D,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "ggd",
         documentation: "Set of equilibrium representations using the generic grid description",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE_GGD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE_GGD,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "coordinate_system",
@@ -13052,6 +14579,7 @@ static NODES_TIME_SLICE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].time.clone() },
                 )
             },
@@ -13094,6 +14622,7 @@ static NODES_TIME_SLICE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
+                    no_names,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].passive_dof_values.clone() },
                 )
             },
@@ -13115,6 +14644,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].name.clone() },
                 )
             },
@@ -13133,6 +14663,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].description.clone() },
                 )
             },
@@ -13151,6 +14682,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].commit.clone() },
                 )
             },
@@ -13169,6 +14701,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].version.clone() },
                 )
             },
@@ -13187,6 +14720,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].repository.clone() },
                 )
             },
@@ -13205,6 +14739,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
+                    position_of_name_code_library,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].parameters.clone() },
                 )
             },
@@ -13221,9 +14756,14 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.name.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D { equilibrium.code.name.clone() },
+                )
             },
         }),
     },
@@ -13235,9 +14775,14 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.description.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D { equilibrium.code.description.clone() },
+                )
             },
         }),
     },
@@ -13249,9 +14794,14 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.commit.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D { equilibrium.code.commit.clone() },
+                )
             },
         }),
     },
@@ -13263,9 +14813,14 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.version.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D { equilibrium.code.version.clone() },
+                )
             },
         }),
     },
@@ -13277,9 +14832,14 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.repository.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D { equilibrium.code.repository.clone() },
+                )
             },
         }),
     },
@@ -13291,9 +14851,14 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D { equilibrium.code.parameters.clone() },
+                )
             },
         }),
     },
@@ -13305,9 +14870,14 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_1D {
-                    equilibrium.code.output_flag.clone()
-                })
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    no_names,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> INT_1D { equilibrium.code.output_flag.clone() },
+                )
             },
         }),
     },
@@ -13315,7 +14885,10 @@ static NODES_CODE: &[Node] = &[
         name: "library",
         documentation: "List of external libraries used by the code that has produced this IDS",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_CODE_LIBRARY,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -13333,6 +14906,7 @@ static NODES_LIMITER_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     1,
                     lengths_limiter_unit,
+                    position_of_name_limiter_unit,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.limiter.unit[at[0]].outline.r.clone() },
                 )
             },
@@ -13351,6 +14925,7 @@ static NODES_LIMITER_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     1,
                     lengths_limiter_unit,
+                    position_of_name_limiter_unit,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.limiter.unit[at[0]].outline.z.clone() },
                 )
             },
@@ -13372,6 +14947,7 @@ static NODES_LIMITER_UNIT: &[Node] = &[
                     indices,
                     1,
                     lengths_limiter_unit,
+                    position_of_name_limiter_unit,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.limiter.unit[at[0]].name.clone() },
                 )
             },
@@ -13389,7 +14965,10 @@ static NODES_LIMITER: &[Node] = &[Node {
     name: "unit",
     documentation: "Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`.\nThe order is part of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region the plasma is allowed to occupy, and only `unit(0)` is used as the vessel.\n`unit(1)`, `unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the vessel contour.\nThe points of every unit are candidate limit points, so a plasma may be limited on the vessel or on any of the tiles",
     units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_LIMITER_UNIT),
+    kind: NodeKind::ArrayOfStructures {
+        children: NODES_LIMITER_UNIT,
+        elements_are_named: true,
+    },
 }];
 
 static NODES_ROOT: &[Node] = &[
@@ -13403,13 +14982,19 @@ static NODES_ROOT: &[Node] = &[
         name: "grids_ggd",
         documentation: "Grids (using the Generic Grid Description), for various time slices. The timebase of this array of structure must be a subset of the time_slice timebase",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_GRIDS_GGD),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_GRIDS_GGD,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "time_slice",
         documentation: "Set of equilibria at various time slices",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_TIME_SLICE),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_TIME_SLICE,
+            elements_are_named: false,
+        },
     },
     Node {
         name: "code",
@@ -13419,7 +15004,7 @@ static NODES_ROOT: &[Node] = &[
     },
     Node {
         name: "limiter",
-        documentation: "The limiter: the immobile surfaces which bound the plasma.\nA copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the equilibrium IDS rather than from the `wall` IDS",
+        documentation: "The limiter: the immobile surfaces which bound the plasma.\nA copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the Equilibrium IDS rather than from the `wall` IDS",
         units: "",
         kind: NodeKind::Structure(NODES_LIMITER),
     },

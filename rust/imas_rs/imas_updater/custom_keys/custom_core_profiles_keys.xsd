@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GSFit's custom (non-IMAS) keys for the core_profiles IDS: the keys GSFit needs which the IMAS Data Dictionary does not define.
+
+    `../build_ids.py` merges them into the IDS's structs, which it generates from the Data Dictionary's schema of the IDS,
+    `../IMAS-Data-Dictionary/schemas/core_profiles/dd_core_profiles.xsd`, so that they sit flat alongside the Data Dictionary's keys.
+    This schema is laid out as `dd_core_profiles.xsd` is, and holds only GSFit's additions; `custom_equilibrium_keys.xsd` describes the
+    layout in full.
+
+    These keys have no IMAS counterpart, so they cannot be written to an IMAS backend. Anything written out over the standard Data
+    Dictionary must skip them.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+    <xs:include schemaLocation="../IMAS-Data-Dictionary/schemas/utilities/dd_support.xsd"/>
+
+    <!--
+        The key below is for `profiles_2d(itime)`, the plasma quantities in a poloidal cross-section.
+        The Data Dictionary has the ions there, `ion(i1)`, and the totals, e.g. `pressure_thermal`, but not the electrons. They are named
+        as in `profiles_1d(itime)/electrons`, and laid out on `grid` as the Data Dictionary's own keys of `profiles_2d(itime)` are: on a
+        rectangular grid, one value per (dim1, dim2) point; on the irregular grid `irregular_rz_na` (`grid_type/index` 91), the list of
+        points (dim1(i), dim2(i)), with the values in their first dimension and a second dimension of 1. GSFit's readers give the Thomson
+        scattering channels this way.
+    -->
+    <xs:complexType name="core_profiles_profiles_2d">
+        <xs:sequence>
+            <xs:element name="electrons" type="core_profiles_profiles_2d_electrons">
+                <xs:annotation>
+                    <xs:documentation>
+                        Quantities related to the electrons
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="core_profiles_profiles_2d_electrons">
+        <xs:annotation>
+            <xs:documentation>
+                Quantities related to the electrons, in a poloidal cross-section, as `profiles_1d(itime)/electrons`
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="pressure">
+                <xs:annotation>
+                    <xs:documentation>
+                        Pressure (thermal), as `profiles_1d(itime)/electrons/pressure`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+</xs:schema>

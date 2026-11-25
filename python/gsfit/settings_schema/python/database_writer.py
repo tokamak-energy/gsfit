@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
+from dataclasses import field
 
 # The database writers, from `get_database_writer` in python/gsfit/database_writers/__init__.py.
 DatabaseWriterMethod: typing.TypeAlias = typing.Literal[
@@ -22,16 +23,48 @@ DatabaseWriterMethod: typing.TypeAlias = typing.Literal[
     "geqdsk",
 ]
 
+# The ways of choosing the time-slices written to G EQDSK files.
+GeqdskTimeslicesMethod: typing.TypeAlias = typing.Literal[
+    "all",
+    "user_defined",
+]
+
 
 @dataclass(kw_only=True)
 class DatabaseWriter:
     """
     Where the results are written.
 
-    :param method: A database writer to write the results with: one `method` for each place to write to, at least one. None of the writers has settings of its own.
+    :param method: Write results to a database from: `gsfit/database_writers/`
+    :param geqdsk: Settings for the geqdsk writer. A `gsfit_shot=<pulseNo>_time=<time>ms.geqdsk` file is written to the current working directory for each time-slice.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "database_writer.xsd"
 
-    method: list[DatabaseWriterMethod]
+    method: list[DatabaseWriterMethod] = field(default_factory=list)
+    geqdsk: Geqdsk | None = None
+
+
+@dataclass(kw_only=True)
+class Geqdsk:
+    """
+    Settings for the geqdsk writer. A `gsfit_shot=<pulseNo>_time=<time>ms.geqdsk` file is written to the current working directory for each time-slice.
+
+    :param timeslices: The time-slices to write, one file each.
+    """
+
+    timeslices: Timeslices
+
+
+@dataclass(kw_only=True)
+class Timeslices:
+    """
+    The time-slices to write, one file each.
+
+    :param method: How the time-slices to write are chosen.
+    :param user_defined: Times to write, as a space separated list, e.g. "0.12" or "0.08 0.12". The nearest reconstructed time-slice is used. A requested time outside the reconstructed times is skipped with a warning, unless it lands exactly on the first or last time-slice. [second]
+    """
+
+    method: GeqdskTimeslicesMethod
+    user_defined: list[float]  # [second]

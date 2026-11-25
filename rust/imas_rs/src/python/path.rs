@@ -4,7 +4,7 @@
 use super::{IndexSpec, Leaf, Node, NodeKind, Value};
 use pyo3::exceptions::{PyAttributeError, PyIndexError, PyTypeError};
 use pyo3::prelude::*;
-use pyo3::types::PySlice;
+use pyo3::types::{PyByteArray, PyBytes, PySlice};
 use std::any::Any;
 
 /// One step along a data dictionary path.
@@ -77,6 +77,8 @@ impl PyPath {
                             let rendered_indices: Vec<String> = indices.iter().map(|index| index.to_string()).collect();
                             rendered_indices.join(",")
                         }
+                        // Quoted, so that a name is never mistaken for a position
+                        IndexSpec::Name(name) => format!("{name:?}"),
                     };
                     rendered.push_str(&format!("({inside})"));
                 }
@@ -99,7 +101,7 @@ impl PyPath {
         let children: &'static [Node] = match self.node.children(self.indexed) {
             Some(children) => children,
             None => match &self.node.kind {
-                NodeKind::ArrayOfStructures(_) => {
+                NodeKind::ArrayOfStructures { .. } => {
                     let array_name: &str = self.node.name;
                     return Err(PyAttributeError::new_err(format!(
                         "`{array_name}` is an array of structures; index it before reading `{name}`, \
@@ -140,21 +142,37 @@ impl PyPath {
     }
 
     fn __getitem__(&self, index: &Bound<'_, PyAny>) -> PyResult<PyPath> {
-        match &self.node.kind {
-            NodeKind::ArrayOfStructures(_) => {}
+        let elements_are_named: bool = match &self.node.kind {
+            NodeKind::ArrayOfStructures { elements_are_named, .. } => *elements_are_named,
             _ => {
                 return Err(PyTypeError::new_err(format!(
                     "`{}` is not an array of structures and cannot be indexed",
                     self.node.name
                 )));
             }
-        }
+        };
 
         if self.indexed {
             return Err(PyIndexError::new_err(format!("`{}` has already been indexed", self.node.name)));
         }
 
-        let spec: IndexSpec = if let Ok(slice) = index.cast::<PySlice>() {
+        // Bytes are a sequence of ints, so would otherwise be taken for a list of positions: `b"DIV"` for `[68, 73, 86]`
+        if index.is_instance_of::<PyBytes>() || index.is_instance_of::<PyByteArray>() {
+            return Err(PyTypeError::new_err(format!(
+                "`{}` cannot be indexed with bytes; a name is a str",
+                self.node.name
+            )));
+        }
+
+        let spec: IndexSpec = if let Ok(name) = index.extract::<String>() {
+            if !elements_are_named {
+                return Err(PyTypeError::new_err(format!(
+                    "`{}` cannot be indexed by name, as its elements have no `name`",
+                    self.node.name
+                )));
+            }
+            IndexSpec::Name(name)
+        } else if let Ok(slice) = index.cast::<PySlice>() {
             IndexSpec::Slice {
                 start: slice.getattr("start")?.extract()?,
                 stop: slice.getattr("stop")?.extract()?,
@@ -166,7 +184,7 @@ impl PyPath {
             IndexSpec::Many(many)
         } else {
             return Err(PyTypeError::new_err(
-                "an array of structures must be indexed with an int, a slice, or a list of ints",
+                "an array of structures must be indexed with an int, a slice, a list of ints, or, where its elements have a `name`, a str",
             ));
         };
 

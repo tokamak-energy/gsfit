@@ -18,10 +18,10 @@ from dataclasses import dataclass
 class ConstraintsDiamagneticFlux:
     """
     Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
-    GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
+    GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS Equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
     A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
-    Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
-    With one, the magnetics IDS must hold the diamagnetic flux.
+    Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the Magnetics IDS, and is not included in the fit.
+    With one whose `include` is true, the Magnetics IDS must hold the diamagnetic flux; with `include` false, a missing diamagnetic flux gives a NaN constraint.
     Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
 
     :param diamagnetic_flux: Fitting settings for the diamagnetic flux.

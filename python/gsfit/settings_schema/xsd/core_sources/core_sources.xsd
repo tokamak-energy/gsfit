@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for core_sources.xml: how the core_sources IDS is built, the sources of the plasma, `gsfit_rs.CoreSources`.
+
+    The root element is `core_sources_settings`, the IDS's name followed by `_settings`.
+    `workflow` links to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each.
+    No database reader builds core_sources yet: its sources are set from Python, e.g. the neutral beams' from an ASCOT5 run, by
+    `examples/write_ascot5_to_ids.py`.
+    XmlPath and Link are the same in each IDS's schema, so change them all together.
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= Link to workflow.xml ================================= -->
+
+    <xs:simpleType name="XmlPath">
+        <xs:annotation>
+            <xs:documentation>
+                Path of an XML file, relative to the file holding the link.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:anyURI">
+            <xs:pattern value="\S+\.xml"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="Link">
+        <xs:annotation>
+            <xs:documentation>
+                A link to the file holding these settings.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="href" type="XmlPath" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    Path of the linked file, relative to the file holding the link, e.g. "../workflow.xml".
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="core_sources_settings">
+        <xs:annotation>
+            <xs:documentation>
+                How the core_sources IDS is built: the sources of the plasma, e.g. the current driven by the neutral beams. No database reader builds it yet; its sources are set from Python.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="workflow" type="Link" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>
+                            A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". No database reader reads the sources yet.
+                        </xs:documentation>
+                        <xs:appinfo>
+                            <schema>../workflow.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

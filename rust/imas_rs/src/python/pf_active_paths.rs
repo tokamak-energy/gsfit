@@ -10,8 +10,8 @@
 
 #![allow(clippy::all)]
 
-use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels};
-use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, INT_2D, STR_0D};
+use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels, no_names};
+use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, INT_2D, STR_0D, index_of_name};
 use crate::ids::pf_active::PfActive;
 use std::any::Any;
 
@@ -70,6 +70,60 @@ fn lengths_supply(pf_active: &PfActive, level: usize, _at: &[usize]) -> Option<u
 }
 
 // ============================================================================
+// Array-of-structures names
+// ============================================================================
+
+/// Position of the element named `name` at each array-of-structures level along `circuit` whose elements have a `name`.
+fn position_of_name_circuit(pf_active: &PfActive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_active.circuit, name),
+        _ => return no_names(pf_active, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `code_library` whose elements have a `name`.
+fn position_of_name_code_library(pf_active: &PfActive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_active.code.library, name),
+        _ => return no_names(pf_active, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `coil` whose elements have a `name`.
+fn position_of_name_coil(pf_active: &PfActive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_active.coil, name),
+        _ => return no_names(pf_active, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `coil_element` whose elements have a `name`.
+fn position_of_name_coil_element(pf_active: &PfActive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_active.coil, name),
+        1 => return index_of_name(&pf_active.coil[at[0]].element, name),
+        _ => return no_names(pf_active, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `coil_function` whose elements have a `name`.
+fn position_of_name_coil_function(pf_active: &PfActive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_active.coil, name),
+        1 => return index_of_name(&pf_active.coil[at[0]].function, name),
+        _ => return no_names(pf_active, level, at, name),
+    }
+}
+
+/// Position of the element named `name` at each array-of-structures level along `supply` whose elements have a `name`.
+fn position_of_name_supply(pf_active: &PfActive, level: usize, at: &[usize], name: &str) -> Result<usize, String> {
+    match level {
+        0 => return index_of_name(&pf_active.supply, name),
+        _ => return no_names(pf_active, level, at, name),
+    }
+}
+
+// ============================================================================
 // Nodes
 // ============================================================================
 
@@ -82,7 +136,7 @@ static NODES_TEMPERATURE_REFERENCE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
                     pf_active.temperature_reference.description.clone()
                 })
             },
@@ -96,7 +150,7 @@ static NODES_TEMPERATURE_REFERENCE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> FLT_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> FLT_0D {
                     pf_active.temperature_reference.data.clone()
                 })
             },
@@ -113,9 +167,14 @@ static NODES_COIL_FUNCTION: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_function, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.coil[at[0]].function[at[1]].name.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_function,
+                    position_of_name_coil_function,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.coil[at[0]].function[at[1]].name.clone() },
+                )
             },
         }),
     },
@@ -127,9 +186,14 @@ static NODES_COIL_FUNCTION: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_function, |pf_active: &PfActive, at: &[usize]| -> INT_0D {
-                    pf_active.coil[at[0]].function[at[1]].index.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_function,
+                    position_of_name_coil_function,
+                    |pf_active: &PfActive, at: &[usize]| -> INT_0D { pf_active.coil[at[0]].function[at[1]].index.clone() },
+                )
             },
         }),
     },
@@ -141,9 +205,14 @@ static NODES_COIL_FUNCTION: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_function, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.coil[at[0]].function[at[1]].description.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_function,
+                    position_of_name_coil_function,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.coil[at[0]].function[at[1]].description.clone() },
+                )
             },
         }),
     },
@@ -158,9 +227,14 @@ static NODES_COIL_RESISTANCE_ADDITIONAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].resistance_additional.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].resistance_additional.data.clone() },
+                )
             },
         }),
     },
@@ -172,9 +246,14 @@ static NODES_COIL_RESISTANCE_ADDITIONAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].resistance_additional.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].resistance_additional.time.clone() },
+                )
             },
         }),
     },
@@ -189,9 +268,14 @@ static NODES_COIL_TEMPERATURE_TIMED: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].temperature_timed.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].temperature_timed.data.clone() },
+                )
             },
         }),
     },
@@ -203,9 +287,14 @@ static NODES_COIL_TEMPERATURE_TIMED: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].temperature_timed.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].temperature_timed.time.clone() },
+                )
             },
         }),
     },
@@ -220,9 +309,14 @@ static NODES_COIL_B_FIELD_MAX_TIMED: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].b_field_max_timed.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].b_field_max_timed.data.clone() },
+                )
             },
         }),
     },
@@ -234,9 +328,14 @@ static NODES_COIL_B_FIELD_MAX_TIMED: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].b_field_max_timed.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].b_field_max_timed.time.clone() },
+                )
             },
         }),
     },
@@ -251,9 +350,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.outline.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].element[at[1]].geometry.outline.r.clone() },
+                )
             },
         }),
     },
@@ -265,9 +369,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.outline.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].element[at[1]].geometry.outline.z.clone() },
+                )
             },
         }),
     },
@@ -282,9 +391,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.rectangle.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.rectangle.r.clone() },
+                )
             },
         }),
     },
@@ -296,9 +410,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.rectangle.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.rectangle.z.clone() },
+                )
             },
         }),
     },
@@ -310,9 +429,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.rectangle.width.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.rectangle.width.clone() },
+                )
             },
         }),
     },
@@ -324,9 +448,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.rectangle.height.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.rectangle.height.clone() },
+                )
             },
         }),
     },
@@ -341,9 +470,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.oblique.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.oblique.r.clone() },
+                )
             },
         }),
     },
@@ -355,9 +489,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.oblique.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.oblique.z.clone() },
+                )
             },
         }),
     },
@@ -369,9 +508,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.oblique.length_alpha.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.oblique.length_alpha.clone() },
+                )
             },
         }),
     },
@@ -383,9 +527,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.oblique.length_beta.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.oblique.length_beta.clone() },
+                )
             },
         }),
     },
@@ -397,9 +546,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.oblique.alpha.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.oblique.alpha.clone() },
+                )
             },
         }),
     },
@@ -411,9 +565,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.oblique.beta.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.oblique.beta.clone() },
+                )
             },
         }),
     },
@@ -428,9 +587,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.arcs_of_circle.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].element[at[1]].geometry.arcs_of_circle.r.clone() },
+                )
             },
         }),
     },
@@ -442,9 +606,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.arcs_of_circle.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].element[at[1]].geometry.arcs_of_circle.z.clone() },
+                )
             },
         }),
     },
@@ -456,9 +625,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.arcs_of_circle.curvature_radii.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].element[at[1]].geometry.arcs_of_circle.curvature_radii.clone() },
+                )
             },
         }),
     },
@@ -473,9 +647,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.annulus.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.annulus.r.clone() },
+                )
             },
         }),
     },
@@ -487,9 +666,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.annulus.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.annulus.z.clone() },
+                )
             },
         }),
     },
@@ -501,9 +685,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.annulus.radius_inner.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.annulus.radius_inner.clone() },
+                )
             },
         }),
     },
@@ -515,9 +704,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.annulus.radius_outer.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.annulus.radius_outer.clone() },
+                )
             },
         }),
     },
@@ -532,9 +726,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_THICK_LINE_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.thick_line.first_point.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.thick_line.first_point.r.clone() },
+                )
             },
         }),
     },
@@ -546,9 +745,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_THICK_LINE_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.thick_line.first_point.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.thick_line.first_point.z.clone() },
+                )
             },
         }),
     },
@@ -563,9 +767,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_THICK_LINE_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.thick_line.second_point.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.thick_line.second_point.r.clone() },
+                )
             },
         }),
     },
@@ -577,9 +786,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_THICK_LINE_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.thick_line.second_point.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.thick_line.second_point.z.clone() },
+                )
             },
         }),
     },
@@ -606,9 +820,14 @@ static NODES_COIL_ELEMENT_GEOMETRY_THICK_LINE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.thick_line.thickness.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].geometry.thick_line.thickness.clone() },
+                )
             },
         }),
     },
@@ -623,9 +842,14 @@ static NODES_COIL_ELEMENT_GEOMETRY: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> INT_0D {
-                    pf_active.coil[at[0]].element[at[1]].geometry.geometry_type.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> INT_0D { pf_active.coil[at[0]].element[at[1]].geometry.geometry_type.clone() },
+                )
             },
         }),
     },
@@ -676,9 +900,14 @@ static NODES_COIL_ELEMENT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.coil[at[0]].element[at[1]].name.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.coil[at[0]].element[at[1]].name.clone() },
+                )
             },
         }),
     },
@@ -690,9 +919,14 @@ static NODES_COIL_ELEMENT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.coil[at[0]].element[at[1]].description.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.coil[at[0]].element[at[1]].description.clone() },
+                )
             },
         }),
     },
@@ -704,9 +938,14 @@ static NODES_COIL_ELEMENT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].turns_with_sign.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].turns_with_sign.clone() },
+                )
             },
         }),
     },
@@ -718,9 +957,14 @@ static NODES_COIL_ELEMENT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 2, lengths_coil_element, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].element[at[1]].area.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    2,
+                    lengths_coil_element,
+                    position_of_name_coil_element,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].element[at[1]].area.clone() },
+                )
             },
         }),
     },
@@ -741,9 +985,14 @@ static NODES_COIL_GEOMETRY_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].geometry.outline.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].geometry.outline.r.clone() },
+                )
             },
         }),
     },
@@ -755,9 +1004,14 @@ static NODES_COIL_GEOMETRY_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].geometry.outline.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].geometry.outline.z.clone() },
+                )
             },
         }),
     },
@@ -772,9 +1026,14 @@ static NODES_COIL_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.rectangle.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.rectangle.r.clone() },
+                )
             },
         }),
     },
@@ -786,9 +1045,14 @@ static NODES_COIL_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.rectangle.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.rectangle.z.clone() },
+                )
             },
         }),
     },
@@ -800,9 +1064,14 @@ static NODES_COIL_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.rectangle.width.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.rectangle.width.clone() },
+                )
             },
         }),
     },
@@ -814,9 +1083,14 @@ static NODES_COIL_GEOMETRY_RECTANGLE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.rectangle.height.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.rectangle.height.clone() },
+                )
             },
         }),
     },
@@ -831,9 +1105,14 @@ static NODES_COIL_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.oblique.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.oblique.r.clone() },
+                )
             },
         }),
     },
@@ -845,9 +1124,14 @@ static NODES_COIL_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.oblique.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.oblique.z.clone() },
+                )
             },
         }),
     },
@@ -859,9 +1143,14 @@ static NODES_COIL_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.oblique.length_alpha.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.oblique.length_alpha.clone() },
+                )
             },
         }),
     },
@@ -873,9 +1162,14 @@ static NODES_COIL_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.oblique.length_beta.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.oblique.length_beta.clone() },
+                )
             },
         }),
     },
@@ -887,9 +1181,14 @@ static NODES_COIL_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.oblique.alpha.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.oblique.alpha.clone() },
+                )
             },
         }),
     },
@@ -901,9 +1200,14 @@ static NODES_COIL_GEOMETRY_OBLIQUE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.oblique.beta.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.oblique.beta.clone() },
+                )
             },
         }),
     },
@@ -918,9 +1222,14 @@ static NODES_COIL_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].geometry.arcs_of_circle.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].geometry.arcs_of_circle.r.clone() },
+                )
             },
         }),
     },
@@ -932,9 +1241,14 @@ static NODES_COIL_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].geometry.arcs_of_circle.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].geometry.arcs_of_circle.z.clone() },
+                )
             },
         }),
     },
@@ -946,9 +1260,14 @@ static NODES_COIL_GEOMETRY_ARCS_OF_CIRCLE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].geometry.arcs_of_circle.curvature_radii.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].geometry.arcs_of_circle.curvature_radii.clone() },
+                )
             },
         }),
     },
@@ -963,9 +1282,14 @@ static NODES_COIL_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.annulus.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.annulus.r.clone() },
+                )
             },
         }),
     },
@@ -977,9 +1301,14 @@ static NODES_COIL_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.annulus.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.annulus.z.clone() },
+                )
             },
         }),
     },
@@ -991,9 +1320,14 @@ static NODES_COIL_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.annulus.radius_inner.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.annulus.radius_inner.clone() },
+                )
             },
         }),
     },
@@ -1005,9 +1339,14 @@ static NODES_COIL_GEOMETRY_ANNULUS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.annulus.radius_outer.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.annulus.radius_outer.clone() },
+                )
             },
         }),
     },
@@ -1022,9 +1361,14 @@ static NODES_COIL_GEOMETRY_THICK_LINE_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.thick_line.first_point.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.thick_line.first_point.r.clone() },
+                )
             },
         }),
     },
@@ -1036,9 +1380,14 @@ static NODES_COIL_GEOMETRY_THICK_LINE_FIRST_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.thick_line.first_point.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.thick_line.first_point.z.clone() },
+                )
             },
         }),
     },
@@ -1053,9 +1402,14 @@ static NODES_COIL_GEOMETRY_THICK_LINE_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.thick_line.second_point.r.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.thick_line.second_point.r.clone() },
+                )
             },
         }),
     },
@@ -1067,9 +1421,14 @@ static NODES_COIL_GEOMETRY_THICK_LINE_SECOND_POINT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.thick_line.second_point.z.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.thick_line.second_point.z.clone() },
+                )
             },
         }),
     },
@@ -1096,9 +1455,14 @@ static NODES_COIL_GEOMETRY_THICK_LINE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].geometry.thick_line.thickness.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].geometry.thick_line.thickness.clone() },
+                )
             },
         }),
     },
@@ -1113,9 +1477,14 @@ static NODES_COIL_GEOMETRY: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> INT_0D {
-                    pf_active.coil[at[0]].geometry.geometry_type.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> INT_0D { pf_active.coil[at[0]].geometry.geometry_type.clone() },
+                )
             },
         }),
     },
@@ -1166,9 +1535,14 @@ static NODES_COIL_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].current.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].current.data.clone() },
+                )
             },
         }),
     },
@@ -1180,9 +1554,14 @@ static NODES_COIL_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].current.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].current.time.clone() },
+                )
             },
         }),
     },
@@ -1197,9 +1576,14 @@ static NODES_COIL_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].voltage.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].voltage.data.clone() },
+                )
             },
         }),
     },
@@ -1211,9 +1595,14 @@ static NODES_COIL_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].voltage.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].voltage.time.clone() },
+                )
             },
         }),
     },
@@ -1228,9 +1617,14 @@ static NODES_COIL_FORCE_RADIAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_radial.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_radial.data.clone() },
+                )
             },
         }),
     },
@@ -1242,9 +1636,14 @@ static NODES_COIL_FORCE_RADIAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_radial.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_radial.time.clone() },
+                )
             },
         }),
     },
@@ -1259,9 +1658,14 @@ static NODES_COIL_FORCE_VERTICAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_vertical.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_vertical.data.clone() },
+                )
             },
         }),
     },
@@ -1273,9 +1677,14 @@ static NODES_COIL_FORCE_VERTICAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_vertical.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_vertical.time.clone() },
+                )
             },
         }),
     },
@@ -1290,9 +1699,14 @@ static NODES_COIL_FORCE_RADIAL_CRUSHING: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_radial_crushing.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_radial_crushing.data.clone() },
+                )
             },
         }),
     },
@@ -1304,9 +1718,14 @@ static NODES_COIL_FORCE_RADIAL_CRUSHING: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_radial_crushing.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_radial_crushing.time.clone() },
+                )
             },
         }),
     },
@@ -1321,9 +1740,14 @@ static NODES_COIL_FORCE_VERTICAL_CRUSHING: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_vertical_crushing.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_vertical_crushing.data.clone() },
+                )
             },
         }),
     },
@@ -1335,9 +1759,14 @@ static NODES_COIL_FORCE_VERTICAL_CRUSHING: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].force_vertical_crushing.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].force_vertical_crushing.time.clone() },
+                )
             },
         }),
     },
@@ -1352,9 +1781,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.coil[at[0]].name.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.coil[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -1366,9 +1800,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.coil[at[0]].description.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.coil[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -1376,7 +1815,10 @@ static NODES_COIL: &[Node] = &[
         name: "function",
         documentation: "Set of functions for which this coil may be used",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_COIL_FUNCTION),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_COIL_FUNCTION,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "resistance",
@@ -1386,9 +1828,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].resistance.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].resistance.clone() },
+                )
             },
         }),
     },
@@ -1412,9 +1859,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].inductance.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].inductance.clone() },
+                )
             },
         }),
     },
@@ -1426,9 +1878,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.coil[at[0]].energy_limit_max.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.coil[at[0]].energy_limit_max.clone() },
+                )
             },
         }),
     },
@@ -1440,9 +1897,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_2D {
-                    pf_active.coil[at[0]].current_limit_max.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_2D { pf_active.coil[at[0]].current_limit_max.clone() },
+                )
             },
         }),
     },
@@ -1454,9 +1916,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].resistance_tabulated.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].resistance_tabulated.clone() },
+                )
             },
         }),
     },
@@ -1468,9 +1935,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].b_field_max.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].b_field_max.clone() },
+                )
             },
         }),
     },
@@ -1482,9 +1954,14 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.coil[at[0]].temperature.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_coil,
+                    position_of_name_coil,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.coil[at[0]].temperature.clone() },
+                )
             },
         }),
     },
@@ -1498,7 +1975,10 @@ static NODES_COIL: &[Node] = &[
         name: "element",
         documentation: "Each PF coil is comprised of a number of cross-section elements described  individually and connected serially",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_COIL_ELEMENT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_COIL_ELEMENT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "geometry",
@@ -1553,7 +2033,7 @@ static NODES_FORCE_LIMITS_FORCE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
                     pf_active.force_limits.force.data.clone()
                 })
             },
@@ -1567,7 +2047,7 @@ static NODES_FORCE_LIMITS_FORCE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
                     pf_active.force_limits.force.time.clone()
                 })
             },
@@ -1584,7 +2064,7 @@ static NODES_FORCE_LIMITS: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> FLT_2D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> FLT_2D {
                     pf_active.force_limits.combination_matrix.clone()
                 })
             },
@@ -1598,7 +2078,7 @@ static NODES_FORCE_LIMITS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
                     pf_active.force_limits.limit_max.clone()
                 })
             },
@@ -1612,7 +2092,7 @@ static NODES_FORCE_LIMITS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> FLT_1D {
                     pf_active.force_limits.limit_min.clone()
                 })
             },
@@ -1635,9 +2115,14 @@ static NODES_CIRCUIT_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.circuit[at[0]].voltage.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.circuit[at[0]].voltage.data.clone() },
+                )
             },
         }),
     },
@@ -1649,9 +2134,14 @@ static NODES_CIRCUIT_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.circuit[at[0]].voltage.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.circuit[at[0]].voltage.time.clone() },
+                )
             },
         }),
     },
@@ -1666,9 +2156,14 @@ static NODES_CIRCUIT_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.circuit[at[0]].current.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.circuit[at[0]].current.data.clone() },
+                )
             },
         }),
     },
@@ -1680,9 +2175,14 @@ static NODES_CIRCUIT_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.circuit[at[0]].current.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.circuit[at[0]].current.time.clone() },
+                )
             },
         }),
     },
@@ -1697,9 +2197,14 @@ static NODES_CIRCUIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.circuit[at[0]].name.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.circuit[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -1711,9 +2216,14 @@ static NODES_CIRCUIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.circuit[at[0]].description.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.circuit[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -1725,9 +2235,14 @@ static NODES_CIRCUIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.circuit[at[0]].r#type.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.circuit[at[0]].r#type.clone() },
+                )
             },
         }),
     },
@@ -1739,9 +2254,14 @@ static NODES_CIRCUIT: &[Node] = &[
             data_type: "INT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_circuit, |pf_active: &PfActive, at: &[usize]| -> INT_2D {
-                    pf_active.circuit[at[0]].connections.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_circuit,
+                    position_of_name_circuit,
+                    |pf_active: &PfActive, at: &[usize]| -> INT_2D { pf_active.circuit[at[0]].connections.clone() },
+                )
             },
         }),
     },
@@ -1768,9 +2288,14 @@ static NODES_SUPPLY_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.supply[at[0]].voltage.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.supply[at[0]].voltage.data.clone() },
+                )
             },
         }),
     },
@@ -1782,9 +2307,14 @@ static NODES_SUPPLY_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.supply[at[0]].voltage.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.supply[at[0]].voltage.time.clone() },
+                )
             },
         }),
     },
@@ -1799,9 +2329,14 @@ static NODES_SUPPLY_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.supply[at[0]].current.data.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.supply[at[0]].current.data.clone() },
+                )
             },
         }),
     },
@@ -1813,9 +2348,14 @@ static NODES_SUPPLY_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.supply[at[0]].current.time.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.supply[at[0]].current.time.clone() },
+                )
             },
         }),
     },
@@ -1830,9 +2370,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.supply[at[0]].name.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.supply[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -1844,9 +2389,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.supply[at[0]].description.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.supply[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -1858,9 +2408,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> INT_0D {
-                    pf_active.supply[at[0]].r#type.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> INT_0D { pf_active.supply[at[0]].r#type.clone() },
+                )
             },
         }),
     },
@@ -1872,9 +2427,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].resistance.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].resistance.clone() },
+                )
             },
         }),
     },
@@ -1886,9 +2446,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].delay.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].delay.clone() },
+                )
             },
         }),
     },
@@ -1900,9 +2465,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.supply[at[0]].filter_numerator.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.supply[at[0]].filter_numerator.clone() },
+                )
             },
         }),
     },
@@ -1914,9 +2484,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_1D {
-                    pf_active.supply[at[0]].filter_denominator.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_1D { pf_active.supply[at[0]].filter_denominator.clone() },
+                )
             },
         }),
     },
@@ -1928,9 +2503,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].current_limit_max.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].current_limit_max.clone() },
+                )
             },
         }),
     },
@@ -1942,9 +2522,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].current_limit_min.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].current_limit_min.clone() },
+                )
             },
         }),
     },
@@ -1956,9 +2541,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].voltage_limit_max.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].voltage_limit_max.clone() },
+                )
             },
         }),
     },
@@ -1970,9 +2560,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].voltage_limit_min.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].voltage_limit_min.clone() },
+                )
             },
         }),
     },
@@ -1984,9 +2579,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].current_limiter_gain.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].current_limiter_gain.clone() },
+                )
             },
         }),
     },
@@ -1998,9 +2598,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> FLT_0D {
-                    pf_active.supply[at[0]].energy_limit_max.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> FLT_0D { pf_active.supply[at[0]].energy_limit_max.clone() },
+                )
             },
         }),
     },
@@ -2012,9 +2617,14 @@ static NODES_SUPPLY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_supply, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.supply[at[0]].nonlinear_model.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_supply,
+                    position_of_name_supply,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.supply[at[0]].nonlinear_model.clone() },
+                )
             },
         }),
     },
@@ -2041,9 +2651,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_code_library, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.code.library[at[0]].name.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.code.library[at[0]].name.clone() },
+                )
             },
         }),
     },
@@ -2055,9 +2670,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_code_library, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.code.library[at[0]].description.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.code.library[at[0]].description.clone() },
+                )
             },
         }),
     },
@@ -2069,9 +2689,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_code_library, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.code.library[at[0]].commit.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.code.library[at[0]].commit.clone() },
+                )
             },
         }),
     },
@@ -2083,9 +2708,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_code_library, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.code.library[at[0]].version.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.code.library[at[0]].version.clone() },
+                )
             },
         }),
     },
@@ -2097,9 +2727,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_code_library, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.code.library[at[0]].repository.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.code.library[at[0]].repository.clone() },
+                )
             },
         }),
     },
@@ -2111,9 +2746,14 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 1, lengths_code_library, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
-                    pf_active.code.library[at[0]].parameters.clone()
-                })
+                gather(
+                    pf_active,
+                    indices,
+                    1,
+                    lengths_code_library,
+                    position_of_name_code_library,
+                    |pf_active: &PfActive, at: &[usize]| -> STR_0D { pf_active.code.library[at[0]].parameters.clone() },
+                )
             },
         }),
     },
@@ -2128,7 +2768,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
                     pf_active.code.name.clone()
                 })
             },
@@ -2142,7 +2782,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
                     pf_active.code.description.clone()
                 })
             },
@@ -2156,7 +2796,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
                     pf_active.code.commit.clone()
                 })
             },
@@ -2170,7 +2810,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
                     pf_active.code.version.clone()
                 })
             },
@@ -2184,7 +2824,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
                     pf_active.code.repository.clone()
                 })
             },
@@ -2198,7 +2838,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> STR_0D {
                     pf_active.code.parameters.clone()
                 })
             },
@@ -2212,7 +2852,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> INT_1D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> INT_1D {
                     pf_active.code.output_flag.clone()
                 })
             },
@@ -2222,7 +2862,10 @@ static NODES_CODE: &[Node] = &[
         name: "library",
         documentation: "List of external libraries used by the code that has produced this IDS",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_CODE_LIBRARY,
+            elements_are_named: true,
+        },
     },
 ];
 
@@ -2237,7 +2880,10 @@ static NODES_ROOT: &[Node] = &[
         name: "coil",
         documentation: "Active PF coils",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_COIL),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_COIL,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "force_limits",
@@ -2249,13 +2895,19 @@ static NODES_ROOT: &[Node] = &[
         name: "circuit",
         documentation: "Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_CIRCUIT),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_CIRCUIT,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "supply",
         documentation: "PF power supplies",
         units: "",
-        kind: NodeKind::ArrayOfStructures(NODES_SUPPLY),
+        kind: NodeKind::ArrayOfStructures {
+            children: NODES_SUPPLY,
+            elements_are_named: true,
+        },
     },
     Node {
         name: "latency",
@@ -2265,7 +2917,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
-                gather(pf_active, indices, 0, no_levels, |pf_active: &PfActive, _at: &[usize]| -> FLT_0D {
+                gather(pf_active, indices, 0, no_levels, no_names, |pf_active: &PfActive, _at: &[usize]| -> FLT_0D {
                     pf_active.latency.clone()
                 })
             },

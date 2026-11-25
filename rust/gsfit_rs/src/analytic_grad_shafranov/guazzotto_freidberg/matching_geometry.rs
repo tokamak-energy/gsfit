@@ -102,14 +102,14 @@ impl MatchingGeometry {
 /// References are to L. Guazzotto & J. P. Freidberg, J. Plasma Phys. 87 (2021) 905870303.
 ///
 /// # Arguments
-/// * `configuration` - the boundary topology and its shape parameters
-/// * `eps` - inverse aspect ratio [dimensionless]
-pub fn matching_geometry(configuration: &Configuration, eps: f64) -> Result<MatchingGeometry, String> {
+/// * `configuration` - the boundary topology and its shape parameters, whose `eps` the model surface is built with
+pub fn matching_geometry(configuration: &Configuration) -> Result<MatchingGeometry, String> {
+    let eps: f64 = configuration.eps();
     let constraints: Vec<Constraint>;
     let upper_half: ModelSurfaceHalf;
     let lower_half: ModelSurfaceHalf;
     match *configuration {
-        Configuration::SymmetricLimited { kappa, delta } => {
+        Configuration::SymmetricLimited { kappa, delta, .. } => {
             // GF Eqs. 3.5, 3.8
             let miller: MillerHalf = MillerHalf::new(eps, kappa, delta)?;
             let x_delta: f64 = miller.x_delta;
@@ -132,7 +132,7 @@ pub fn matching_geometry(configuration: &Configuration, eps: f64) -> Result<Matc
             upper_half = ModelSurfaceHalf::Miller(miller);
             lower_half = ModelSurfaceHalf::Miller(miller);
         }
-        Configuration::DoubleNull { kappa_x, delta_x } => {
+        Configuration::DoubleNull { kappa_x, delta_x, .. } => {
             // GF Eq. 4.6
             let two_ellipses: TwoEllipsesHalf = TwoEllipsesHalf::new(eps, kappa_x, delta_x)?;
             let x_x: f64 = two_ellipses.x_x;
@@ -159,6 +159,7 @@ pub fn matching_geometry(configuration: &Configuration, eps: f64) -> Result<Matc
             delta,
             kappa_x,
             delta_x,
+            ..
         } => {
             // GF Eqs. 5.3 - 5.6: a Miller upper half and a two-ellipse lower half, with the X-point below
             let miller: MillerHalf = MillerHalf::new(eps, kappa, delta)?;
@@ -193,9 +194,6 @@ pub fn matching_geometry(configuration: &Configuration, eps: f64) -> Result<Matc
             ];
             upper_half = ModelSurfaceHalf::Miller(miller);
             lower_half = ModelSurfaceHalf::TwoEllipses(two_ellipses);
-        }
-        Configuration::AntisymmetricLimited { .. } => {
-            return Err("GuazzottoFreidberg: AntisymmetricLimited solve is not yet implemented".to_string());
         }
     }
 

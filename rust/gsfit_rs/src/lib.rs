@@ -22,7 +22,7 @@ mod tf;
 mod wall;
 
 // Load structs and functions
-use analytic_grad_shafranov::{BuxtonProkopyszyn, Configuration, GuazzottoFreidberg, Symmetry};
+use analytic_grad_shafranov::{BuxtonProkopyszyn, GuazzottoFreidberg};
 use circuit_equations::solve_circuit_equations;
 use core_profiles::CoreProfiles;
 use core_sources::CoreSources;
@@ -89,7 +89,7 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose machine operation classes
     m.add_class::<PulseSchedule>()?;
 
-    // Expose sensor classes. The isoflux, isoflux boundary and stationary point constraints are custom keys of the magnetics IDS
+    // Expose sensor classes. The isoflux, isoflux boundary and stationary point constraints are custom keys of the Magnetics IDS
     m.add_class::<Magnetics>()?;
 
     // Expose source functions
@@ -98,8 +98,6 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Expose analytic equilibria
     m.add_class::<GuazzottoFreidberg>()?;
-    m.add_class::<Symmetry>()?;
-    m.add_class::<Configuration>()?;
     m.add_class::<BuxtonProkopyszyn>()?;
 
     // Expose solovev equilibrium function

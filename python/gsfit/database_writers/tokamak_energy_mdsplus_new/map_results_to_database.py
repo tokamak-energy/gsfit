@@ -1,6 +1,7 @@
 import typing
 from typing import TYPE_CHECKING
 
+import mdsthin
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs.imas import equilibrium_paths as ep
@@ -37,6 +38,9 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("BOUNDARY", "SQUARE_U_I"), ep.time_slice[:].boundary.squareness_upper_inner),
     (("BOUNDARY", "SQUARE_U_O"), ep.time_slice[:].boundary.squareness_upper_outer),
     (("BOUNDARY", "PSI"), ep.time_slice[:].boundary.psi),
+    (("BOUNDARY", "PHI"), ep.time_slice[:].boundary.phi),
+    (("BOUNDARY", "PHI_POL_CUR"), ep.time_slice[:].boundary.phi_poloidal_current),
+    (("BOUNDARY", "RHO_TOR"), ep.time_slice[:].boundary.rho_tor),
     (("BOUNDARY", "OUTLINE", "R"), ep.time_slice[:].boundary.outline.r),
     (("BOUNDARY", "OUTLINE", "Z"), ep.time_slice[:].boundary.outline.z),
     (("BOUNDARY", "BOUNDING", "R"), ep.time_slice[:].boundary.bounding.r),
@@ -88,7 +92,6 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "ELONGATION"), ep.time_slice[:].profiles_1d.elongation),
     (("PROFILES_1D", "PSI_NORM", "F"), ep.time_slice[:].profiles_1d.f),
     (("PROFILES_1D", "PSI_NORM", "FF_PRIME"), ep.time_slice[:].profiles_1d.f_df_dpsi),
-    (("PROFILES_1D", "PSI_NORM", "FLUX_TOR"), ep.time_slice[:].profiles_1d.phi),
     (("PROFILES_1D", "PSI_NORM", "MAG_SHEAR"), ep.time_slice[:].profiles_1d.magnetic_shear),
     (("PROFILES_1D", "PSI_NORM", "P_PRIME"), ep.time_slice[:].profiles_1d.dpressure_dpsi),
     (("PROFILES_1D", "PSI_NORM", "PRESSURE"), ep.time_slice[:].profiles_1d.pressure),
@@ -112,9 +115,9 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "TRIANG_L"), ep.time_slice[:].profiles_1d.triangularity_lower),
     (("PROFILES_1D", "PSI_NORM", "TRIANG_U"), ep.time_slice[:].profiles_1d.triangularity_upper),
     (("PROFILES_1D", "PSI_NORM", "VOL"), ep.time_slice[:].profiles_1d.volume),
-    (("PROFILES_1D", "PSI_NORM", "VOL_PRIME"), ep.time_slice[:].profiles_1d.dvolume_dpsi),
     (("PROFILES_1D", "PSI_NORM", "RHO_VOL_NORM"), ep.time_slice[:].profiles_1d.rho_volume_norm),
     (("PROFILES_1D", "PSI_NORM", "DVOL_DPSI"), ep.time_slice[:].profiles_1d.dvolume_dpsi),
+    (("PROFILES_1D", "PSI_NORM", "DVOL_DPSI_N"), ep.time_slice[:].profiles_1d.dvolume_dpsi_norm),
     (("PROFILES_1D", "PSI_NORM", "DVOL_DRHO_T"), ep.time_slice[:].profiles_1d.dvolume_drho_tor),
     (("PROFILES_1D", "PSI_NORM", "SURFACE"), ep.time_slice[:].profiles_1d.surface),
     (("PROFILES_1D", "PSI_NORM", "GM1"), ep.time_slice[:].profiles_1d.gm1),
@@ -135,6 +138,8 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "R_MIDPLANE", "FF_PRIME"), ep.time_slice[:].profiles_1d_r_midplane.f_df_dpsi),
     (("PROFILES_1D", "R_MIDPLANE", "J_PHI"), ep.time_slice[:].profiles_1d_r_midplane.j_phi),
     (("PROFILES_1D", "R_MIDPLANE", "PRESSURE"), ep.time_slice[:].profiles_1d_r_midplane.pressure),
+    (("PROFILES_1D", "R_MIDPLANE", "PSI_NORM"), ep.time_slice[:].profiles_1d_r_midplane.psi_norm),
+    (("PROFILES_1D", "R_MIDPLANE", "PSI"), ep.time_slice[:].profiles_1d_r_midplane.psi),
     (("PROFILES_1D", "R_MIDPLANE", "Q"), ep.time_slice[:].profiles_1d_r_midplane.q),
     # SOL
     (("PROFILES_1D", "R_MIDPLANE_H", "PSI_NORM"), ep.time_slice[:].profiles_1d_r_midplane_h.psi_norm),
@@ -369,7 +374,7 @@ def map_results_to_database(
     results["GLOBAL"]["I_ROD"] = 2.0 * np.pi * r0 * b0 / mu_0
 
     # The magnetic sensors, from `constraints/b_field_pol_probe`, `constraints/flux_loop` and `constraints/rogowski_coil`, which
-    # `Equilibrium.copy_from_magnetics_ids` filled on every time-slice with each sensor in the fit settings, in the order of the magnetics IDS:
+    # `Equilibrium.copy_from_magnetics_ids` filled on every time-slice with each sensor in the fit settings, in the order of the Magnetics IDS:
     # `measured`, the measurement interpolated onto the time-slice's time, `reconstructed`, the reconstruction's value of it, and `weight`,
     # which `Equilibrium` set from the fit settings. MDSplus holds one weight for each sensor, so the first time-slice's is written.
     # Whether each sensor is fitted is its fit settings' `include`, in the equilibrium's settings, which the equilibrium was built from
@@ -408,22 +413,56 @@ def map_results_to_database(
         results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["RECONSTRUCT"] = flux_loop_reconstructed[:, i_flux_loop]
         results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["WEIGHT"] = float(flux_loop_weight[i_flux_loop])
 
+    # Every Rogowski coil on the MDSplus tree, as `GSFIT_new_format.csv` defines its nodes. `CONSTRAINTS.ROGOWSKI.ALL` stacks all of them,
+    # so each needs data, but the equilibrium only fits those in its settings: every coil starts as not included, with NaN, and the
+    # fitted ones are overwritten below
+    # TODO: some Rogowski coils are not added to GSFit Magnetics
+    rogowski_coil_names_on_mdsplus: list[str] = [
+        "BVLB",
+        "BVLT",
+        "BVLWIRE",
+        "BVUBWIRE",
+        "BVUTWIRE",
+        "DIVB",
+        "DIVBWIRE",
+        "DIVPSRB",
+        "DIVPSRT",
+        "DIVT",
+        "DIVTWIRE",
+        "GASBFLB",
+        "GASBFLT",
+        "GASBFLT_SPR",
+        "HFSPSRB",
+        "HFSPSRT",
+        "INIVC000",
+        "INIVC270",
+        "INIVC270_SPR",
+        "MCB",
+        "MCT",
+        "MCT_SPR",
+        "MCWIRE",
+        "PSHBWIRE",
+        "PSHTWIRE",
+        "SOLWIRE",
+        "TFWIRE",
+    ]
+    for sensor_name in rogowski_coil_names_on_mdsplus:
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["INCLUDE"] = np.int32(0)
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["MEASURED"] = np.full(n_time, np.nan)
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["RECONSTRUCT"] = np.full(n_time, np.nan)
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["WEIGHT"] = np.nan
+    # The fitted Rogowski coils, overwriting their placeholders
     rogowski_coil_include: dict[str, np.int32] = {}
     for rogowski_coil_settings in constraints_settings.rogowski_coil:
         rogowski_coil_include[rogowski_coil_settings.name] = np.int32(rogowski_coil_settings.include)
     rogowski_coil_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.rogowski_coil[:].name)
-    rogowski_coil_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.rogowski_coil[:].weight)
-    # shape = [n_time, n_rogowski_coil]
-    rogowski_coil_measured: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.rogowski_coil[:].measured)
-    rogowski_coil_reconstructed: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.rogowski_coil[:].reconstructed)
-    n_rogowski_coil: int = len(rogowski_coil_names)
-    for i_rogowski_coil in range(n_rogowski_coil):
-        sensor_name = str(rogowski_coil_names[i_rogowski_coil])
-        # results["CONSTRAINTS"]["ROGOWSKI"][pf_name]["EXACT"]
+    for rogowski_coil_name in rogowski_coil_names:
+        sensor_name: str = str(rogowski_coil_name)
+        # results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["EXACT"]
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["INCLUDE"] = rogowski_coil_include[sensor_name]
-        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["MEASURED"] = rogowski_coil_measured[:, i_rogowski_coil]
-        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["RECONSTRUCT"] = rogowski_coil_reconstructed[:, i_rogowski_coil]
-        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["WEIGHT"] = float(rogowski_coil_weight[i_rogowski_coil])
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["MEASURED"] = equilibrium.get(ep.time_slice[:].constraints.rogowski_coil[sensor_name].measured)
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["RECONSTRUCT"] = equilibrium.get(ep.time_slice[:].constraints.rogowski_coil[sensor_name].reconstructed)
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["WEIGHT"] = float(equilibrium.get(ep.time_slice[0].constraints.rogowski_coil[sensor_name].weight))
 
     # Diamagnetic flux, from `constraints/diamagnetic_flux`, whose `reconstructed` the equilibrium post-processor calculates. GSFit fits a
     # single diamagnetic flux, `magnetics/diamagnetic_flux(0)`, which `Equilibrium.copy_from_magnetics_ids` copies in only when the fit
@@ -438,17 +477,24 @@ def map_results_to_database(
 
     # The PF coil currents, from `constraints/pf_current`, which `Equilibrium.copy_from_pf_active_ids` filled on every time-slice
     pf_current_names = [str(pf_name) for pf_name in equilibrium.get(ep.time_slice[0].constraints.pf_current[:].name)]
-    pf_current_measured = equilibrium.get(ep.time_slice[:].constraints.pf_current[:].measured)  # shape = (n_time, n_pf)
-    for i_pf, pf_name in enumerate(pf_current_names):
+    for pf_name in pf_current_names:
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["EXACT"]
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["INCLUDE"]
-        results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["MEASURED"] = pf_current_measured[:, i_pf]
+        results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["MEASURED"] = equilibrium.get(ep.time_slice[:].constraints.pf_current[pf_name].measured)
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["RECONSTRUCT"] = equilibrium.get(ep.time_slice[:].constraints.pf_current[i_pf].reconstructed)
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["WEIGHT"] = equilibrium.get(ep.time_slice[:].constraints.pf_current[i_pf].weight)
-    # TODO: need to handle circuits vs coils better
-    results["CONSTRAINTS"]["PF_CURRENT"]["BVL"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("BVLT")]
-    results["CONSTRAINTS"]["PF_CURRENT"]["DIV"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("DIVT")]
-    results["CONSTRAINTS"]["PF_CURRENT"]["PSH"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("PSHT")]
+
+    # pf_current_measured = equilibrium.get(ep.time_slice[:].constraints.pf_current[:].measured)  # shape = (n_time, n_pf)
+    # for i_pf, pf_name in enumerate(pf_current_names):
+    #     # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["EXACT"]
+    #     # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["INCLUDE"]
+    #     results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["MEASURED"] = pf_current_measured[:, i_pf]
+    #     # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["RECONSTRUCT"] = equilibrium.get(ep.time_slice[:].constraints.pf_current[i_pf].reconstructed)
+    #     # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["WEIGHT"] = equilibrium.get(ep.time_slice[:].constraints.pf_current[i_pf].weight)
+    # # # TODO: need to handle circuits vs coils better
+    # # results["CONSTRAINTS"]["PF_CURRENT"]["BVL"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("BVLT")]
+    # # results["CONSTRAINTS"]["PF_CURRENT"]["DIV"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("DIVT")]
+    # # results["CONSTRAINTS"]["PF_CURRENT"]["PSH"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("PSHT")]
 
     # Passive conductors: for each loop the equilibrium fits, its degrees of freedom, which are the amplitudes the reconstruction fitted and
     # their current distributions, and the geometry of its filaments.
@@ -540,8 +586,17 @@ def map_results_to_database(
     for tree_name, workflow_tree in workflow_from_settings(gsfit_controller.settings_xml).items():
         # A nil `pulseNo` reads the pulse being reconstructed
         if workflow_tree.pulseNo is None:
-            results["INPUT"]["WORKFLOW"][tree_name]["PULSE"] = pulseNo
+            workflow_pulseNo: int = pulseNo
         else:
-            results["INPUT"]["WORKFLOW"][tree_name]["PULSE"] = workflow_tree.pulseNo
-        results["INPUT"]["WORKFLOW"][tree_name]["RUN"] = workflow_tree.run_name
+            workflow_pulseNo = workflow_tree.pulseNo
+        results["INPUT"]["WORKFLOW"][tree_name]["PULSE"] = workflow_pulseNo
+        # "BEST" is a link to whichever run we believe is the most accurate, and which run that is can change after GSFit has run.
+        # So we store the run it pointed to, which the tree marks in the text node `BEST:BEST_RUN`, e.g. `\PSU2COIL::TOP.BEST:BEST_RUN` = "RUN06"
+        if workflow_tree.run_name == "BEST":
+            with mdsthin.Connection("smaug") as conn:
+                conn.openTree(tree_name, workflow_pulseNo)
+                workflow_run_name: str = str(conn.get(f"\\{tree_name}::TOP.BEST:BEST_RUN").data()).strip()
+        else:
+            workflow_run_name = workflow_tree.run_name
+        results["INPUT"]["WORKFLOW"][tree_name]["RUN"] = workflow_run_name
         results["INPUT"]["WORKFLOW"][tree_name]["USAGE"] = workflow_tree.usage

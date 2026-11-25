@@ -94,14 +94,14 @@
                 <xs:element name="method" type="TimeslicesMethod">
                     <xs:annotation>
                         <xs:documentation>
-                            How the times are chosen. Its settings are in the element of the same name, below.
+                            How the time-slices to reconstruct are chosen.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="arange">
                     <xs:annotation>
                         <xs:documentation>
-                            Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
+                            Equally spaced values within a given interval (numpy.arange).
                         </xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
@@ -119,7 +119,7 @@
                             <xs:element name="time_end" type="FiniteDouble">
                                 <xs:annotation>
                                     <xs:documentation>
-                                        End of the times, which is not included.
+                                        End of the times, which is not normally included.
                                     </xs:documentation>
                                     <xs:appinfo>
                                         <units>second</units>

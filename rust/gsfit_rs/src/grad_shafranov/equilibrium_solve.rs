@@ -716,12 +716,32 @@ impl<'a> EquilibriumSolver<'a> {
                 }
             }
         }
+        // The flux-surface averaged parallel current constraints fitted: those which `Equilibrium::new` put on this time-slice, each on its flux
+        // surface, `position/psi_norm`, with the `f` and `gm5` which make it linear in the source functions, whose fit settings,
+        // `equilibrium_settings/constraints/j_parallel(:)`, include it. Its settings are the ones with its name and time, `time_measurement`,
+        // which `Equilibrium::new` copied from them
+        let j_parallel_constraints: &Vec<EquilibriumConstraints0dPosition> = &self.time_slice.constraints.j_parallel;
+        let mut i_j_parallel_fitted: Vec<usize> = Vec::new();
+        let n_j_parallel: usize = j_parallel_constraints.len();
+        let n_j_parallel_settings: usize = settings_constraints.j_parallel.len();
+        for i_j_parallel in 0..n_j_parallel {
+            let constraint: &EquilibriumConstraints0dPosition = &j_parallel_constraints[i_j_parallel];
+            for i_settings in 0..n_j_parallel_settings {
+                if settings_constraints.j_parallel[i_settings].name == constraint.name
+                    && settings_constraints.j_parallel[i_settings].time == constraint.time_measurement
+                    && settings_constraints.j_parallel[i_settings].include
+                {
+                    i_j_parallel_fitted.push(i_j_parallel);
+                }
+            }
+        }
         let n_bp: usize = i_b_field_pol_probe_fitted.len();
         let n_fl: usize = i_flux_loop_fitted.len();
         let n_rog: usize = i_rogowski_coil_fitted.len();
         let n_isoflux: usize = isoflux.measured.len();
         let n_isoflux_boundary: usize = isoflux_boundary.measured.len();
         let n_pressure_sensors: usize = i_pressure_fitted.len();
+        let n_j_parallel_constraints: usize = i_j_parallel_fitted.len();
         // Two per stationary point, `d(psi)/d(r) = 0` and `d(psi)/d(z) = 0`
         let n_stationary_point_constraints: usize = stationary_point.measured.len();
         let n_p_prime_regularisation: usize = p_prime_source_function.source_function_regularisation().shape()[0];
@@ -742,6 +762,7 @@ impl<'a> EquilibriumSolver<'a> {
             + n_isoflux
             + n_isoflux_boundary
             + n_pressure_sensors
+            + n_j_parallel_constraints
             + n_stationary_point_constraints
             + n_p_prime_regularisation
             + n_ff_prime_regularisation
@@ -753,7 +774,8 @@ impl<'a> EquilibriumSolver<'a> {
         // different equilibrium. Their shapes are therefore kept, but a common amplitude is fitted,
         // whenever there is a constraint besides the stationary points to fit it to - normally the
         // plasma current from a Rogowski coil. The amplitude is the last degree of freedom
-        let n_constraints_besides_stationary_points: usize = n_bp + n_fl + n_dialoop + n_rog + n_isoflux + n_isoflux_boundary + n_pressure_sensors;
+        let n_constraints_besides_stationary_points: usize =
+            n_bp + n_fl + n_dialoop + n_rog + n_isoflux + n_isoflux_boundary + n_pressure_sensors + n_j_parallel_constraints;
         let n_exact_amplitude_dof: usize = if n_p_prime_dof + n_ff_prime_dof == 0 && n_constraints_besides_stationary_points > 0 {
             1
         } else {
@@ -1270,6 +1292,52 @@ impl<'a> EquilibriumSolver<'a> {
 
             // Vertical stability (not for pressure sensors)
             // TODO: should there be vertical stability for pressure sensors? I don't think so?
+
+            // Store sensor values
+            s_measured[i_constraint] = constraint.measured;
+
+            // Store weights
+            constraint_weights[i_constraint] = constraint.weight / constraint.expected_value;
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // Add the fitted flux-surface averaged parallel current constraints to the fitting matrix. Each is on its flux surface,
+        // `position/psi_norm`, where
+        //     <J . B> / B0 = 2 pi (F p' + <B ** 2> F F' / (mu_0 F)) / B0
+        // which, with `F` and `<B ** 2>` held at the constraint's `f` and `gm5`, those of the equilibrium `measured` was calculated on, is
+        // linear in the coefficients of `p'` and `F F'`, and needs no Greens function
+        let b0: f64 = self.vacuum_toroidal_field_b0;
+        for i_j_parallel in 0..n_j_parallel_constraints {
+            let constraint: &EquilibriumConstraints0dPosition = &j_parallel_constraints[i_j_parallel_fitted[i_j_parallel]];
+            let psi_norm_here: Array1<f64> = Array1::from_vec(vec![constraint.position.psi_norm]);
+            let p_prime_coefficient: f64 = 2.0 * PI * constraint.f / b0;
+            let ff_prime_coefficient: f64 = 2.0 * PI * constraint.gm5 / (MU_0 * constraint.f * b0);
+
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                fitting_matrix[(i_constraint, i_p_prime_dof)] =
+                    p_prime_coefficient * p_prime_source_function.source_function_value_single_dof(&psi_norm_here, i_p_prime_dof)[0];
+            }
+
+            // ff_prime degrees of freedom
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] =
+                    ff_prime_coefficient * ff_prime_source_function.source_function_value_single_dof(&psi_norm_here, i_ff_prime_dof)[0];
+            }
+
+            // Exact source function component
+            let mut value_from_exact_source_functions: f64 = 0.0;
+            if let Some(p_prime_exact) = &p_prime_exact_dof_values {
+                value_from_exact_source_functions += p_prime_coefficient * p_prime_source_function.source_function_value(&psi_norm_here, p_prime_exact)[0];
+            }
+            if let Some(ff_prime_exact) = &ff_prime_exact_dof_values {
+                value_from_exact_source_functions += ff_prime_coefficient * ff_prime_source_function.source_function_value(&psi_norm_here, ff_prime_exact)[0];
+            }
+            constraint_values_from_exact_source_functions[i_constraint] = value_from_exact_source_functions;
+
+            // The passive conductors, the PF coils and the vertical position do not enter: the constraint is on a flux surface, wherever it is
 
             // Store sensor values
             s_measured[i_constraint] = constraint.measured;

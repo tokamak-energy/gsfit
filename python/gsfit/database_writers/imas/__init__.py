@@ -18,6 +18,8 @@ class DatabaseWriterIMAS(DatabaseWriterProtocol):
     `Gsfit.write_results_to_database` keeps it on `gsfit_controller.equilibrium_ids`.
     """
 
+    writes_to_mdsplus: bool = False
+
     def map_results_to_database(self, gsfit_controller: "Gsfit") -> "IDSToplevel":
         return map_results_to_database(self, gsfit_controller)
 

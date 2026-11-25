@@ -242,58 +242,112 @@ mod tests {
     /// null's value on the row below
     #[test]
     fn eigenvalues_match_guazzotto_freidberg_table_4() {
-        let cases: [(&str, Configuration, f64, f64, f64); 8] = [
-            ("circle", Configuration::SymmetricLimited { kappa: 1.0, delta: 0.0 }, 0.33, 1.0, 2.38),
-            ("ellipse", Configuration::SymmetricLimited { kappa: 2.0, delta: 0.0 }, 0.25, 1.0, 1.88),
+        // Each case is GF's (name, configuration, nu, alpha from Table 4), with r_geo = 1 m, so that a_minor = eps
+        let cases: [(&str, Configuration, f64, f64); 8] = [
+            (
+                "circle",
+                Configuration::SymmetricLimited {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.33,
+                    kappa: 1.0,
+                    delta: 0.0,
+                },
+                1.0,
+                2.38,
+            ),
+            (
+                "ellipse",
+                Configuration::SymmetricLimited {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.25,
+                    kappa: 2.0,
+                    delta: 0.0,
+                },
+                1.0,
+                1.88,
+            ),
             (
                 "high-triangularity D",
-                Configuration::SymmetricLimited { kappa: 2.0, delta: 0.75 },
-                0.4,
+                Configuration::SymmetricLimited {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.4,
+                    kappa: 2.0,
+                    delta: 0.75,
+                },
                 1.0,
                 2.05,
             ),
-            ("inverse D", Configuration::SymmetricLimited { kappa: 1.9, delta: -0.6 }, 0.33, 0.5, 1.91),
+            (
+                "inverse D",
+                Configuration::SymmetricLimited {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.33,
+                    kappa: 1.9,
+                    delta: -0.6,
+                },
+                0.5,
+                1.91,
+            ),
             (
                 "double null, standard",
-                Configuration::DoubleNull { kappa_x: 2.0, delta_x: 0.5 },
-                0.33,
+                Configuration::DoubleNull {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.33,
+                    kappa_x: 2.0,
+                    delta_x: 0.5,
+                },
                 0.4,
                 1.96,
             ),
             (
                 "double null, spherical",
-                Configuration::DoubleNull { kappa_x: 2.4, delta_x: 0.8 },
-                0.75,
+                Configuration::DoubleNull {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.75,
+                    kappa_x: 2.4,
+                    delta_x: 0.8,
+                },
                 1.04,
                 1.90,
             ),
             (
                 "single null, standard",
                 Configuration::SingleNull {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.33,
                     kappa: 1.6,
                     delta: 0.4,
                     kappa_x: 2.0,
                     delta_x: 0.5,
                 },
-                0.33,
                 1.0,
                 2.04,
             ),
             (
                 "single null, high beta_p",
                 Configuration::SingleNull {
+                    r_geo: 1.0,
+                    z_geo: 0.0,
+                    a_minor: 0.25,
                     kappa: 1.8,
                     delta: 0.6,
                     kappa_x: 2.1,
                     delta_x: 0.8,
                 },
-                0.25,
                 2.1,
                 2.09,
             ),
         ];
-        for (name, configuration, eps, nu, alpha_table_4) in cases {
-            let geom: MatchingGeometry = matching_geometry(&configuration, eps).unwrap();
+        for (name, configuration, nu, alpha_table_4) in cases {
+            let eps: f64 = configuration.eps();
+            let geom: MatchingGeometry = matching_geometry(&configuration).unwrap();
             let alpha: f64 = solve_alpha(eps, nu, &geom, 150, 1.0, 3.0);
             assert!(
                 (alpha - alpha_table_4).abs() <= 0.005,
@@ -306,16 +360,19 @@ mod tests {
     /// last, the eigenvalue condition, to the accuracy of `alpha`
     #[test]
     fn single_null_solution_satisfies_every_constraint() {
-        let eps: f64 = 0.25;
         let nu: f64 = 2.1;
         let n_radial_expansion: usize = 150;
         let configuration: Configuration = Configuration::SingleNull {
+            r_geo: 1.0,
+            z_geo: 0.0,
+            a_minor: 0.25,
             kappa: 1.8,
             delta: 0.6,
             kappa_x: 2.1,
             delta_x: 0.8,
         };
-        let geom: MatchingGeometry = matching_geometry(&configuration, eps).unwrap();
+        let eps: f64 = configuration.eps();
+        let geom: MatchingGeometry = matching_geometry(&configuration).unwrap();
         let alpha: f64 = solve_alpha(eps, nu, &geom, n_radial_expansion, 1.0, 3.0);
         let flux: FluxSolution = flux_solution(alpha, eps, nu, &geom, n_radial_expansion).unwrap();
 

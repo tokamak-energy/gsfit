@@ -53,11 +53,11 @@ class Equilibrium:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -1327,6 +1327,21 @@ class _EquilibriumConstraints0dPositionItem:
 
         Units: as_parent
         """
+    @property
+    def f(self) -> Path[float]:
+        """For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of
+        the equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the
+        source functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values
+
+        Units: T.m
+        """
+    @property
+    def gm5(self) -> Path[float]:
+        """For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux
+        surface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`
+
+        Units: T^2
+        """
 
 class _EquilibriumConstraints0dPositionMany:
     """Scalar constraint with R,Z,phi position"""
@@ -1388,6 +1403,21 @@ class _EquilibriumConstraints0dPositionMany:
         The fit weights the measurement by `weight / expected_value`
 
         Units: as_parent
+        """
+    @property
+    def f(self) -> Path[npt.NDArray[np.float64]]:
+        """For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of
+        the equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the
+        source functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values
+
+        Units: T.m
+        """
+    @property
+    def gm5(self) -> Path[npt.NDArray[np.float64]]:
+        """For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux
+        surface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`
+
+        Units: T^2
         """
 
 class _EquilibriumConstraintsIsofluxItem:
@@ -2814,7 +2844,7 @@ class _EquilibriumLimiterItem:
     """The limiter: the immobile surfaces which bound the plasma.
 
     A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, with the same layout, so that `unit(i)` here is `unit(i)` there.
-    The data dictionary has no place for the limiter in the equilibrium IDS, but an equilibrium cannot be found without one.
+    The data dictionary has no place for the limiter in the Equilibrium IDS, but an equilibrium cannot be found without one.
 
     It is geometry, so it is the same for every time-slice.
     That is why it hangs off the IDS root rather than off `time_slice`.
@@ -2833,7 +2863,7 @@ class _EquilibriumLimiterMany:
     """The limiter: the immobile surfaces which bound the plasma.
 
     A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, with the same layout, so that `unit(i)` here is `unit(i)` there.
-    The data dictionary has no place for the limiter in the equilibrium IDS, but an equilibrium cannot be found without one.
+    The data dictionary has no place for the limiter in the Equilibrium IDS, but an equilibrium cannot be found without one.
 
     It is geometry, so it is the same for every time-slice.
     That is why it hangs off the IDS root rather than off `time_slice`.
@@ -3197,6 +3227,13 @@ class _EquilibriumProfiles1dItem:
         Units: kg.m^-3
         """
     @property
+    def dvolume_dpsi_norm(self) -> Path[npt.NDArray[np.float64]]:
+        """Radial derivative of the volume enclosed in the flux surface with respect to the normalised poloidal flux, `psi_norm`.
+        This is the data dictionary's `dvolume_dpsi` multiplied by `psi_boundary - psi_axis`, so unlike it, it does not depend on the poloidal flux sign convention
+
+        Units: m^3
+        """
+    @property
     def r_inboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
 
@@ -3512,6 +3549,13 @@ class _EquilibriumProfiles1dMany:
         Units: kg.m^-3
         """
     @property
+    def dvolume_dpsi_norm(self) -> Path[npt.NDArray[np.float64]]:
+        """Radial derivative of the volume enclosed in the flux surface with respect to the normalised poloidal flux, `psi_norm`.
+        This is the data dictionary's `dvolume_dpsi` multiplied by `psi_boundary - psi_axis`, so unlike it, it does not depend on the poloidal flux sign convention
+
+        Units: m^3
+        """
+    @property
     def r_inboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
         """Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
 
@@ -3588,6 +3632,19 @@ class _EquilibriumProfiles1dRMidplaneItem:
         Units: Pa
         """
     @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux along the mid-plane: the solved grid's own values along its middle row, `profiles_2d/psi`, inside and outside the plasma boundary
+
+        Units: Wb
+        """
+    @property
+    def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
+        """Normalised poloidal flux along the mid-plane, `(psi - psi_axis) / (psi_boundary - psi_axis)`, which is 1 on the plasma boundary.
+        Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma: it carries on past 1 outside the plasma boundary
+
+        Units: 1
+        """
+    @property
     def q(self) -> Path[npt.NDArray[np.float64]]:
         """Safety factor along the mid-plane.
         NaN outside the plasma boundary, where there is no closed flux surface to define it
@@ -3643,6 +3700,19 @@ class _EquilibriumProfiles1dRMidplaneMany:
         Zero outside the plasma boundary
 
         Units: Pa
+        """
+    @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux along the mid-plane: the solved grid's own values along its middle row, `profiles_2d/psi`, inside and outside the plasma boundary
+
+        Units: Wb
+        """
+    @property
+    def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
+        """Normalised poloidal flux along the mid-plane, `(psi - psi_axis) / (psi_boundary - psi_axis)`, which is 1 on the plasma boundary.
+        Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma: it carries on past 1 outside the plasma boundary
+
+        Units: 1
         """
     @property
     def q(self) -> Path[npt.NDArray[np.float64]]:
@@ -4791,6 +4861,14 @@ class _EquilibriumRphizpsirho0dDynamicAos3Item:
 
         Units: Wb
         """
+    @property
+    def psi_norm(self) -> Path[float]:
+        """Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic
+        axis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux
+        function: the fit applies it on the surface with this `psi_norm` of each iteration's flux
+
+        Units: 1
+        """
 
 class _EquilibriumRphizpsirho0dDynamicAos3Many:
     """Structure for R, Z, Phi, psi, rho_tor positions (0D, dynamic within a type 3 array of structures (index on time))"""
@@ -4824,6 +4902,14 @@ class _EquilibriumRphizpsirho0dDynamicAos3Many:
         """Poloidal magnetic flux. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary
 
         Units: Wb
+        """
+    @property
+    def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
+        """Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic
+        axis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux
+        function: the fit applies it on the surface with this `psi_norm` of each iteration's flux
+
+        Units: 1
         """
 
 class _EquilibriumRz0dDynamicAosItem:
@@ -4896,80 +4982,80 @@ class _EquilibriumRz1dDynamicAosMany:
 
 class _EquilibriumConstraints0dArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraints0dItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dMany: ...
 
 class _EquilibriumConstraints0dArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraints0dMany: ...
 
 class _EquilibriumConstraints0dDofArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dDofItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraints0dDofItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dDofMany: ...
 
 class _EquilibriumConstraints0dDofArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dDofMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraints0dDofMany: ...
 
 class _EquilibriumConstraints0dIpLikeArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dIpLikeItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraints0dIpLikeItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dIpLikeMany: ...
 
 class _EquilibriumConstraints0dIpLikeArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dIpLikeMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraints0dIpLikeMany: ...
 
 class _EquilibriumConstraints0dOneLikeArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dOneLikeItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraints0dOneLikeItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dOneLikeMany: ...
 
 class _EquilibriumConstraints0dOneLikeArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dOneLikeMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraints0dOneLikeMany: ...
 
 class _EquilibriumConstraints0dPositionArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dPositionItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraints0dPositionItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dPositionMany: ...
 
 class _EquilibriumConstraints0dPositionArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dPositionMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraints0dPositionMany: ...
 
 class _EquilibriumConstraintsIsofluxArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraintsIsofluxItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraintsIsofluxItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraintsIsofluxMany: ...
 
 class _EquilibriumConstraintsIsofluxArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraintsIsofluxMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraintsIsofluxMany: ...
 
 class _EquilibriumConstraintsIsofluxBoundaryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraintsIsofluxBoundaryItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraintsIsofluxBoundaryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraintsIsofluxBoundaryMany: ...
 
 class _EquilibriumConstraintsIsofluxBoundaryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraintsIsofluxBoundaryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraintsIsofluxBoundaryMany: ...
 
 class _EquilibriumConstraintsMagnetizationArrayFromItem:
     @overload
@@ -4995,14 +5081,14 @@ class _EquilibriumConstraintsPurePositionArrayFromMany:
 
 class _EquilibriumConstraintsStationaryPointArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumConstraintsStationaryPointItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumConstraintsStationaryPointItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraintsStationaryPointMany: ...
 
 class _EquilibriumConstraintsStationaryPointArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraintsStationaryPointMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumConstraintsStationaryPointMany: ...
 
 class _EquilibriumContourTreeNodeArrayFromItem:
     @overload
@@ -5017,14 +5103,14 @@ class _EquilibriumContourTreeNodeArrayFromMany:
 
 class _EquilibriumGapArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumGapItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumGapItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGapMany: ...
 
 class _EquilibriumGapArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGapMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumGapMany: ...
 
 class _EquilibriumGgdArrayFromItem:
     @overload
@@ -5050,14 +5136,14 @@ class _EquilibriumGgdArrayArrayFromMany:
 
 class _EquilibriumLimiterUnitArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumLimiterUnitItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumLimiterUnitItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumLimiterUnitMany: ...
 
 class _EquilibriumLimiterUnitArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumLimiterUnitMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumLimiterUnitMany: ...
 
 class _EquilibriumProfiles2dArrayFromItem:
     @overload
@@ -5193,25 +5279,25 @@ class _EquilibriumGenericGridScalarArrayFromMany:
 
 class _EquilibriumIdentifierDynamicAos3ArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumIdentifierDynamicAos3Item: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumIdentifierDynamicAos3Item: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumIdentifierDynamicAos3Many: ...
 
 class _EquilibriumIdentifierDynamicAos3ArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumIdentifierDynamicAos3Many: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumIdentifierDynamicAos3Many: ...
 
 class _EquilibriumLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _EquilibriumLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumLibraryMany: ...
 
 class _EquilibriumLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _EquilibriumLibraryMany: ...
 
 class _EquilibriumRz1dDynamicAosArrayFromItem:
     @overload
@@ -5245,7 +5331,7 @@ class _EquilibriumPaths:
     @property
     def limiter(self) -> _EquilibriumLimiterItem:
         """The limiter: the immobile surfaces which bound the plasma.
-        A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the equilibrium IDS rather than from the `wall` IDS
+        A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the Equilibrium IDS rather than from the `wall` IDS
         """
 
 equilibrium_paths: _EquilibriumPaths
@@ -5256,11 +5342,11 @@ class PfActive:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -6413,69 +6499,69 @@ class _PfActiveThickLineStaticMany:
 
 class _PfActiveIdentifierStaticArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfActiveIdentifierStaticItem: ...
+    def __getitem__(self, index: int | str) -> _PfActiveIdentifierStaticItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfActiveIdentifierStaticMany: ...
 
 class _PfActiveIdentifierStaticArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfActiveIdentifierStaticMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfActiveIdentifierStaticMany: ...
 
 class _PfActiveLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfActiveLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _PfActiveLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfActiveLibraryMany: ...
 
 class _PfActiveLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfActiveLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfActiveLibraryMany: ...
 
 class _PfActivePfCircuitsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfActivePfCircuitsItem: ...
+    def __getitem__(self, index: int | str) -> _PfActivePfCircuitsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfCircuitsMany: ...
 
 class _PfActivePfCircuitsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfCircuitsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfActivePfCircuitsMany: ...
 
 class _PfActivePfCoilsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfActivePfCoilsItem: ...
+    def __getitem__(self, index: int | str) -> _PfActivePfCoilsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfCoilsMany: ...
 
 class _PfActivePfCoilsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfCoilsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfActivePfCoilsMany: ...
 
 class _PfActivePfCoilsElementsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfActivePfCoilsElementsItem: ...
+    def __getitem__(self, index: int | str) -> _PfActivePfCoilsElementsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfCoilsElementsMany: ...
 
 class _PfActivePfCoilsElementsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfCoilsElementsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfActivePfCoilsElementsMany: ...
 
 class _PfActivePfSuppliesArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfActivePfSuppliesItem: ...
+    def __getitem__(self, index: int | str) -> _PfActivePfSuppliesItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfSuppliesMany: ...
 
 class _PfActivePfSuppliesArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfSuppliesMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfActivePfSuppliesMany: ...
 
 # --------------------------------------------------------------------------
 # pf_active root
@@ -6516,11 +6602,11 @@ class PfPassive:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -7139,36 +7225,36 @@ class _PfPassiveThickLineStaticMany:
 
 class _PfPassiveLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfPassiveLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _PfPassiveLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfPassiveLibraryMany: ...
 
 class _PfPassiveLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfPassiveLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfPassiveLibraryMany: ...
 
 class _PfPassivePfCoilsElementsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfPassivePfCoilsElementsItem: ...
+    def __getitem__(self, index: int | str) -> _PfPassivePfCoilsElementsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfPassivePfCoilsElementsMany: ...
 
 class _PfPassivePfCoilsElementsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfPassivePfCoilsElementsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfPassivePfCoilsElementsMany: ...
 
 class _PfPassiveLoopsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PfPassiveLoopsItem: ...
+    def __getitem__(self, index: int | str) -> _PfPassiveLoopsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PfPassiveLoopsMany: ...
 
 class _PfPassiveLoopsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PfPassiveLoopsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PfPassiveLoopsMany: ...
 
 # --------------------------------------------------------------------------
 # pf_passive root
@@ -7191,11 +7277,11 @@ class PulseSchedule:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -9304,25 +9390,25 @@ class _PulseScheduleRphiz0dStaticMany:
 
 class _PulseScheduleGasMixtureConstantArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleGasMixtureConstantItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleGasMixtureConstantItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleGasMixtureConstantMany: ...
 
 class _PulseScheduleGasMixtureConstantArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleGasMixtureConstantMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleGasMixtureConstantMany: ...
 
 class _PulseScheduleLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleLibraryMany: ...
 
 class _PulseScheduleLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleLibraryMany: ...
 
 class _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromItem:
     @overload
@@ -9337,47 +9423,47 @@ class _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromMany:
 
 class _PulseScheduleDensityControlIonArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleDensityControlIonItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleDensityControlIonItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleDensityControlIonMany: ...
 
 class _PulseScheduleDensityControlIonArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleDensityControlIonMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleDensityControlIonMany: ...
 
 class _PulseScheduleDensityControlValveArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleDensityControlValveItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleDensityControlValveItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleDensityControlValveMany: ...
 
 class _PulseScheduleDensityControlValveArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleDensityControlValveMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleDensityControlValveMany: ...
 
 class _PulseScheduleEcBeamArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleEcBeamItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleEcBeamItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleEcBeamMany: ...
 
 class _PulseScheduleEcBeamArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleEcBeamMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleEcBeamMany: ...
 
 class _PulseScheduleEcMirrorArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleEcMirrorItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleEcMirrorItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleEcMirrorMany: ...
 
 class _PulseScheduleEcMirrorArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleEcMirrorMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleEcMirrorMany: ...
 
 class _PulseScheduleEcMirrorMovementArrayFromItem:
     @overload
@@ -9403,47 +9489,47 @@ class _PulseScheduleEventArrayFromMany:
 
 class _PulseScheduleGapArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleGapItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleGapItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleGapMany: ...
 
 class _PulseScheduleGapArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleGapMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleGapMany: ...
 
 class _PulseScheduleIcAntennaArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleIcAntennaItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleIcAntennaItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleIcAntennaMany: ...
 
 class _PulseScheduleIcAntennaArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleIcAntennaMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleIcAntennaMany: ...
 
 class _PulseScheduleLhAntennaArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleLhAntennaItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleLhAntennaItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleLhAntennaMany: ...
 
 class _PulseScheduleLhAntennaArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleLhAntennaMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleLhAntennaMany: ...
 
 class _PulseScheduleNbiUnitArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseScheduleNbiUnitItem: ...
+    def __getitem__(self, index: int | str) -> _PulseScheduleNbiUnitItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseScheduleNbiUnitMany: ...
 
 class _PulseScheduleNbiUnitArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleNbiUnitMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseScheduleNbiUnitMany: ...
 
 class _PulseScheduleOutlineArrayFromItem:
     @overload
@@ -9458,25 +9544,25 @@ class _PulseScheduleOutlineArrayFromMany:
 
 class _PulseSchedulePfActiveCoilArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseSchedulePfActiveCoilItem: ...
+    def __getitem__(self, index: int | str) -> _PulseSchedulePfActiveCoilItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseSchedulePfActiveCoilMany: ...
 
 class _PulseSchedulePfActiveCoilArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseSchedulePfActiveCoilMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseSchedulePfActiveCoilMany: ...
 
 class _PulseSchedulePfActiveSupplyArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _PulseSchedulePfActiveSupplyItem: ...
+    def __getitem__(self, index: int | str) -> _PulseSchedulePfActiveSupplyItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _PulseSchedulePfActiveSupplyMany: ...
 
 class _PulseSchedulePfActiveSupplyArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _PulseSchedulePfActiveSupplyMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _PulseSchedulePfActiveSupplyMany: ...
 
 class _PulseScheduleRzArrayFromItem:
     @overload
@@ -9537,11 +9623,11 @@ class Tf:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -10480,14 +10566,14 @@ class _TfGgdMany:
 
 class _TfCoilArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _TfCoilItem: ...
+    def __getitem__(self, index: int | str) -> _TfCoilItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _TfCoilMany: ...
 
 class _TfCoilArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _TfCoilMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _TfCoilMany: ...
 
 class _TfCoilConductorArrayFromItem:
     @overload
@@ -10612,25 +10698,25 @@ class _TfGenericGridScalarArrayFromMany:
 
 class _TfIdentifierDynamicAos3ArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _TfIdentifierDynamicAos3Item: ...
+    def __getitem__(self, index: int | str) -> _TfIdentifierDynamicAos3Item: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _TfIdentifierDynamicAos3Many: ...
 
 class _TfIdentifierDynamicAos3ArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _TfIdentifierDynamicAos3Many: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _TfIdentifierDynamicAos3Many: ...
 
 class _TfLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _TfLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _TfLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _TfLibraryMany: ...
 
 class _TfLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _TfLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _TfLibraryMany: ...
 
 class _TfGgdArrayFromItem:
     @overload
@@ -10697,11 +10783,11 @@ class Wall:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -13928,36 +14014,36 @@ class _WallGenericGridVectorComponentsRphizArrayFromMany:
 
 class _WallIdentifierDynamicAos3ArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallIdentifierDynamicAos3Item: ...
+    def __getitem__(self, index: int | str) -> _WallIdentifierDynamicAos3Item: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallIdentifierDynamicAos3Many: ...
 
 class _WallIdentifierDynamicAos3ArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallIdentifierDynamicAos3Many: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallIdentifierDynamicAos3Many: ...
 
 class _WallIdentifierStaticArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallIdentifierStaticItem: ...
+    def __getitem__(self, index: int | str) -> _WallIdentifierStaticItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallIdentifierStaticMany: ...
 
 class _WallIdentifierStaticArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallIdentifierStaticMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallIdentifierStaticMany: ...
 
 class _WallLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _WallLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallLibraryMany: ...
 
 class _WallLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallLibraryMany: ...
 
 class _WallPlasmaCompositionNeutralElementArrayFromItem:
     @overload
@@ -13994,25 +14080,25 @@ class _WallRz1dDynamicAosTimeArrayFromMany:
 
 class _WallVessel2dElementArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallVessel2dElementItem: ...
+    def __getitem__(self, index: int | str) -> _WallVessel2dElementItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallVessel2dElementMany: ...
 
 class _WallVessel2dElementArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallVessel2dElementMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallVessel2dElementMany: ...
 
 class _WallVessel2dUnitArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallVessel2dUnitItem: ...
+    def __getitem__(self, index: int | str) -> _WallVessel2dUnitItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallVessel2dUnitMany: ...
 
 class _WallVessel2dUnitArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallVessel2dUnitMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallVessel2dUnitMany: ...
 
 class _Wall2dArrayFromItem:
     @overload
@@ -14027,25 +14113,25 @@ class _Wall2dArrayFromMany:
 
 class _Wall2dLimiterUnitArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _Wall2dLimiterUnitItem: ...
+    def __getitem__(self, index: int | str) -> _Wall2dLimiterUnitItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _Wall2dLimiterUnitMany: ...
 
 class _Wall2dLimiterUnitArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _Wall2dLimiterUnitMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _Wall2dLimiterUnitMany: ...
 
 class _Wall2dMobileUnitArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _Wall2dMobileUnitItem: ...
+    def __getitem__(self, index: int | str) -> _Wall2dMobileUnitItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _Wall2dMobileUnitMany: ...
 
 class _Wall2dMobileUnitArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _Wall2dMobileUnitMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _Wall2dMobileUnitMany: ...
 
 class _WallDescriptionGgdArrayFromItem:
     @overload
@@ -14082,47 +14168,47 @@ class _WallDescriptionGgdComponentArrayFromMany:
 
 class _WallDescriptionGgdEnergyIonArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyIonItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdEnergyIonItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyIonMany: ...
 
 class _WallDescriptionGgdEnergyIonArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyIonMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdEnergyIonMany: ...
 
 class _WallDescriptionGgdEnergyIonStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyIonStateItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdEnergyIonStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyIonStateMany: ...
 
 class _WallDescriptionGgdEnergyIonStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyIonStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdEnergyIonStateMany: ...
 
 class _WallDescriptionGgdEnergyNeutralArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyNeutralItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdEnergyNeutralItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyNeutralMany: ...
 
 class _WallDescriptionGgdEnergyNeutralArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyNeutralMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdEnergyNeutralMany: ...
 
 class _WallDescriptionGgdEnergyNeutralStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyNeutralStateItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdEnergyNeutralStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyNeutralStateMany: ...
 
 class _WallDescriptionGgdEnergyNeutralStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyNeutralStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdEnergyNeutralStateMany: ...
 
 class _WallDescriptionGgdGgdArrayFromItem:
     @overload
@@ -14148,91 +14234,91 @@ class _WallDescriptionGgdMaterialArrayFromMany:
 
 class _WallDescriptionGgdParticleIonArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleIonItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdParticleIonItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleIonMany: ...
 
 class _WallDescriptionGgdParticleIonArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleIonMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdParticleIonMany: ...
 
 class _WallDescriptionGgdParticleIonStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleIonStateItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdParticleIonStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleIonStateMany: ...
 
 class _WallDescriptionGgdParticleIonStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleIonStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdParticleIonStateMany: ...
 
 class _WallDescriptionGgdParticleNeutralArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleNeutralItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdParticleNeutralItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleNeutralMany: ...
 
 class _WallDescriptionGgdParticleNeutralArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleNeutralMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdParticleNeutralMany: ...
 
 class _WallDescriptionGgdParticleNeutralStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleNeutralStateItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdParticleNeutralStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleNeutralStateMany: ...
 
 class _WallDescriptionGgdParticleNeutralStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleNeutralStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdParticleNeutralStateMany: ...
 
 class _WallDescriptionGgdRecyclingIonArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingIonItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdRecyclingIonItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingIonMany: ...
 
 class _WallDescriptionGgdRecyclingIonArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingIonMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdRecyclingIonMany: ...
 
 class _WallDescriptionGgdRecyclingIonStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingIonStateItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdRecyclingIonStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingIonStateMany: ...
 
 class _WallDescriptionGgdRecyclingIonStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingIonStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdRecyclingIonStateMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingNeutralItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdRecyclingNeutralItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingNeutralStateItem: ...
+    def __getitem__(self, index: int | str) -> _WallDescriptionGgdRecyclingNeutralStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralStateMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralStateMany: ...
 
 class _WallDescriptionGgdThicknessArrayFromItem:
     @overload
@@ -14247,25 +14333,25 @@ class _WallDescriptionGgdThicknessArrayFromMany:
 
 class _WallGlobalQuantititesNeutralArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallGlobalQuantititesNeutralItem: ...
+    def __getitem__(self, index: int | str) -> _WallGlobalQuantititesNeutralItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallGlobalQuantititesNeutralMany: ...
 
 class _WallGlobalQuantititesNeutralArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallGlobalQuantititesNeutralMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallGlobalQuantititesNeutralMany: ...
 
 class _WallGlobalQuantititesNeutralOriginArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _WallGlobalQuantititesNeutralOriginItem: ...
+    def __getitem__(self, index: int | str) -> _WallGlobalQuantititesNeutralOriginItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _WallGlobalQuantititesNeutralOriginMany: ...
 
 class _WallGlobalQuantititesNeutralOriginArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _WallGlobalQuantititesNeutralOriginMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _WallGlobalQuantititesNeutralOriginMany: ...
 
 # --------------------------------------------------------------------------
 # wall root
@@ -14321,11 +14407,11 @@ class Magnetics:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -15276,58 +15362,58 @@ class _MagneticsSignalFlt1dValidityMany:
 
 class _MagneticsLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsLibraryMany: ...
 
 class _MagneticsLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsLibraryMany: ...
 
 class _MagneticsBpolProbeArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsBpolProbeItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsBpolProbeItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsBpolProbeMany: ...
 
 class _MagneticsBpolProbeArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsBpolProbeMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsBpolProbeMany: ...
 
 class _MagneticsFluxLoopArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsFluxLoopItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsFluxLoopItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsFluxLoopMany: ...
 
 class _MagneticsFluxLoopArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsFluxLoopMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsFluxLoopMany: ...
 
 class _MagneticsIsofluxArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsIsofluxItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsIsofluxItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsIsofluxMany: ...
 
 class _MagneticsIsofluxArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsIsofluxMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsIsofluxMany: ...
 
 class _MagneticsIsofluxBoundaryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsIsofluxBoundaryItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsIsofluxBoundaryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsIsofluxBoundaryMany: ...
 
 class _MagneticsIsofluxBoundaryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsIsofluxBoundaryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsIsofluxBoundaryMany: ...
 
 class _MagneticsMethodDistinctArrayFromItem:
     @overload
@@ -15342,36 +15428,36 @@ class _MagneticsMethodDistinctArrayFromMany:
 
 class _MagneticsRogowskiArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsRogowskiItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsRogowskiItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsRogowskiMany: ...
 
 class _MagneticsRogowskiArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsRogowskiMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsRogowskiMany: ...
 
 class _MagneticsShuntArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsShuntItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsShuntItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsShuntMany: ...
 
 class _MagneticsShuntArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsShuntMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsShuntMany: ...
 
 class _MagneticsStationaryPointArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _MagneticsStationaryPointItem: ...
+    def __getitem__(self, index: int | str) -> _MagneticsStationaryPointItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _MagneticsStationaryPointMany: ...
 
 class _MagneticsStationaryPointArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsStationaryPointMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _MagneticsStationaryPointMany: ...
 
 class _MagneticsRphiz0dStaticArrayFromItem:
     @overload
@@ -15453,11 +15539,11 @@ class CoreProfiles:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -18474,47 +18560,47 @@ class _CoreProfilesStatisticsQuantity2dTypeMany:
 
 class _CoreProfilesCoreProfile2dIonsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreProfilesCoreProfile2dIonsItem: ...
+    def __getitem__(self, index: int | str) -> _CoreProfilesCoreProfile2dIonsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreProfilesCoreProfile2dIonsMany: ...
 
 class _CoreProfilesCoreProfile2dIonsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreProfilesCoreProfile2dIonsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreProfilesCoreProfile2dIonsMany: ...
 
 class _CoreProfilesCoreProfileIonsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreProfilesCoreProfileIonsItem: ...
+    def __getitem__(self, index: int | str) -> _CoreProfilesCoreProfileIonsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreProfilesCoreProfileIonsMany: ...
 
 class _CoreProfilesCoreProfileIonsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreProfilesCoreProfileIonsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreProfilesCoreProfileIonsMany: ...
 
 class _CoreProfilesCoreProfileNeutralArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreProfilesCoreProfileNeutralItem: ...
+    def __getitem__(self, index: int | str) -> _CoreProfilesCoreProfileNeutralItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreProfilesCoreProfileNeutralMany: ...
 
 class _CoreProfilesCoreProfileNeutralArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreProfilesCoreProfileNeutralMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreProfilesCoreProfileNeutralMany: ...
 
 class _CoreProfiles2dIonsStatesArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreProfiles2dIonsStatesItem: ...
+    def __getitem__(self, index: int | str) -> _CoreProfiles2dIonsStatesItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreProfiles2dIonsStatesMany: ...
 
 class _CoreProfiles2dIonsStatesArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreProfiles2dIonsStatesMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreProfiles2dIonsStatesMany: ...
 
 class _CoreProfilesGlobalQuantitiesIonArrayFromItem:
     @overload
@@ -18529,25 +18615,25 @@ class _CoreProfilesGlobalQuantitiesIonArrayFromMany:
 
 class _CoreProfilesIonsChargeStates2ArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreProfilesIonsChargeStates2Item: ...
+    def __getitem__(self, index: int | str) -> _CoreProfilesIonsChargeStates2Item: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreProfilesIonsChargeStates2Many: ...
 
 class _CoreProfilesIonsChargeStates2ArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreProfilesIonsChargeStates2Many: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreProfilesIonsChargeStates2Many: ...
 
 class _CoreProfilesNeutralStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreProfilesNeutralStateItem: ...
+    def __getitem__(self, index: int | str) -> _CoreProfilesNeutralStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreProfilesNeutralStateMany: ...
 
 class _CoreProfilesNeutralStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreProfilesNeutralStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreProfilesNeutralStateMany: ...
 
 class _CoreProfilesProfiles1dArrayFromItem:
     @overload
@@ -18573,14 +18659,14 @@ class _CoreProfilesProfiles2dArrayFromMany:
 
 class _CoreProfilesLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreProfilesLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _CoreProfilesLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreProfilesLibraryMany: ...
 
 class _CoreProfilesLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreProfilesLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreProfilesLibraryMany: ...
 
 class _CoreProfilesPlasmaCompositionNeutralElementArrayFromItem:
     @overload
@@ -18673,11 +18759,11 @@ class CoreSources:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this IDS.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -20443,58 +20529,58 @@ class _CoreSourcesSourceProfiles1dArrayFromMany:
 
 class _CoreSourcesSourceProfiles1dIonsArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreSourcesSourceProfiles1dIonsItem: ...
+    def __getitem__(self, index: int | str) -> _CoreSourcesSourceProfiles1dIonsItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreSourcesSourceProfiles1dIonsMany: ...
 
 class _CoreSourcesSourceProfiles1dIonsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreSourcesSourceProfiles1dIonsMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreSourcesSourceProfiles1dIonsMany: ...
 
 class _CoreSourcesSourceProfiles1dIonsChargeStatesArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreSourcesSourceProfiles1dIonsChargeStatesItem: ...
+    def __getitem__(self, index: int | str) -> _CoreSourcesSourceProfiles1dIonsChargeStatesItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreSourcesSourceProfiles1dIonsChargeStatesMany: ...
 
 class _CoreSourcesSourceProfiles1dIonsChargeStatesArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreSourcesSourceProfiles1dIonsChargeStatesMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreSourcesSourceProfiles1dIonsChargeStatesMany: ...
 
 class _CoreSourcesSourceProfiles1dNeutralArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreSourcesSourceProfiles1dNeutralItem: ...
+    def __getitem__(self, index: int | str) -> _CoreSourcesSourceProfiles1dNeutralItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreSourcesSourceProfiles1dNeutralMany: ...
 
 class _CoreSourcesSourceProfiles1dNeutralArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreSourcesSourceProfiles1dNeutralMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreSourcesSourceProfiles1dNeutralMany: ...
 
 class _CoreSourcesSourceProfiles1dNeutralStateArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreSourcesSourceProfiles1dNeutralStateItem: ...
+    def __getitem__(self, index: int | str) -> _CoreSourcesSourceProfiles1dNeutralStateItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreSourcesSourceProfiles1dNeutralStateMany: ...
 
 class _CoreSourcesSourceProfiles1dNeutralStateArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreSourcesSourceProfiles1dNeutralStateMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreSourcesSourceProfiles1dNeutralStateMany: ...
 
 class _CoreSourcesLibraryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _CoreSourcesLibraryItem: ...
+    def __getitem__(self, index: int | str) -> _CoreSourcesLibraryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _CoreSourcesLibraryMany: ...
 
 class _CoreSourcesLibraryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _CoreSourcesLibraryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _CoreSourcesLibraryMany: ...
 
 class _CoreSourcesPlasmaCompositionNeutralElementArrayFromItem:
     @overload
@@ -20542,7 +20628,7 @@ class GreensTables:
     These are geometry only - they depend on where the observers and the conductors are, never on the plasma - so they are calculated once, before the first time-slice is solved.
     The grid's and the magnetic sensors' are shared by every time-slice, so they are kept once, rather than on every time-slice.
     The constraints at points which can move, `isoflux`, `isoflux_boundary` and `stationary_point`, have a table for each time-slice instead, as their points can be elsewhere at each, in the order of `equilibrium/time_slice`.
-    They are GSFit's own, and the data dictionary has no nodes for them, so they are not in the equilibrium IDS: `gsfit_rs::Equilibrium` holds them, in `greens_tables`.
+    They are GSFit's own, and the data dictionary has no nodes for them, so they are not in the Equilibrium IDS: `gsfit_rs::Equilibrium` holds them, in `greens_tables`.
 
     They are arranged observer first, then source: `greens_tables/<observer>/<source>`.
     This is the order of the data dictionary's `em_coupling` IDS, "Quantity_Sensor_Source".
@@ -20558,11 +20644,11 @@ class GreensTables:
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path` out of this structure.
 
-        The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. The dimensions are gained from left to right:
-        one per sliced level, in the order they appear on the path, then the leaf's own
-        dimensions. A sliced level which selects a different number of elements under
-        different elements above it would be jagged, and raises `IndexError`.
+        The shape of the result follows the shape of the index: an integer index, or the
+        `name` of one element, gives one value, a slice gathers. The dimensions are gained
+        from left to right: one per sliced level, in the order they appear on the path,
+        then the leaf's own dimensions. A sliced level which selects a different number of
+        elements under different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -21527,102 +21613,102 @@ class _GreensTablesGreensStationaryPointDPsiMany:
 
 class _GreensTablesGreensBFieldPolProbeArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensBFieldPolProbeItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensBFieldPolProbeItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensBFieldPolProbeMany: ...
 
 class _GreensTablesGreensBFieldPolProbeArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensBFieldPolProbeMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensBFieldPolProbeMany: ...
 
 class _GreensTablesGreensFluxLoopArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensFluxLoopItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensFluxLoopItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensFluxLoopMany: ...
 
 class _GreensTablesGreensFluxLoopArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensFluxLoopMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensFluxLoopMany: ...
 
 class _GreensTablesGreensGridPfActiveArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensGridPfActiveItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensGridPfActiveItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensGridPfActiveMany: ...
 
 class _GreensTablesGreensGridPfActiveArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensGridPfActiveMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensGridPfActiveMany: ...
 
 class _GreensTablesGreensGridPfPassiveArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensGridPfPassiveItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensGridPfPassiveItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensGridPfPassiveMany: ...
 
 class _GreensTablesGreensGridPfPassiveArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensGridPfPassiveMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensGridPfPassiveMany: ...
 
 class _GreensTablesGreensGridPfPassiveDofArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensGridPfPassiveDofItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensGridPfPassiveDofItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensGridPfPassiveDofMany: ...
 
 class _GreensTablesGreensGridPfPassiveDofArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensGridPfPassiveDofMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensGridPfPassiveDofMany: ...
 
 class _GreensTablesGreensIsofluxArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensIsofluxItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensIsofluxItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensIsofluxMany: ...
 
 class _GreensTablesGreensIsofluxArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensIsofluxMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensIsofluxMany: ...
 
 class _GreensTablesGreensIsofluxBoundaryArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensIsofluxBoundaryItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensIsofluxBoundaryItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensIsofluxBoundaryMany: ...
 
 class _GreensTablesGreensIsofluxBoundaryArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensIsofluxBoundaryMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensIsofluxBoundaryMany: ...
 
 class _GreensTablesGreensRogowskiCoilArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensRogowskiCoilItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensRogowskiCoilItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensRogowskiCoilMany: ...
 
 class _GreensTablesGreensRogowskiCoilArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensRogowskiCoilMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensRogowskiCoilMany: ...
 
 class _GreensTablesGreensStationaryPointArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _GreensTablesGreensStationaryPointItem: ...
+    def __getitem__(self, index: int | str) -> _GreensTablesGreensStationaryPointItem: ...
     @overload
     def __getitem__(self, index: slice | list[int]) -> _GreensTablesGreensStationaryPointMany: ...
 
 class _GreensTablesGreensStationaryPointArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _GreensTablesGreensStationaryPointMany: ...
+    def __getitem__(self, index: int | str | slice | list[int]) -> _GreensTablesGreensStationaryPointMany: ...
 
 # --------------------------------------------------------------------------
 # greens_tables root
@@ -21634,7 +21720,7 @@ class _GreensTablesPaths:
     These are geometry only - they depend on where the observers and the conductors are, never on the plasma - so they are calculated once, before the first time-slice is solved.
     The grid's and the magnetic sensors' are shared by every time-slice, so they are kept once, rather than on every time-slice.
     The constraints at points which can move, `isoflux`, `isoflux_boundary` and `stationary_point`, have a table for each time-slice instead, as their points can be elsewhere at each, in the order of `equilibrium/time_slice`.
-    They are GSFit's own, and the data dictionary has no nodes for them, so they are not in the equilibrium IDS: `gsfit_rs::Equilibrium` holds them, in `greens_tables`.
+    They are GSFit's own, and the data dictionary has no nodes for them, so they are not in the Equilibrium IDS: `gsfit_rs::Equilibrium` holds them, in `greens_tables`.
 
     They are arranged observer first, then source: `greens_tables/<observer>/<source>`.
     This is the order of the data dictionary's `em_coupling` IDS, "Quantity_Sensor_Source".

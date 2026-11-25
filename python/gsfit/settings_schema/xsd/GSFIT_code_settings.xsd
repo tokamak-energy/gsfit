@@ -38,8 +38,8 @@
       than `constraints.b_field_pol_probe.b_field_pol_probe`. The files, and code/parameters, keep the
       linked file's root element, `constraints__b_field_pol_probe`.
     * The constraints are named as in the IMAS Data Dictionary, e.g. `b_field_pol_probe` and
-      `diamagnetic_flux` as in the equilibrium IDS's time_slice[:]/constraints, and `rogowski_coil` as in
-      the magnetics IDS. `isoflux`, `isoflux_boundary` and `stationary_point` are not in the Data Dictionary,
+      `diamagnetic_flux` as in the Equilibrium IDS's time_slice[:]/constraints, and `rogowski_coil` as in
+      the Magnetics IDS. `isoflux`, `isoflux_boundary` and `stationary_point` are not in the Data Dictionary,
       so keep GSFit's names.
     * Each schema stands alone, with no `xs:include` or `xs:import`, because the XML Form Editor does not
       follow them. Types used by several schemas are repeated in each, and must be the same in each: when
@@ -199,7 +199,7 @@
     <xs:element name="gsfit_code_settings">
         <xs:annotation>
             <xs:documentation>
-                GSFit's settings. This file holds no settings itself; instead it links to different *.xml's.
+                GSFit's settings. This is the root file: every other settings file is linked from here.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -218,7 +218,7 @@
                 <xs:element name="database_writer" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            List of Python `database_writer`'s to call after the run completes.
+                            List of Python `database_writer`'s to call after the run completes. Results can be written to multiple databases, or to none.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>database_writer.xsd</schema>

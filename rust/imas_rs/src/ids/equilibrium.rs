@@ -527,6 +527,15 @@ pub struct EquilibriumConstraints0dPosition {
     /// The fit weights the measurement by `weight / expected_value`
     /// Units: as_parent
     pub expected_value: FLT_0D,
+    /// For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of
+    /// the equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the
+    /// source functions: the fit takes `<J . B> = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values
+    /// Units: T.m
+    pub f: FLT_0D,
+    /// For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `<B ** 2>`, on the flux
+    /// surface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`
+    /// Units: T^2
+    pub gm5: FLT_0D,
 }
 
 impl Default for EquilibriumConstraints0dPosition {
@@ -543,6 +552,8 @@ impl Default for EquilibriumConstraints0dPosition {
             chi_squared: f64::NAN,
             name: String::new(),
             expected_value: f64::NAN,
+            f: f64::NAN,
+            gm5: f64::NAN,
         }
     }
 }
@@ -997,6 +1008,10 @@ pub struct EquilibriumProfiles1d {
     /// Mass density
     /// Units: kg.m^-3
     pub mass_density: FLT_1D,
+    /// Radial derivative of the volume enclosed in the flux surface with respect to the normalised poloidal flux, `psi_norm`.
+    /// This is the data dictionary's `dvolume_dpsi` multiplied by `psi_boundary - psi_axis`, so unlike it, it does not depend on the poloidal flux sign convention
+    /// Units: m^3
+    pub dvolume_dpsi_norm: FLT_1D,
     /// Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
     ///
     /// The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which moves between time-slices.
@@ -1267,6 +1282,10 @@ pub struct Rphizpsirho0dDynamicAos3 {
     /// Poloidal magnetic flux. For a positive plasma current (counter-clockwise when viewed from above), increases from the magnetic axis to the boundary
     /// Units: Wb
     pub psi: FLT_0D,
+    /// Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic
+    /// axis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux
+    /// function: the fit applies it on the surface with this `psi_norm` of each iteration's flux
+    pub psi_norm: FLT_0D,
 }
 
 impl Default for Rphizpsirho0dDynamicAos3 {
@@ -1277,6 +1296,7 @@ impl Default for Rphizpsirho0dDynamicAos3 {
             z: f64::NAN,
             rho_tor_norm: f64::NAN,
             psi: f64::NAN,
+            psi_norm: f64::NAN,
         }
     }
 }
@@ -1600,6 +1620,12 @@ pub struct EquilibriumProfiles1dRMidplane {
     /// Zero outside the plasma boundary
     /// Units: Pa
     pub pressure: FLT_1D,
+    /// Poloidal flux along the mid-plane: the solved grid's own values along its middle row, `profiles_2d/psi`, inside and outside the plasma boundary
+    /// Units: Wb
+    pub psi: FLT_1D,
+    /// Normalised poloidal flux along the mid-plane, `(psi - psi_axis) / (psi_boundary - psi_axis)`, which is 1 on the plasma boundary.
+    /// Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma: it carries on past 1 outside the plasma boundary
+    pub psi_norm: FLT_1D,
     /// Safety factor along the mid-plane.
     /// NaN outside the plasma boundary, where there is no closed flux surface to define it
     pub q: FLT_1D,
@@ -1911,7 +1937,7 @@ pub struct EquilibriumSourceFunction {
 /// The limiter: the immobile surfaces which bound the plasma.
 ///
 /// A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, with the same layout, so that `unit(i)` here is `unit(i)` there.
-/// The data dictionary has no place for the limiter in the equilibrium IDS, but an equilibrium cannot be found without one.
+/// The data dictionary has no place for the limiter in the Equilibrium IDS, but an equilibrium cannot be found without one.
 ///
 /// It is geometry, so it is the same for every time-slice.
 /// That is why it hangs off the IDS root rather than off `time_slice`.
@@ -1962,7 +1988,7 @@ pub struct Equilibrium {
     pub time_slice: Vec<EquilibriumTimeSlice>,
     pub code: Code,
     /// The limiter: the immobile surfaces which bound the plasma.
-    /// A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the equilibrium IDS rather than from the `wall` IDS
+    /// A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the Equilibrium IDS rather than from the `wall` IDS
     pub limiter: EquilibriumLimiter,
 }
 
@@ -2593,6 +2619,7 @@ pub struct EquilibriumConstraints0dPositionPositionView<'a, D> {
     pub z: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
     pub rho_tor_norm: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
     pub psi: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub psi_norm: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraints0dPosition, D>,
 }
 
@@ -2604,6 +2631,7 @@ impl<'a, D: Dimension> EquilibriumConstraints0dPositionPositionView<'a, D> {
             z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.z),
             rho_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.rho_tor_norm),
             psi: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.psi),
+            psi_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.psi_norm),
             slice_elements: elements,
         }
     }
@@ -2622,6 +2650,8 @@ pub struct EquilibriumConstraints0dPositionSliceView<'a, D> {
     pub chi_squared: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
     pub name: Accumulator<'a, EquilibriumConstraints0dPosition, STR_0D, D>,
     pub expected_value: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub f: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub gm5: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraints0dPosition, D>,
 }
 
@@ -2639,6 +2669,8 @@ impl<'a, D: Dimension> EquilibriumConstraints0dPositionSliceView<'a, D> {
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.chi_squared),
             name: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.name.clone()),
             expected_value: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.expected_value),
+            f: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.f),
+            gm5: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.gm5),
             slice_elements: elements,
         }
     }
@@ -2866,6 +2898,7 @@ pub struct EquilibriumConstraintsIsofluxPosition1View<'a, D> {
     pub z: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
     pub rho_tor_norm: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
     pub psi: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
+    pub psi_norm: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraintsIsoflux, D>,
 }
 
@@ -2877,6 +2910,7 @@ impl<'a, D: Dimension> EquilibriumConstraintsIsofluxPosition1View<'a, D> {
             z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_1.z),
             rho_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_1.rho_tor_norm),
             psi: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_1.psi),
+            psi_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_1.psi_norm),
             slice_elements: elements,
         }
     }
@@ -2889,6 +2923,7 @@ pub struct EquilibriumConstraintsIsofluxPosition2View<'a, D> {
     pub z: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
     pub rho_tor_norm: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
     pub psi: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
+    pub psi_norm: Accumulator<'a, EquilibriumConstraintsIsoflux, FLT_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraintsIsoflux, D>,
 }
 
@@ -2900,6 +2935,7 @@ impl<'a, D: Dimension> EquilibriumConstraintsIsofluxPosition2View<'a, D> {
             z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_2.z),
             rho_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_2.rho_tor_norm),
             psi: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_2.psi),
+            psi_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsoflux| item.position_2.psi_norm),
             slice_elements: elements,
         }
     }
@@ -2986,6 +3022,7 @@ pub struct EquilibriumConstraintsIsofluxBoundaryPositionView<'a, D> {
     pub z: Accumulator<'a, EquilibriumConstraintsIsofluxBoundary, FLT_0D, D>,
     pub rho_tor_norm: Accumulator<'a, EquilibriumConstraintsIsofluxBoundary, FLT_0D, D>,
     pub psi: Accumulator<'a, EquilibriumConstraintsIsofluxBoundary, FLT_0D, D>,
+    pub psi_norm: Accumulator<'a, EquilibriumConstraintsIsofluxBoundary, FLT_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraintsIsofluxBoundary, D>,
 }
 
@@ -2997,6 +3034,7 @@ impl<'a, D: Dimension> EquilibriumConstraintsIsofluxBoundaryPositionView<'a, D> 
             z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsofluxBoundary| item.position.z),
             rho_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsofluxBoundary| item.position.rho_tor_norm),
             psi: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsofluxBoundary| item.position.psi),
+            psi_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsIsofluxBoundary| item.position.psi_norm),
             slice_elements: elements,
         }
     }
@@ -3081,6 +3119,7 @@ pub struct EquilibriumConstraintsStationaryPointPositionView<'a, D> {
     pub z: Accumulator<'a, EquilibriumConstraintsStationaryPoint, FLT_0D, D>,
     pub rho_tor_norm: Accumulator<'a, EquilibriumConstraintsStationaryPoint, FLT_0D, D>,
     pub psi: Accumulator<'a, EquilibriumConstraintsStationaryPoint, FLT_0D, D>,
+    pub psi_norm: Accumulator<'a, EquilibriumConstraintsStationaryPoint, FLT_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraintsStationaryPoint, D>,
 }
 
@@ -3092,6 +3131,7 @@ impl<'a, D: Dimension> EquilibriumConstraintsStationaryPointPositionView<'a, D> 
             z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsStationaryPoint| item.position.z),
             rho_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsStationaryPoint| item.position.rho_tor_norm),
             psi: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsStationaryPoint| item.position.psi),
+            psi_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsStationaryPoint| item.position.psi_norm),
             slice_elements: elements,
         }
     }

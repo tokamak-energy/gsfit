@@ -2,7 +2,7 @@
 <!--
     Schema for constraints_rogowski_coil.xml: how each Rogowski coil is fitted.
 
-    Named as in the IMAS Data Dictionary: magnetics rogowski_coil[:]. The Data Dictionary's equilibrium IDS
+    Named as in the IMAS Data Dictionary: magnetics rogowski_coil[:]. The Data Dictionary's Equilibrium IDS
     has no Rogowski coil constraint, so GSFit adds its own, time_slice[:]/constraints/rogowski_coil[:];
     GSFit's IMAS writer puts them in time_slice[:]/constraints/pf_passive_current[:].
     The root element is `constraints__rogowski_coil`, the path of this file's link in

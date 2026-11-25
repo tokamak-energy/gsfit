@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class DatabaseWriterTokamakEnergyMDSplus(DatabaseWriterProtocol):
+    writes_to_mdsplus: bool = True
+
     def map_results_to_database(self, gsfit_controller: "Gsfit") -> None:
         return map_results_to_database(self, gsfit_controller)
 

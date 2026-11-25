@@ -17,7 +17,7 @@ from dataclasses import dataclass
 @dataclass(kw_only=True)
 class Grid:
     """
-    The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
+    The (R, Z) grid the equilibrium is solved on, and the psi_norm grid for the 1D profiles.
 
     :param n_r: Number of radial grid points.
     :param n_z: Number of vertical grid points.
@@ -25,7 +25,7 @@ class Grid:
     :param r_max: Upper radial bound of the grid. [metre]
     :param z_min: Lower vertical bound of the grid. [metre]
     :param z_max: Upper vertical bound of the grid. [metre]
-    :param n_psi_norm: Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
+    :param n_psi_norm: Number of points in the normalised poloidal flux, `psi_norm` from 0.0 to 1.0.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

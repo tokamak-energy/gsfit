@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for numerics.xml: how the analytic solution is computed.
+
+    References are to L. Guazzotto and J. P. Freidberg, J. Plasma Phys. 87 (2021) 905870303.
+    See ../GUAZZOTTO_FREIDBERG_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="numerics">
+        <xs:annotation>
+            <xs:documentation>
+                How the analytic solution is computed.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="n_radial_expansion" type="xs:positiveInteger">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Number of terms in the radial series C_n(x) and S_n(x), Guazzotto and Freidberg's M. A spherical tokamak needs many, e.g. 150.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

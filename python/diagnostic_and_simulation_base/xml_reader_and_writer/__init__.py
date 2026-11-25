@@ -1,4 +1,5 @@
 from .generate_python_dataclasses import generate_python_dataclasses
+from .generate_rust_structs import SharedModule
 from .generate_rust_structs import generate_rust_structs
 from .keyed_list import KeyedList
 from .read_to_python_dataclasses import matrix_row_element
@@ -8,6 +9,7 @@ from .serialise_python_dataclasses_to_imas_parameters_input import serialise_pyt
 # Define interfaces
 __all__ = [
     "KeyedList",
+    "SharedModule",
     "generate_python_dataclasses",
     "generate_rust_structs",
     "matrix_row_element",

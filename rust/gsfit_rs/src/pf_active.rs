@@ -1,4 +1,3 @@
-use crate::greens::Greens;
 use crate::settings::settings_pf_active::SettingsPfActive;
 use imas_rs::ids::pf_active::{Code, Outline2dGeometryStatic, PfActive as PfActiveIds, PfCoils, PfCoilsElements, RectangleStatic, SignalFlt1d};
 use imas_rs::python::{PickleState, PickleStateError, PyParametersInput, PyPath, PyPfActive, read_path};
@@ -19,7 +18,6 @@ use xmlschema::{Report, Schema, SchemaError};
 /// * `element(i2)/geometry/rectangle/r`, `z`, `width` and `height` - one element per filament,
 ///   with `element(i2)/geometry/geometry_type` = 2, a rectangle
 /// * `element(i2)/turns_with_sign` = 1 - every filament is one turn
-/// * `inductance` - the self-inductance, calculated from the filaments
 /// * `current` - the current per turn, on the experimental timebase
 /// * `voltage` - only when the coil's voltage is prescribed
 ///
@@ -42,7 +40,7 @@ use xmlschema::{Report, Schema, SchemaError};
 ///   then calculates its current
 ///
 /// `Equilibrium.copy_from_pf_active_ids` copies each coil's current onto every time-slice of the
-/// equilibrium IDS, as `constraints/pf_current(i1)`, interpolated onto the reconstruction times.
+/// Equilibrium IDS, as `constraints/pf_current(i1)`, interpolated onto the reconstruction times.
 ///
 /// Read the data back through `pf_active_ids` and a path from `gsfit_rs.imas.pf_active_paths`;
 /// there are no bespoke accessors.
@@ -136,8 +134,8 @@ impl PfActive {
     /// * `time` - the experimental timebase (1d array), [second]
     /// * `current` - the current per turn (1d array), [ampere]
     ///
-    /// Each filament becomes one `element(i2)`: a rectangle of one turn. The coil's self-inductance,
-    /// `coil(i1)/inductance`, is calculated from them.
+    /// Each filament becomes one `element(i2)`: a rectangle of one turn. `coil(i1)/inductance` is not filled: the circuit equations
+    /// calculate the inductances between the coils themselves, with the equilibrium's `numerics/greens/conductor_model`.
     ///
     /// Store the **experimental** current here, not one interpolated onto the reconstruction
     /// times: `Equilibrium.copy_from_pf_active_ids` interpolates it itself. It is signed; see the
@@ -380,7 +378,7 @@ impl PfActive {
         // One element per filament: a rectangle of one turn
         let mut elements: Vec<PfCoilsElements> = Vec::with_capacity(n_element);
         for i_element in 0..n_element {
-            // The Greens functions for the self-inductance need every filament at a positive radius, and of a positive size
+            // The Greens functions need every filament at a positive radius, and of a positive size
             let is_usable_filament: bool =
                 element_r[i_element] > 0.0 && element_z[i_element].is_finite() && element_width[i_element] > 0.0 && element_height[i_element] > 0.0;
             if !is_usable_filament {
@@ -406,19 +404,9 @@ impl PfActive {
             });
         }
 
-        // Self-inductance, [henry]: the flux linking the coil per ampere, summed over every pair of filaments, each one turn.
-        // `solve_circuit_equations` uses the same method for the mutual inductances between the coils.
-        // TODO: this should be re-visited. It is fast, but uses the flux at the centre of each filament, which overestimates a
-        // self-inductance (by ~5% for a typical filament; see `Greens::psi`). `mutual_inductance_finite_size_to_finite_size` averages
-        // the flux over each filament's cross-section, but splits every filament into 100 sub-filaments, so is far slower.
-        let inductance: f64 = Greens::sensor_to_conductor(element_r.clone(), element_z.clone(), element_r, element_z, element_width, element_height)
-            .psi()
-            .sum();
-
         self.pf_active_ids.coil.push(PfCoils {
             name: name.to_string(),
             element: elements,
-            inductance,
             current: SignalFlt1d {
                 data: current_data,
                 time: current_time,
@@ -433,7 +421,7 @@ impl PfActive {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::settings_pf_active::SettingsPfActiveWorkflow;
+    use crate::settings::settings_workflow::SettingsWorkflow;
     use imas_rs::dd_support::parameters_input::ParametersInput;
 
     /// The XML schema the settings' structs are generated from
@@ -483,7 +471,7 @@ mod tests {
     fn the_settings_are_read_into_structs() {
         let settings_pf_active: SettingsPfActive = SettingsPfActive::from_xml(SETTINGS_WITH_WORKFLOW_XML).expect("the settings can be read");
 
-        let workflow: &SettingsPfActiveWorkflow = settings_pf_active.workflow.as_ref().expect("the settings link to workflow.xml");
+        let workflow: &SettingsWorkflow = settings_pf_active.workflow.as_ref().expect("the settings link to workflow.xml");
         assert_eq!(workflow.tree.len(), 2);
         assert_eq!(workflow.tree[0].tree_name, "ELMAG");
         assert_eq!(workflow.tree[0].pulseNo, Some(-1));

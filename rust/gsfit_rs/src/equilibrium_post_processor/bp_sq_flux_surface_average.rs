@@ -1,11 +1,10 @@
 //! The flux-surface-averaged squared poloidal magnetic field.
 
 use super::constant_values::ConstantValues;
-use super::flux_surfaces::FluxSurface;
+use super::flux_surfaces::{FluxSurface, calculate_at_psi_norm};
 use super::intermediate_values::IntermediateValues;
 use imas_rs::EquilibriumTimeSlice;
-use ndarray::{Array1, Array2};
-use ndarray_interp::interp2d::Interp2D;
+use std::f64::consts::PI;
 
 // For diverted plasmas `b_p = 0` at the x-point, which lies on the boundary, making
 // `∮ d_ell / b_p` log-divergent on the separatrix, so the average is taken slightly inside it
@@ -19,18 +18,18 @@ const BP_SQ_FS_AVG_PSI_NORM: f64 = 0.995;
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice, read only
-/// * `intermediate_values` - the shared intermediate values; `flux_surfaces` is read and `bp_sq_fs_avg` is written
+/// * `intermediate_values` - the shared intermediate values; `bp_sq_fs_avg` is written
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
-    let bp_sq_fs_avg: f64 = calculate_bp_sq_fs_avg(time_slice, intermediate_values);
+    let bp_sq_fs_avg: f64 = calculate_bp_sq_fs_avg(time_slice);
     intermediate_values.bp_sq_fs_avg = bp_sq_fs_avg;
 }
 
-/// Calculate the flux-surface-averaged squared poloidal magnetic field:
+/// Calculate the flux-surface-averaged squared poloidal magnetic field,
 ///
-/// `<<b_p ** 2>> = ∮ b_p d_ell / ∮ (d_ell / b_p)`
+/// `<b_p ** 2> = contour_integral(b_p d_ell) / contour_integral(d_ell / b_p)`,
 ///
-/// which follows from the standard flux surface average, `<<x>> = ∮ (x / b_p) d_ell / ∮ (d_ell / b_p)`,
-/// where the `1 / b_p` weighting comes from the volume element between neighbouring flux surfaces.
+/// with `b_p = |grad(psi)| / (2 * pi * R)`, on the flux surface at `psi_norm = BP_SQ_FS_AVG_PSI_NORM`, found along rays from the
+/// magnetic axis; see `flux_surfaces`.
 ///
 /// Note: `∮ b_p d_ell` is calculated numerically rather than using Ampere's law
 /// (`∮ b_p d_ell = mu_0 * ip`), because Ampere's law with the full plasma current only
@@ -41,64 +40,35 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice, read only
-/// * `intermediate_values` - the shared intermediate values; `flux_surfaces` is read
 ///
 /// # Returns
-/// * `bp_sq_fs_avg` - flux-surface-averaged `b_p ** 2` [tesla ** 2]
-///
-/// Note: the surfaces are only known on the `psi_norm` grid, so the average is taken on the last
-/// grid surface at or below `BP_SQ_FS_AVG_PSI_NORM`, rather than on a contour traced at exactly
-/// that value. Rounding down rather than to nearest is what keeps it off the separatrix.
-fn calculate_bp_sq_fs_avg(time_slice: &EquilibriumTimeSlice, intermediate_values: &IntermediateValues) -> f64 {
-    let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
+/// * `bp_sq_fs_avg` - flux-surface-averaged `b_p ** 2`; NaN when the surface cannot be found [tesla ** 2]
+fn calculate_bp_sq_fs_avg(time_slice: &EquilibriumTimeSlice) -> f64 {
+    let flux_surface: FluxSurface = calculate_at_psi_norm(time_slice, BP_SQ_FS_AVG_PSI_NORM);
 
-    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
-    let n_psi_norm: usize = psi_norm.len();
+    flux_surface.flux_surface_average(|r_here: f64, grad_psi_here: f64| (grad_psi_here / (2.0 * PI * r_here)).powi(2))
+}
 
-    // The last grid surface at or below the requested `psi_norm`
-    let mut i_psi_norm_local: usize = 0;
-    for i_psi_norm in 0..n_psi_norm {
-        if psi_norm[i_psi_norm] <= BP_SQ_FS_AVG_PSI_NORM {
-            i_psi_norm_local = i_psi_norm;
-        }
+#[cfg(test)]
+mod tests {
+    use super::super::boundary::geometry::time_slice_with_elliptical_psi;
+    use super::*;
+    use approx::assert_abs_diff_eq;
+
+    /// Circular surfaces, `psi = 1 - a * rho ** 2` about `(mag_r, 0)`: on the circle of radius `rho`, `b_p = a * rho / (pi * R)`, and
+    /// the average, `integral(x * R d(theta)) / (2 * pi * mag_r)`, of `1 / R ** 2` is `1 / (mag_r * sqrt(mag_r ** 2 - rho ** 2))`
+    #[test]
+    fn a_circular_surface_matches_the_analytic_average() {
+        let a: f64 = 25.0;
+        let mag_r: f64 = 0.5;
+        let minor_radius: f64 = 0.2;
+        let mut time_slice: EquilibriumTimeSlice = time_slice_with_elliptical_psi(mag_r, 0.0, a, 0.0, a);
+        time_slice.boundary.psi = 1.0 - a * minor_radius.powi(2);
+
+        let bp_sq_fs_avg: f64 = calculate_bp_sq_fs_avg(&time_slice);
+
+        let rho: f64 = minor_radius * BP_SQ_FS_AVG_PSI_NORM.sqrt();
+        let bp_sq_fs_avg_expected: f64 = (a * rho / PI).powi(2) / (mag_r * (mag_r.powi(2) - rho.powi(2)).sqrt());
+        assert_abs_diff_eq!(bp_sq_fs_avg, bp_sq_fs_avg_expected, epsilon = 1e-12 * bp_sq_fs_avg_expected);
     }
-
-    // Note: the exterior ring is closed, i.e. the last point repeats the first point
-    let fs_r: &Array1<f64> = &flux_surfaces[i_psi_norm_local].r;
-    let fs_z: &Array1<f64> = &flux_surfaces[i_psi_norm_local].z;
-    let fs_n: usize = fs_r.len();
-    if fs_n < 4 {
-        // Degenerate contour
-        return f64::NAN;
-    }
-
-    // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
-    // ever one entry in this array of structures
-    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
-    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
-    let b_field_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
-    let b_field_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
-
-    // Interpolator for b_p on the (R, Z) grid
-    let bp_2d: Array2<f64> = (b_field_r_2d.mapv(|x| x.powi(2)) + b_field_z_2d.mapv(|x| x.powi(2))).mapv(f64::sqrt);
-    let bp_interpolator = Interp2D::builder(bp_2d).x(z.clone()).y(r.clone()).build().unwrap();
-
-    // b_p along the flux surface
-    let mut fs_bp: Array1<f64> = Array1::from_elem(fs_n, f64::NAN);
-    for i_fs in 0..fs_n {
-        fs_bp[i_fs] = bp_interpolator.interp_scalar(fs_z[i_fs], fs_r[i_fs]).unwrap();
-    }
-
-    // Trapezoidal integration around the closed contour
-    let mut bp_d_ell_integral: f64 = 0.0; // ∮ b_p d_ell
-    let mut d_ell_over_bp_integral: f64 = 0.0; // ∮ (d_ell / b_p)
-    for i_fs in 1..fs_n {
-        let delta_ell: f64 = (fs_r[i_fs] - fs_r[i_fs - 1]).hypot(fs_z[i_fs] - fs_z[i_fs - 1]);
-        bp_d_ell_integral += 0.5 * delta_ell * (fs_bp[i_fs] + fs_bp[i_fs - 1]);
-        d_ell_over_bp_integral += 0.5 * delta_ell * (1.0 / fs_bp[i_fs] + 1.0 / fs_bp[i_fs - 1]);
-    }
-
-    let bp_sq_fs_avg: f64 = bp_d_ell_integral / d_ell_over_bp_integral;
-
-    bp_sq_fs_avg
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Schema for grid.xml: the (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
+    Schema for grid.xml: the (R, Z) grid the equilibrium is solved on, and the psi_norm grid for the 1D profiles.
 
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
@@ -48,7 +48,7 @@
     <xs:element name="grid">
         <xs:annotation>
             <xs:documentation>
-                The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
+                The (R, Z) grid the equilibrium is solved on, and the psi_norm grid for the 1D profiles.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -110,7 +110,7 @@
                 <xs:element name="n_psi_norm" type="NumberOfGridPoints">
                     <xs:annotation>
                         <xs:documentation>
-                            Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
+                            Number of points in the normalised poloidal flux, `psi_norm` from 0.0 to 1.0.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

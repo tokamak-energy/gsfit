@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <database_writer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/database_writer.xsd">
     <method>tokamak_energy_mdsplus_new</method>
+    <!-- <method>geqdsk</method> -->
+    <geqdsk>
+        <timeslices>
+            <method>user_defined</method>
+            <user_defined>0.12</user_defined>
+        </timeslices>
+    </geqdsk>
 </database_writer>

@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for configuration.xml: the model surface, Guazzotto and Freidberg's shape of the plasma boundary.
+
+    The analytic boundary passes through the model surface's innermost and outermost points and its top and bottom, the matching
+    points, with the model surface's slope and curvature there; elsewhere it is close to the model surface, but not on it.
+    Guazzotto and Freidberg's normalised coordinates are x = (R**2 / r_geo**2 - 1 - eps**2) / (2 eps) and y = (Z - z_geo) / a_minor,
+    with eps = a_minor / r_geo, so the innermost and outermost points are at x = -1 and x = 1, on y = 0.
+    References are to L. Guazzotto and J. P. Freidberg, J. Plasma Phys. 87 (2021) 905870303.
+    See ../GUAZZOTTO_FREIDBERG_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ===================================== Enums ===================================== -->
+
+    <xs:simpleType name="ConfigurationMethod">
+        <xs:annotation>
+            <xs:documentation>
+                The model surfaces.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="symmetric_limited">
+                <xs:annotation>
+                    <xs:documentation>
+                        Up-down symmetric limited plasma: Guazzotto and Freidberg's Miller surface (Sec. 3).
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="double_null">
+                <xs:annotation>
+                    <xs:documentation>
+                        Up-down symmetric double null: two ellipses meeting at right angles at each X-point (Sec. 4).
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="single_null">
+                <xs:annotation>
+                    <xs:documentation>
+                        Lower single null: a Miller upper half and, below z_geo, the double null's two ellipses meeting at the X-point (Sec. 5).
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="Triangularity">
+        <xs:annotation>
+            <xs:documentation>
+                A triangularity: a finite number greater than -1 and less than 1.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="-1.0"/>
+            <xs:maxExclusive value="1.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Complex types ================================= -->
+
+    <xs:complexType name="SymmetricLimited">
+        <xs:annotation>
+            <xs:documentation>
+                Settings for the up-down symmetric limited plasma.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="r_geo" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius midway between the innermost and outermost points of the model surface, Guazzotto and Freidberg's R_0.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="z_geo" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height of the innermost and outermost points, Guazzotto and Freidberg's y = 0.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="a_minor" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Minor radius, half the distance between the innermost and outermost points; less than r_geo. Guazzotto and Freidberg's inverse aspect ratio is eps = a_minor / r_geo.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="kappa" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Elongation: the height of the top above z_geo, over a_minor.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="delta" type="Triangularity">
+                <xs:annotation>
+                    <xs:documentation>
+                        Triangularity: r_geo minus the major radius of the top, over a_minor.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="DoubleNull">
+        <xs:annotation>
+            <xs:documentation>
+                Settings for the up-down symmetric double null.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="r_geo" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius midway between the innermost and outermost points of the model surface, Guazzotto and Freidberg's R_0.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="z_geo" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height of the innermost and outermost points, Guazzotto and Freidberg's y = 0.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="a_minor" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Minor radius, half the distance between the innermost and outermost points; less than r_geo. Guazzotto and Freidberg's inverse aspect ratio is eps = a_minor / r_geo.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="kappa_x" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Elongation at the X-points: their height above and below z_geo, over a_minor; more than 2 (1 - delta_x**2)**0.5 (Eq. 4.4).
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="delta_x" type="Triangularity">
+                <xs:annotation>
+                    <xs:documentation>
+                        Triangularity at the X-points: r_geo minus their major radius, over a_minor.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="SingleNull">
+        <xs:annotation>
+            <xs:documentation>
+                Settings for the lower single null.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="r_geo" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius midway between the innermost and outermost points of the model surface, Guazzotto and Freidberg's R_0.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="z_geo" type="FiniteDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height of the innermost and outermost points, Guazzotto and Freidberg's y = 0.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="a_minor" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Minor radius, half the distance between the innermost and outermost points; less than r_geo. Guazzotto and Freidberg's inverse aspect ratio is eps = a_minor / r_geo.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>metre</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="kappa" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Elongation of the upper half: the height of the top above z_geo, over a_minor.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="delta" type="Triangularity">
+                <xs:annotation>
+                    <xs:documentation>
+                        Triangularity of the upper half: r_geo minus the major radius of the top, over a_minor.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="kappa_x" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Elongation at the X-point: its depth below z_geo, over a_minor; more than 2 (1 - delta_x**2)**0.5 (Eq. 4.4).
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="delta_x" type="Triangularity">
+                <xs:annotation>
+                    <xs:documentation>
+                        Triangularity at the X-point: r_geo minus its major radius, over a_minor.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>dimensionless</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="configuration">
+        <xs:annotation>
+            <xs:documentation>
+                The model surface, centred on (r_geo, z_geo), its innermost and outermost points being at r_geo - a_minor and r_geo + a_minor.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="method" type="ConfigurationMethod">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The model surface to use.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="symmetric_limited" type="SymmetricLimited" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Settings for the up-down symmetric limited plasma.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="double_null" type="DoubleNull" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Settings for the up-down symmetric double null.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="single_null" type="SingleNull" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Settings for the lower single null.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

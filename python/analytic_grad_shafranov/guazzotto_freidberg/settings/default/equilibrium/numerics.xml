@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<numerics xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/numerics.xsd">
+    <n_radial_expansion>150</n_radial_expansion>
+</numerics>

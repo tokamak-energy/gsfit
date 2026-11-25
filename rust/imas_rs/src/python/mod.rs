@@ -28,8 +28,8 @@
 //!
 //! # Layout
 //!
-//! * `index.rs` - how an array of structures is indexed (`[3]`, `[:]`, `[[0, 2]]`), with
-//!   CPython's slice semantics
+//! * `index.rs` - how an array of structures is indexed (`[3]`, `[:]`, `[[0, 2]]`, or, where its
+//!   elements have a `name`, `["BVLT"]`), with CPython's slice semantics
 //! * `description.rs` - the static description types the generated tables are built from
 //! * `gather.rs` - the values read back, and gathering a leaf across a sliced array of
 //!   structures
@@ -78,7 +78,7 @@ use pyo3::prelude::*;
 
 pub use dd_support::PyParametersInput;
 pub use description::{Leaf, Node, NodeKind};
-pub use gather::{Gatherable, LengthOf, Value, gather, no_levels};
+pub use gather::{Gatherable, LengthOf, PositionOfName, Value, gather, no_levels, no_names};
 pub use ids::{PyCoreProfiles, PyCoreSources, PyEquilibrium, PyMagnetics, PyPfActive, PyPfPassive, PyPulseSchedule, PyTf, PyWall};
 pub use index::IndexSpec;
 pub use path::{PyPath, Segment, read_path};

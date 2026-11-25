@@ -528,7 +528,7 @@ pub fn sort_boundary_points_version_2(
 
     // Each iteration marks one interior point used (or breaks), so the loop runs at most `n_point_max` times.
     let n_point_max: usize = interior.len();
-    for _i_point in 0..n_point_max {
+    'point_loop: for _i_point in 0..n_point_max {
         // Candidates by distance
         let mut cand: Vec<(usize, f64)> = interior
             .iter()
@@ -561,11 +561,11 @@ pub fn sort_boundary_points_version_2(
 
         // Pick nearest that doesn't cause a crossing
         let mut chosen: Option<usize> = None;
-        for (i, _d2) in cand.into_iter() {
+        'candidate_loop: for (i, _d2) in cand.into_iter() {
             let p = interior[i];
             if !would_cross(&r_sorted, &z_sorted, cur.0, cur.1, p.0, p.1) {
                 chosen = Some(i);
-                break;
+                break 'candidate_loop;
             }
         }
         // If all would cross, pick nearest unused to make progress
@@ -595,7 +595,7 @@ pub fn sort_boundary_points_version_2(
                 locked_steps_done += 1;
             }
         } else {
-            break;
+            break 'point_loop;
         }
     }
 
@@ -608,7 +608,7 @@ pub fn sort_boundary_points_version_2(
         let mut best_pos: Option<(usize, f64)> = None;
         for k in 0..(m - 1) {
             let mut crosses = false;
-            for i in 0..(m - 1) {
+            'segment_loop: for i in 0..(m - 1) {
                 if i == k {
                     continue;
                 }
@@ -632,7 +632,7 @@ pub fn sort_boundary_points_version_2(
                     z_sorted[k + 1],
                 ) {
                     crosses = true;
-                    break;
+                    break 'segment_loop;
                 }
             }
             if !crosses {

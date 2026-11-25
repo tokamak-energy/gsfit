@@ -318,7 +318,7 @@
                 <xs:element name="method" type="SourceFunctionMethod">
                     <xs:annotation>
                         <xs:documentation>
-                            The basis functions to use. Their settings are in the element of the same name, below.
+                            The basis function to use.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

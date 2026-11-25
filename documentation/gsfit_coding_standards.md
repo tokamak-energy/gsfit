@@ -7,6 +7,67 @@ This file provides guidance when working with code in this repository.
 * If a function is only ever used once in a single place then it might be better to inline it rather than creating a separate function.
 * Using implementations for input / output types can help with understanding, for example returning `Array1<f64>` with two elements representing (R, Z) is not as clear as returning a struct with named fields.
 
+## Keeping the code understandable: function signatures
+Returning variables from functions should be done using a structured approach.
+The following is an example of bad practice:
+```python
+def greens_psi_parallelogram(
+    sensor_r: npt.NDArray[np.float64],
+    sensor_z: npt.NDArray[np.float64],
+    oblique_r: float,
+    oblique_z: float,
+    oblique_length_alpha: float,
+    oblique_length_beta: float,
+    oblique_alpha: float,
+    oblique_beta: float,
+    n_elliptic: int,
+    n_thin_ring: int,
+    n_multipole: int,
+    relative_tolerance: float,
+    n_subdivision_max: int,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+```
+I have absolutely no idea what is being returned here without looking at the function implementation.
+Much better would be an object, struct, or dictionary with named fields.
+
+## Error messages with unmatched branches
+Sometimes we need to match against strings (because we are using the IMAS data structure).
+
+The return error message should not list the available options.
+The reasons-- the list of available options can easily get out of sync with the actual code, and there is no way of testing if the list is correct.
+
+The following is incorrect usage:
+```rust
+let method: &str = "efit_polynomial";
+match method {
+        "efit_polynomial" => {
+            unimplemented!("efit_polynomial stuff...");
+        }
+        "tensioned_cubic_b_spline" => {
+            unimplemented!("tensioned_cubic_b_spline stuff...");
+        }
+        _ => Err(PyValueError::new_err(format!("`method` = \"{method}\" is not recognized, available methods are: `efit_polynomial`, and `tensioned_cubic_b_spline`"))),
+    }
+```
+
+The following is correct usage:
+```rust
+let method: &str = "efit_polynomial";
+match method {
+        "efit_polynomial" => {
+            unimplemented!("efit_polynomial stuff...");
+        }
+        "tensioned_cubic_b_spline" => {
+            unimplemented!("tensioned_cubic_b_spline stuff...");
+        }
+        _ => Err(PyValueError::new_err(format!("`method` = \"{method}\" is not recognized"))),
+    }
+```
+
+## Accessing data from `structs`
+I prefer public fields over getter's.
+Getter's adds unnecessary bloat to the code, and hide where the data originates from.
+
 ## Variable naming
 ### Hierarchical variable naming
 Variables should be named using a "hierarchical" structure.
@@ -270,3 +331,32 @@ Do not use `math` for anything!
 * Rust's `non_snake_case` lint rejects consecutive underscores. Keep the file and module names identical and place `#[expect(non_snake_case, reason = "double underscores separate IDS node names")]` on each affected module declaration.
 * Keep file names alphabetically sorted. Calls in `equilibrium_post_processor.rs` remain dependency-ordered, not alphabetically ordered.
 * Calculate shared intermediate quantities once and pass them explicitly; root-level intermediate helpers do not write IDS paths.
+
+# Variable shadowing
+Shadowing of variables should be avoided.
+For example:
+```rust
+enum Calculation {
+    /// `sensor_to_conductor` with `ConductorModel::Point`
+    PointToPoint(PointToPoint),
+    /// `sensor_to_conductor` with `ConductorModel::FiniteSize`; boxed, as it holds its tables once they are calculated
+    FiniteSizeToPoint(Box<FiniteSizeToPoint>),
+    /// `conductor_to_conductor` and `conductor_to_self` with `ConductorModel::FiniteSize`: `psi` only; boxed, as it holds two sets of
+    /// conductors
+    FiniteSizeToFiniteSize(Box<FiniteSizeToFiniteSize>),
+}
+```
+`PointToPoint`, `FiniteSizeToPoint`, and `FiniteSizeToFiniteSize` are all both enum variants and types (a struct with implementations).
+
+# Writing comments which won't drift as source code is updated
+Consider the comment below:
+```rust
+/// Check whether this is still needed when plotly.js is upgraded (it is vendored, see `PLOTLY_JS_PATH`; at present
+/// 4.3.0).
+```
+Every time we update `plotly.js`, we also need to remember to update this comment.
+There is also no way of automatically checking that the comment is still accurate.
+The comment also doesn't add any helpful information, so the following would be better:
+```rust
+/// Check whether this is still needed when plotly.js is upgraded (it is vendored, see `PLOTLY_JS_PATH`).
+```

@@ -1,7 +1,7 @@
 // Load modules
 // Each file adds one kind of sensor to the `Magnetics` struct, with its own `#[pymethods]` block and Rust only `impl Magnetics` block,
-// and copies that kind of sensor into the equilibrium IDS, with a Rust only `impl Equilibrium` block; so there is nothing to expose.
-// `isoflux`, `isoflux_boundary` and `stationary_point` are the constraints at points which can move, custom keys of the magnetics IDS,
+// and copies that kind of sensor into the Equilibrium IDS, with a Rust only `impl Equilibrium` block; so there is nothing to expose.
+// `isoflux`, `isoflux_boundary` and `stationary_point` are the constraints at points which can move, custom keys of the Magnetics IDS,
 // which share `moving_point`
 mod b_field_pol_probe;
 mod diamagnetic_flux;

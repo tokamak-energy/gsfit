@@ -405,7 +405,7 @@ def map_results_to_database(
         logger.debug(f"IMAS writer: {len(skipped)} GSFit leaves have no node in the data dictionary: {sorted(skipped)}")
 
     # ------------------------------------------------------------------
-    # Constraints, which live in the sensor objects rather than in the equilibrium IDS
+    # Constraints, which live in the sensor objects rather than in the Equilibrium IDS
     # ------------------------------------------------------------------
     bp_probe_names: list[str] = list(bp_probes.keys())
     flux_loop_names: list[str] = list(flux_loops.keys())

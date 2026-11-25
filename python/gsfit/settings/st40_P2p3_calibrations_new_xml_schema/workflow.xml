@@ -35,7 +35,7 @@
     <tree>
         <tree_name>PSU2COIL</tree_name>
         <pulseNo xsi:nil="true"/>
-        <run_name>RUN06</run_name>
+        <run_name>BEST</run_name>
         <usage>PF and TF coil currents</usage>
     </tree>
     <tree>

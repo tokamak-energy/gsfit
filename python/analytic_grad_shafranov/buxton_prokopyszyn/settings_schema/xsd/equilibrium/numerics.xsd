@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for numerics.xml: how the analytic solution is computed.
+
+    Spacings of wavenumbers are in units of the paper's k_max, k_max**2 = (2 pi)**2 (mu0 c_bar_p_prime R_c**2 + c_bar_ff_prime) / (psi_a - psi_b),
+    with R_c = (r_geo**2 + a_minor**2)**0.5.
+    See ../BUXTON_PROKOPYSZYN_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ===================================== Enums ===================================== -->
+
+    <xs:simpleType name="RadialVariable">
+        <xs:annotation>
+            <xs:documentation>
+                The variable the radial power series are in.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="r_squared">
+                <xs:annotation>
+                    <xs:documentation>
+                        Powers of R**2 - R_c**2.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="log_r_squared">
+                <xs:annotation>
+                    <xs:documentation>
+                        Powers of ln(R**2 / R_c**2), which converge faster at low aspect ratio.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="auto">
+                <xs:annotation>
+                    <xs:documentation>
+                        log_r_squared when a_minor / r_geo is at least 0.5, else r_squared.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="CBarMethod">
+        <xs:annotation>
+            <xs:documentation>
+                How each profile's linear part, c_bar (1 - psi_N), is chosen.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="auto">
+                <xs:annotation>
+                    <xs:documentation>
+                        slope_at_boundary when, for both profiles, the slope at the LCFS is at least the value on the magnetic axis, else value_at_axis.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="slope_at_boundary">
+                <xs:annotation>
+                    <xs:documentation>
+                        c_bar = sum_{i >= 1} c_i, so that the linear part has the profile's slope at the LCFS; for broad profiles.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="value_at_axis">
+                <xs:annotation>
+                    <xs:documentation>
+                        c_bar = c_0 + c_1, so that the linear part has the profile's value on the magnetic axis; for peaked profiles, and those dominated by their constant terms.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="least_squares">
+                <xs:annotation>
+                    <xs:documentation>
+                        c_bar = 3 int_0^1 p'(psi_N) (1 - psi_N) dpsi_N, the least-squares line through the profile (likewise for ff').
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FitRegularisationMethod">
+        <xs:annotation>
+            <xs:documentation>
+                The regularisation of the least-squares boundary fit of the Taylor orders above 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="auto">
+                <xs:annotation>
+                    <xs:documentation>
+                        none, then, if that series' Grad-Shafranov residual is above 1e-12, tikhonov, which is kept if its residual is three times smaller; with cosh terms, tikhonov alone.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="none">
+                <xs:annotation>
+                    <xs:documentation>
+                        Plain least squares.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="tikhonov">
+                <xs:annotation>
+                    <xs:documentation>
+                        Tikhonov regularisation of the shape terms' amplitudes.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="tsvd">
+                <xs:annotation>
+                    <xs:documentation>
+                        Truncated singular value decomposition.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed, and nor is a number beyond the largest double, e.g. `1e400`, which would be read as infinite.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+            <xs:minInclusive value="-1.7976931348623157e308"/>
+            <xs:maxInclusive value="1.7976931348623157e308"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="WavenumberSpacing">
+        <xs:annotation>
+            <xs:documentation>
+                A spacing of the wavenumbers, in units of k_max: a finite number greater than 0 and less than 1.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+            <xs:maxExclusive value="1.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="NumberOfWavenumbers">
+        <xs:annotation>
+            <xs:documentation>
+                A number of equally spaced wavenumbers: at least 4.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:positiveInteger">
+            <xs:minInclusive value="4"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="NumberOfRadialTerms">
+        <xs:annotation>
+            <xs:documentation>
+                A number of terms in a radial power series: at least 20.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:positiveInteger">
+            <xs:minInclusive value="20"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="numerics">
+        <xs:annotation>
+            <xs:documentation>
+                How the analytic solution is computed.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="wavenumbers">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The vertical wavenumbers k_j of the terms cos(k_j (Z - z_geo)) X_j(R**2), and of the cosh terms.
+                        </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="n_wave" type="NumberOfWavenumbers">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Number of equally spaced wavenumbers, k_j = (j - 1) k_spacing k_max for j = 1 .. n_wave.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="k_spacing" type="WavenumberSpacing">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Their spacing, in units of k_max; the paper's 1/3.
+                                    </xs:documentation>
+                                    <xs:appinfo>
+                                        <units>dimensionless</units>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="n_wave_cosh" type="xs:nonNegativeInteger">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Number of wavenumbers with negative k_j**2, |k_j| = m k_spacing_cosh k_max for m = 1 .. n_wave_cosh, whose terms cosh(|k_j| (Z - z_geo)) X_j(R**2) follow the corners of a spherical double null; 0 for none. Up-down symmetric shapes only.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="k_spacing_cosh" type="FinitePositiveDouble">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Their spacing, in units of k_max: 1/3 for Guazzotto and Freidberg's linear profiles (only c_1), 1/2 for any others. Not used when n_wave_cosh is 0.
+                                    </xs:documentation>
+                                    <xs:appinfo>
+                                        <units>dimensionless</units>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="radial_series">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The power series of each term's radial function X_j.
+                        </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="radial_variable" type="RadialVariable">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        The variable the radial power series are in.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="n_radial" type="NumberOfRadialTerms">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Number of terms in each radial power series.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="radial_tolerance" type="FiniteNonNegativeDouble">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        A warning is given when the solution's last ten radial powers change psi on the plasma by more than this, relative to psi on the magnetic axis; 0 for no check.
+                                    </xs:documentation>
+                                    <xs:appinfo>
+                                        <units>dimensionless</units>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="taylor_series">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The Taylor series in lambda, about the solution with each profile's linear part, c_bar (1 - psi_N).
+                        </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="c_bar_method" type="CBarMethod">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        How each profile's linear part, c_bar (1 - psi_N), is chosen.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="n_taylor_max" type="xs:positiveInteger">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Most terms of the Taylor series, orders 0 .. n_taylor_max - 1. The partial sum with the smallest Grad-Shafranov residual is kept.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="taylor_tolerance" type="FiniteNonNegativeDouble">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        The series stops once an order's (1 - psi_N)_l and k_{max,l}**2 are below this, relative to order 0's; 0 to compute every order.
+                                    </xs:documentation>
+                                    <xs:appinfo>
+                                        <units>dimensionless</units>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="boundary_fitting">
+                    <xs:annotation>
+                        <xs:documentation>
+                            How the shape terms are fitted to the conditions at the LCFS.
+                        </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="fit_regularisation_method" type="FitRegularisationMethod">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        The regularisation of the least-squares fit of the Taylor orders above 0.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="fit_threshold" type="FiniteNonNegativeDouble">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        tikhonov: the damping, relative to the fit matrix's largest singular value. tsvd: the singular values below this times the largest are dropped. Not used by none.
+                                    </xs:documentation>
+                                    <xs:appinfo>
+                                        <units>dimensionless</units>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="exact_x_points" type="TrueOrFalse">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Whether the X-point conditions, psi = psi_R = psi_Z = 0, are imposed exactly, rather than fitted by least squares with the others.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="n_boundary_lawson_iteration_max" type="xs:nonNegativeInteger">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        lcfs_points only: the most re-solves of Lawson's iteration, which raises the weights of the points the LCFS deviates most from, and keeps the solution with the smallest boundary misfit. 0 for every point weighted 1, as a model surface needs.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="verbose" type="TrueOrFalse">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Whether to print progress.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

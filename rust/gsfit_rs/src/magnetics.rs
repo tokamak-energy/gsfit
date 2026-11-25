@@ -28,14 +28,14 @@ use xmlschema::{Report, Schema, SchemaError};
 /// * `current` - the measured current, on the experimental timebase
 ///
 /// The stretches of a Rogowski coil's contour which have no winding are kept in `rogowski_coil_gaps`, not in the IDS, as the data
-/// dictionary has no node for them, and the magnetics IDS can also be made by another code.
+/// dictionary has no node for them, and the Magnetics IDS can also be made by another code.
 ///
 /// For the diamagnetic flux, `diamagnetic_flux(0)`, and the plasma current, `ip(i1)`:
 /// * `method_name`
 /// * `data` and `time` - on the experimental timebase
 ///
 /// The data dictionary allows one entry for each method of calculating them. GSFit takes the plasma current's first, generally
-/// recommended, method, but accepts only one diamagnetic flux, as the equilibrium IDS has a single diamagnetic flux constraint, so the
+/// recommended, method, but accepts only one diamagnetic flux, as the Equilibrium IDS has a single diamagnetic flux constraint, so the
 /// signals of several diamagnetic loops are averaged into one before it is added.
 ///
 /// The constraints at points which can move are custom keys, as the data dictionary has none, each a time trace on its own timebase,
@@ -56,7 +56,7 @@ use xmlschema::{Report, Schema, SchemaError};
 ///
 /// This is **not** the data dictionary's definition. Its COCOS 17 measures the angle clockwise, so that the normal is
 /// `cos(poloidal_angle) * grad(R) - sin(poloidal_angle) * grad(Z)`, and keeps it within [0, 2 * PI].
-/// TODO: convert to COCOS 17, `poloidal_angle = (-poloidal_angle) mod (2 * PI)`, before the magnetics IDS is written to an IMAS
+/// TODO: convert to COCOS 17, `poloidal_angle = (-poloidal_angle) mod (2 * PI)`, before the Magnetics IDS is written to an IMAS
 /// backend.
 ///
 /// `toroidal_angle` is left empty: every probe's normal is taken to lie in the poloidal plane.
@@ -79,13 +79,14 @@ use xmlschema::{Report, Schema, SchemaError};
 /// kept: it is written to `magnetics/code/parameters`, where IMAS records the parameters of the code which made an IDS.
 ///
 /// They are also read into `settings_magnetics`, whose structs are generated from the XML schema `magnetics.xsd`. They are kept here,
-/// not in the IDS, as the magnetics IDS can also be made by another code, whose `magnetics/code/parameters` would not hold GSFit's settings.
+/// not in the IDS, as the Magnetics IDS can also be made by another code, whose `magnetics/code/parameters` would not hold GSFit's settings.
 #[pyclass(module = "gsfit_rs")]
 pub struct Magnetics {
     pub magnetics_ids: MagneticsIds,
     #[allow(dead_code, reason = "Standard design: the struct keeps its typed settings, even if nothing reads them yet")]
     pub settings_magnetics: SettingsMagnetics,
     /// The gaps in each Rogowski coil's winding, one `Vec` for each `rogowski_coil`, in the same order; empty for a coil with none
+    /// TODO: `rogowski_coil_gaps` should be moved into `magnetics_ids`
     pub rogowski_coil_gaps: Vec<Vec<RogowskiCoilGap>>,
 }
 
@@ -157,12 +158,12 @@ impl PickleState for RogowskiCoilGap {
 /// Python accessible methods
 #[pymethods]
 impl Magnetics {
-    /// Construct a mostly empty magnetics IDS from its settings.
+    /// Construct a mostly empty Magnetics IDS from its settings.
     /// Later it will be fully populated by reading from a database, with `add_b_field_pol_probe`, `add_flux_loop`, `add_rogowski_coil`, `add_diamagnetic_flux`,
     /// `add_ip`, `add_isoflux`, `add_isoflux_boundary` and `add_stationary_point`.
     ///
     /// # Arguments
-    /// * `parameters_input` - the settings the magnetics IDS is built from:
+    /// * `parameters_input` - the settings the Magnetics IDS is built from:
     ///   - `parameters_input.parameters_value` = XML data as a string
     ///   - `parameters_input.schema` = XML schema as a string
     ///   - `parameters_input.parameters_default` = default XML values as a string
@@ -199,7 +200,7 @@ impl Magnetics {
         let settings_magnetics: SettingsMagnetics = SettingsMagnetics::from_xml(&parameters_input.inner.parameters_value)
             .map_err(|error: String| PyValueError::new_err(format!("The magnetic sensors' settings cannot be read into `SettingsMagnetics`: {error}")))?;
 
-        // Construct the magnetics IDS from the parsed settings
+        // Construct the Magnetics IDS from the parsed settings
         let magnetics_ids: MagneticsIds = MagneticsIds {
             code: Code {
                 parameters: parameters_input.inner.parameters_value.clone(),
@@ -216,7 +217,7 @@ impl Magnetics {
     }
 
     /// Read the data at `path`, a path from `gsfit_rs.imas.magnetics_paths`, straight out of the
-    /// magnetics IDS.
+    /// Magnetics IDS.
     ///
     /// This is how the data is read: there are no bespoke accessors, so every quantity is reached
     /// by its data dictionary path. A path holds no data, so the IDS is only borrowed for the
@@ -225,7 +226,7 @@ impl Magnetics {
         read_path(py, &self.magnetics_ids, "magnetics", path)
     }
 
-    /// A copy of the whole magnetics IDS, for reading with `gsfit_rs.imas.magnetics_paths`.
+    /// A copy of the whole Magnetics IDS, for reading with `gsfit_rs.imas.magnetics_paths`.
     ///
     /// Read the data with `get` instead. This copies the IDS on every access. It is for when a
     /// detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.

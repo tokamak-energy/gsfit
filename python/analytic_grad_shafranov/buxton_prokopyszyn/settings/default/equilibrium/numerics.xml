@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<numerics xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/numerics.xsd">
+    <wavenumbers>
+        <n_wave>6</n_wave>
+        <k_spacing>0.3333333333333333</k_spacing>
+        <n_wave_cosh>0</n_wave_cosh>
+        <k_spacing_cosh>0.5</k_spacing_cosh>
+    </wavenumbers>
+    <radial_series>
+        <radial_variable>auto</radial_variable>
+        <n_radial>200</n_radial>
+        <radial_tolerance>1.0e-15</radial_tolerance>
+    </radial_series>
+    <taylor_series>
+        <c_bar_method>auto</c_bar_method>
+        <n_taylor_max>31</n_taylor_max>
+        <taylor_tolerance>1.0e-14</taylor_tolerance>
+    </taylor_series>
+    <boundary_fitting>
+        <fit_regularisation_method>auto</fit_regularisation_method>
+        <fit_threshold>1.0e-4</fit_threshold>
+        <exact_x_points>true</exact_x_points>
+        <n_boundary_lawson_iteration_max>0</n_boundary_lawson_iteration_max>
+    </boundary_fitting>
+    <verbose>false</verbose>
+</numerics>

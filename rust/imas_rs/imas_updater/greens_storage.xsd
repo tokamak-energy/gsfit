@@ -1,0 +1,1078 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The Greens tables, a structure of GSFit's own rather than part of any IDS. `build_ids.py` generates its structs, `GreensTables` and the
+    structures in it, their Python bindings, and their pickling into one module, `rust/gsfit_rs/src/greens_storage.rs`;
+    `gsfit_rs::Equilibrium` holds them, in `greens_tables`.
+
+    They are generated as an IDS's are, so that they have the same accessors: in Rust an array of structures is selected from with a range,
+    e.g. `greens_tables.grid.pf_active(..).name`, or by a name, e.g. `greens_tables.flux_loop(name)`, and in Python a copy, the getter
+    `Equilibrium.greens_tables`, is read with a path, e.g. `get(greens_tables_paths.grid.pf_active[:].name)`. The schema is written as the custom keys
+    in `custom_keys/` are, with the data dictionary's types, which `dd_support.xsd` declares, so it is included:
+    * the root is the `xs:element` `greens_tables`, holding an inline `xs:complexType`
+    * every other structure is a top-level `xs:complexType`, which an element names in `type`
+    * a leaf holds `<xs:group ref="FLT_2D"/>`, or another of the data dictionary's base types, with its units in `xs:appinfo/units`, written
+      as the data dictionary writes them: SI symbols, e.g. `Wb.A^-1`
+    * an array of structures has `minOccurs="0" maxOccurs="unbounded"`, as it can be empty
+    * every structure and element is documented
+    See `build_structure` in `build_ids.py`.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+    <xs:include schemaLocation="IMAS-Data-Dictionary/schemas/utilities/dd_support.xsd"/>
+
+    <xs:element name="greens_tables">
+        <xs:annotation>
+            <xs:documentation>
+                Greens tables: what each observer sees, per ampere flowing in each current source.
+
+                These are geometry only - they depend on where the observers and the conductors are, never on the plasma - so they are calculated once, before the first time-slice is solved.
+                The grid's and the magnetic sensors' are shared by every time-slice, so they are kept once, rather than on every time-slice.
+                The constraints at points which can move, `isoflux`, `isoflux_boundary` and `stationary_point`, have a table for each time-slice instead, as their points can be elsewhere at each, in the order of `equilibrium/time_slice`.
+                They are GSFit's own, and the data dictionary has no nodes for them, so they are not in the Equilibrium IDS: `gsfit_rs::Equilibrium` holds them, in `greens_tables`.
+
+                They are arranged observer first, then source: `greens_tables/&lt;observer&gt;/&lt;source&gt;`.
+                This is the order of the data dictionary's `em_coupling` IDS, "Quantity_Sensor_Source".
+                The observers are the (R, Z) grid, the magnetic sensors, and the constraints at points which can move, and every observer has the same three sources:
+                * `plasma` - the plasma current in each grid cell
+                * `pf_active` - the PF coils, in the order of `pf_active/coil`
+                * `pf_passive` - the passive conductors' degrees of freedom, in the order of `equilibrium/time_slice(itime)/constraints/pf_passive_current`, and then of each one's `dof`
+
+                Each magnetic sensor, and each constraint at points which can move, has one entry, with the same name and in the same order as in `magnetics/&lt;sensor&gt;(i1)` and `equilibrium/time_slice(itime)/constraints/&lt;sensor&gt;(i1)`, so a sensor's tables are found by the name of its constraint.
+                Its tables with the PF coils and the passive degrees of freedom are arrays over them, in the order of `greens_tables/grid/pf_active` and `greens_tables/grid/pf_passive`, which name them.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="grid" type="greens_grid">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Observer: the (R, Z) grid
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="b_field_pol_probe" type="greens_b_field_pol_probe" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="flux_loop" type="greens_flux_loop" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Observer: each flux loop, in the order of `magnetics/flux_loop`
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="rogowski_coil" type="greens_rogowski_coil" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="isoflux" type="greens_isoflux" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Observer: each isoflux constraint, in the order of `magnetics/isoflux`
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="isoflux_boundary" type="greens_isoflux_boundary" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Observer: each isoflux boundary constraint, in the order of `magnetics/isoflux_boundary`
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="stationary_point" type="greens_stationary_point" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Observer: each stationary point constraint, in the order of `magnetics/stationary_point`
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="greens_grid">
+        <xs:annotation>
+            <xs:documentation>
+                Observer: the (R, Z) grid.
+                The poloidal flux and its derivatives at every grid point, per ampere in each current source
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="plasma" type="greens_grid_plasma">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pf_active" type="greens_grid_pf_active" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each PF coil, in the order of `pf_active/coil`.
+                        Every sensor's `pf_active` is in this order too
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pf_passive" type="greens_grid_pf_passive" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each passive conductor the equilibrium fits, in the order of `equilibrium/time_slice(itime)/constraints/pf_passive_current`, with its degrees of freedom.
+                        Every sensor's `pf_passive`, and `equilibrium/time_slice(itime)/passive_dof_values`, are in this order too
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_grid_plasma">
+        <xs:annotation>
+            <xs:documentation>
+                The grid onto itself: the flux at each grid point due to a unit current in each grid cell.
+                Toroidal symmetry makes this a function of the vertical *offset* between the two points, not of their absolute heights, so it is only stored for conductors in the lowest row: a sensor's row, `i_z_sensor`, is then its offset above the conductor
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal flux, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Radial derivative of the poloidal flux, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vertical derivative of the poloidal flux, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second radial derivative of the poloidal flux, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Mixed second derivative of the poloidal flux, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_z2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second vertical derivative of the poloidal flux, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_r2_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_r_d_z2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_z3">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third vertical derivative of the poloidal flux, per ampere in the source.
+                        Shape = `(n_z, n_r, n_r)`, which is `(i_z_sensor, i_r_sensor, i_r_conductor)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_grid_pf_active">
+        <xs:annotation>
+            <xs:documentation>
+                Source: one PF coil, summed over the coil's filaments
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Radial derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_z2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_r2_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_r_d_z2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_z3">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_grid_pf_passive">
+        <xs:annotation>
+            <xs:documentation>
+                Source: one passive conductor, with one entry for each of its degrees of freedom
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the passive conductor, matching the `name` of a `pf_passive/loop`, and `equilibrium/time_slice(itime)/constraints/pf_passive_current(i1)/name`, e.g. `"IVC"`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="dof" type="greens_grid_pf_passive_dof" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Degrees of freedom of this conductor, one entry per current distribution, in the order of `equilibrium/time_slice(itime)/constraints/pf_passive_current(i1)/dof`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_grid_pf_passive_dof">
+        <xs:annotation>
+            <xs:documentation>
+                Source: one degree of freedom of one passive conductor, summed over the filaments weighted by that degree of freedom's current distribution
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the degree of freedom, matching `equilibrium/time_slice(itime)/constraints/pf_passive_current(i1)/dof(i2)/name`, e.g. `"eig_01"`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Radial derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_z2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_r2_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_r_d_z2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d3_psi_d_z3">
+                <xs:annotation>
+                    <xs:documentation>
+                        Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_b_field_pol_probe">
+        <xs:annotation>
+            <xs:documentation>
+                Observer: one poloidal field probe, `magnetics/b_field_pol_probe(i1)`.
+                Each table is the field the probe measures, along its normal, per ampere in the source
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the probe
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="plasma">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_plasma_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell.
+                        The derivative of `plasma` with respect to the probe's height, for the change in the field with the vertical shift `equilibrium/time_slice(itime)/convergence/delta_z`.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_active">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each PF coil, in the order of `greens_tables/grid/pf_active`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_passive">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each passive degree of freedom, in the order of `greens_tables/grid/pf_passive(:)/dof(:)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_flux_loop">
+        <xs:annotation>
+            <xs:documentation>
+                Observer: one flux loop, `magnetics/flux_loop(i1)`.
+                Each table is the poloidal flux through the loop, GSFit's `psi`, per ampere in the source
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the flux loop
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="plasma">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_plasma_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell.
+                        The derivative of `plasma` with respect to the loop's height, for the change in the flux with the vertical shift `equilibrium/time_slice(itime)/convergence/delta_z`.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_active">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each PF coil, in the order of `greens_tables/grid/pf_active`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_passive">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each passive degree of freedom, in the order of `greens_tables/grid/pf_passive(:)/dof(:)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_rogowski_coil">
+        <xs:annotation>
+            <xs:documentation>
+                Observer: one Rogowski coil, `magnetics/rogowski_coil(i1)`.
+                Each table is the current the coil measures, per ampere in the source: the current inside the coil's contour, less `integral(b . d_l) / mu_0` along each of its gaps, from the gap's start to its end
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the Rogowski coil
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="plasma">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>A.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_plasma_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell.
+                        The derivative of `plasma` with respect to the coil's height, for the change in the current with the vertical shift `equilibrium/time_slice(itime)/convergence/delta_z`.
+                        Only the gaps contribute to it.
+                        Shape = `(n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>A.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_active">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each PF coil, in the order of `greens_tables/grid/pf_active`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>A.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_passive">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each passive degree of freedom, in the order of `greens_tables/grid/pf_passive(:)/dof(:)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>A.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_isoflux">
+        <xs:annotation>
+            <xs:documentation>
+                Observer: one isoflux constraint, `magnetics/isoflux(i1)`.
+                Each table is the poloidal flux at the constraint's first point minus the poloidal flux at its second point, GSFit's `psi`, per ampere in the source.
+                The points can move, so there is a table for each time-slice, with the points interpolated onto its time, as `equilibrium/time_slice(itime)/constraints/isoflux(i1)/position_1` and `.../position_2`; NaN at a time-slice where either point is NaN
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the isoflux constraint
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="plasma">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell, at each time-slice.
+                        Shape = `(n_time, n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_plasma_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell, at each time-slice.
+                        The derivative of `plasma` with respect to the points' height, for the change in the flux difference with the vertical shift `equilibrium/time_slice(itime)/convergence/delta_z`.
+                        Shape = `(n_time, n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_active">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each PF coil, in the order of `greens_tables/grid/pf_active`, at each time-slice.
+                        Shape = `(n_time, n_coil)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_passive">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each passive degree of freedom, in the order of `greens_tables/grid/pf_passive(:)/dof(:)`, at each time-slice.
+                        Shape = `(n_time, n_dof_total)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_isoflux_boundary">
+        <xs:annotation>
+            <xs:documentation>
+                Observer: one isoflux boundary constraint, `magnetics/isoflux_boundary(i1)`.
+                Each table is the poloidal flux at the constraint's point, GSFit's `psi`, per ampere in the source.
+                The point can move, so there is a table for each time-slice, with the point interpolated onto its time, as `equilibrium/time_slice(itime)/constraints/isoflux_boundary(i1)/position`; NaN at a time-slice where the point is NaN
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the isoflux boundary constraint
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="plasma">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell, at each time-slice.
+                        Shape = `(n_time, n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_plasma_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell, at each time-slice.
+                        The derivative of `plasma` with respect to the point's height, for the change in the flux with the vertical shift `equilibrium/time_slice(itime)/convergence/delta_z`.
+                        Shape = `(n_time, n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_active">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each PF coil, in the order of `greens_tables/grid/pf_active`, at each time-slice.
+                        Shape = `(n_time, n_coil)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_passive">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each passive degree of freedom, in the order of `greens_tables/grid/pf_passive(:)/dof(:)`, at each time-slice.
+                        Shape = `(n_time, n_dof_total)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_stationary_point">
+        <xs:annotation>
+            <xs:documentation>
+                Observer: one stationary point constraint, `magnetics/stationary_point(i1)`.
+                It constrains both derivatives of the poloidal flux at its point, so it has the tables of each, `d_psi_d_r` and `d_psi_d_z`.
+                The point can move, so there is a table for each time-slice, with the point interpolated onto its time, as `equilibrium/time_slice(itime)/constraints/stationary_point(i1)/position`; NaN at a time-slice where the point is NaN
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the stationary point constraint
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_r" type="greens_stationary_point_d_psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        The radial derivative of the poloidal flux at the point, GSFit's `d(psi)/d(r)`, per ampere in the source
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="d_psi_d_z" type="greens_stationary_point_d_psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        The vertical derivative of the poloidal flux at the point, GSFit's `d(psi)/d(z)`, per ampere in the source
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="greens_stationary_point_d_psi">
+        <xs:annotation>
+            <xs:documentation>
+                One derivative of the poloidal flux at a stationary point, `d_psi_d_r` or `d_psi_d_z`, per ampere in each source, at each time-slice
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="plasma">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell, at each time-slice.
+                        Shape = `(n_time, n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_plasma_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: the plasma current in each grid cell, at each time-slice.
+                        The derivative of `plasma` with respect to the point's height, for the change in the derivative with the vertical shift `equilibrium/time_slice(itime)/convergence/delta_z`.
+                        Shape = `(n_time, n_z, n_r)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_3D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_active">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each PF coil, in the order of `greens_tables/grid/pf_active`, at each time-slice.
+                        Shape = `(n_time, n_coil)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pf_passive">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source: each passive degree of freedom, in the order of `greens_tables/grid/pf_passive(:)/dof(:)`, at each time-slice.
+                        Shape = `(n_time, n_dof_total)`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.A^-1.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

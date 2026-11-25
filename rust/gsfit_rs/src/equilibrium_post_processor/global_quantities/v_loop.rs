@@ -13,7 +13,7 @@ use ndarray::Array1;
 /// differentiates across them, so it runs after the per-slice loop rather than inside it.
 ///
 /// # Arguments
-/// * `equilibrium_ids` - the solved equilibrium IDS; `global_quantities/v_loop` is written into
+/// * `equilibrium_ids` - the solved Equilibrium IDS; `global_quantities/v_loop` is written into
 ///   every time-slice
 pub fn calculate(equilibrium_ids: &mut Equilibrium) {
     // v_loop = - d(psi_b)/d(time)

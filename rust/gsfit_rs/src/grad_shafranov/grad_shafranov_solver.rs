@@ -14,14 +14,20 @@ use imas_rs::{
 };
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+/// Solve the Grad-Shafranov equation for every time-slice of `equilibrium`, writing the solutions into its Equilibrium IDS.
+///
+/// # Errors
+/// A `ValueError`, raised before anything is solved, when an input the solver needs has not been copied into the Equilibrium IDS or does
+/// not match the Greens tables. It is an exception, not a panic, so that a Python `except Exception` catches it, e.g. when running many pulses.
 #[pyfunction]
 #[pyo3(signature = (equilibrium))]
-pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
+pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) -> PyResult<()> {
     println!("solve_grad_shafranov starting");
     let timing_start_serial_setup: Instant = Instant::now();
 
@@ -33,27 +39,29 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
 
     if n_time == 0 {
         println!("solve_grad_shafranov: no times to reconstruct, returning");
-        return;
+        return Ok(());
     }
 
-    // The vacuum toroidal field, from the equilibrium IDS, which `Equilibrium.copy_from_tf_ids` copied it into
+    // The vacuum toroidal field, from the Equilibrium IDS, which `Equilibrium.copy_from_tf_ids` copied it into
     // from the `tf` IDS, with `b0` already interpolated onto the reconstruction times. Checked here,
     // before anything is solved, so that a missing toroidal field stops the solve with one message
     let vacuum_toroidal_field_r0: f64 = equilibrium.equilibrium_ids.vacuum_toroidal_field.r0;
     if vacuum_toroidal_field_r0.is_nan() || equilibrium.equilibrium_ids.vacuum_toroidal_field.b0.len() != n_time {
-        panic!(
-            "solve_grad_shafranov: `equilibrium/vacuum_toroidal_field` is unset: copy the toroidal field in from the `tf` IDS with `Equilibrium.copy_from_tf_ids`"
-        );
+        return Err(PyValueError::new_err(
+            "solve_grad_shafranov: `equilibrium/vacuum_toroidal_field` is unset: copy the toroidal field in from the `tf` IDS with `Equilibrium.copy_from_tf_ids`",
+        ));
     }
 
-    // The limiter, from the equilibrium IDS, which `Equilibrium.copy_from_wall_ids` copied it into from the `wall` IDS, where
+    // The limiter, from the Equilibrium IDS, which `Equilibrium.copy_from_wall_ids` copied it into from the `wall` IDS, where
     // `Wall.add_limiter_unit` checked the outline of each unit. Checked here, before anything is solved, so that a missing limiter
     // stops the solve with one message rather than failing every time-slice
     if equilibrium.equilibrium_ids.limiter.unit.is_empty() {
-        panic!("solve_grad_shafranov: `equilibrium/limiter/unit` is empty: copy the limiter in from the `wall` IDS with `Equilibrium.copy_from_wall_ids`");
+        return Err(PyValueError::new_err(
+            "solve_grad_shafranov: `equilibrium/limiter/unit` is empty: copy the limiter in from the `wall` IDS with `Equilibrium.copy_from_wall_ids`",
+        ));
     }
 
-    // The PF coil currents, from the equilibrium IDS, which `Equilibrium.copy_from_pf_active_ids` copied onto every
+    // The PF coil currents, from the Equilibrium IDS, which `Equilibrium.copy_from_pf_active_ids` copied onto every
     // time-slice from the `pf_active` IDS. The solver multiplies them by the Greens tables, `greens_tables/grid/pf_active`, so both
     // must list the same coils in the same order, which `pf_active/coil` sets for both. Checked here, before anything
     // is solved. The sensors find their Greens with each coil by name, in this order
@@ -61,18 +69,18 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
     for i_time in 0..n_time {
         let pf_current_names: Vec<String> = equilibrium.equilibrium_ids.time_slice[i_time].constraints.pf_current(..).name.to_vec();
         if pf_current_names.is_empty() {
-            panic!(
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_current` is unset: copy the PF coil currents in from the `pf_active` IDS with `Equilibrium.copy_from_pf_active_ids`"
-            );
+            )));
         }
         if pf_current_names != greens_pf_active_names {
-            panic!(
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_current(:)/name` is {pf_current_names:?}, but the Greens tables, `greens_tables/grid/pf_active(:)/name`, are for {greens_pf_active_names:?}; the two must list the same PF coils, in the same order"
-            );
+            )));
         }
     }
 
-    // The passive loops, from the equilibrium IDS, which `Equilibrium.copy_from_pf_passive_ids` made from the fit settings and the
+    // The passive loops, from the Equilibrium IDS, which `Equilibrium.copy_from_pf_passive_ids` made from the fit settings and the
     // `pf_passive` IDS, and copied onto every time-slice: the degrees of freedom each loop's current is fitted with, and their
     // regularisations. The solver fits an amplitude for each degree of freedom with the Greens tables, `greens_tables/grid/pf_passive`, so both must
     // list the same loops and degrees of freedom in the same order, which is the order of the fit settings, `equilibrium_settings/pf_passive_dof`,
@@ -95,15 +103,15 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
         let n_loop: usize = pf_passive_currents.len();
         // Without any passive loops there is nothing to copy, so an empty `pf_passive_current` is only unset when there are Greens tables
         if n_loop == 0 && n_greens_pf_passive > 0 {
-            panic!(
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_passive_current` is unset: copy the passive loops in from the `pf_passive` IDS with `Equilibrium.copy_from_pf_passive_ids`"
-            );
+            )));
         }
         let pf_passive_current_names: Vec<String> = equilibrium.equilibrium_ids.time_slice[i_time].constraints.pf_passive_current(..).name.to_vec();
         if pf_passive_current_names != greens_pf_passive_names {
-            panic!(
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_passive_current(:)/name` is {pf_passive_current_names:?}, but the Greens tables, `greens_tables/grid/pf_passive(:)/name`, are for {greens_pf_passive_names:?}; the two must list the same passive loops, in the same order"
-            );
+            )));
         }
         let mut pf_passive_current_dof_names: Vec<(String, String)> = Vec::new();
         for i_loop in 0..n_loop {
@@ -113,9 +121,9 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
             }
         }
         if pf_passive_current_dof_names != greens_pf_passive_dof_names {
-            panic!(
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: `time_slice({i_time})/constraints/pf_passive_current(:)/dof(:)/name` is {pf_passive_current_dof_names:?}, but the Greens tables, `greens_tables/grid/pf_passive(:)/dof(:)/name`, are for {greens_pf_passive_dof_names:?}; the two must list the same degrees of freedom, in the same order"
-            );
+            )));
         }
     }
 
@@ -124,16 +132,17 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
     // is solved
     for i_time in 0..n_time {
         if equilibrium.settings_equilibrium.constraints.pressure.include && equilibrium.equilibrium_ids.time_slice[i_time].constraints.pressure.is_empty() {
-            panic!(
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: the fit settings, `equilibrium_settings/constraints/pressure`, include pressure, but `time_slice({i_time})/constraints/pressure` is empty: make the pressure constraints from the `core_profiles` IDS with `Equilibrium.copy_from_core_profiles_ids`"
-            );
+            )));
         }
     }
 
     // Every magnetic constraint, fitted or not, needs its measurement, which `Equilibrium.copy_from_magnetics_ids` copies in, recording where
     // from in `source`, and its Greens tables, which `Equilibrium.greens_with_magnetics` calculates, as the solver fits it with them, and the
-    // post-processor reconstructs it with them. The diamagnetic flux, which is there when it has fit settings, needs no Greens tables. Checked
-    // here, before anything is solved
+    // post-processor reconstructs it with them. The diamagnetic flux needs no Greens tables, and its measurement is only needed when its fit
+    // settings include it: with `include` false it may be missing from the Magnetics IDS, which leaves a NaN constraint. Checked here, before
+    // anything is solved
     let greens_b_field_pol_probe_names: Vec<String> = equilibrium.greens_tables.b_field_pol_probe(..).name.to_vec();
     let greens_flux_loop_names: Vec<String> = equilibrium.greens_tables.flux_loop(..).name.to_vec();
     let greens_rogowski_coil_names: Vec<String> = equilibrium.greens_tables.rogowski_coil(..).name.to_vec();
@@ -162,23 +171,26 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
             let n_constraint: usize = names.len();
             for i_constraint in 0..n_constraint {
                 if sources[i_constraint].is_empty() {
-                    panic!(
+                    return Err(PyValueError::new_err(format!(
                         "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{sensor}`, has no measurement: copy the magnetic sensors in from the `magnetics` IDS with `Equilibrium.copy_from_magnetics_ids`",
                         names[i_constraint]
-                    );
+                    )));
                 }
                 if !greens_names.contains(&names[i_constraint]) {
-                    panic!(
+                    return Err(PyValueError::new_err(format!(
                         "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{sensor}`, has no Greens tables in `greens_tables/{sensor}`: calculate them with `Equilibrium.greens_with_magnetics`",
                         names[i_constraint]
-                    );
+                    )));
                 }
             }
         }
-        if equilibrium.settings_equilibrium.constraints.diamagnetic_flux.is_some() && constraints.diamagnetic_flux.source.is_empty() {
-            panic!(
+        if let Some(settings_diamagnetic_flux) = &equilibrium.settings_equilibrium.constraints.diamagnetic_flux
+            && settings_diamagnetic_flux.include
+            && constraints.diamagnetic_flux.source.is_empty()
+        {
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: `time_slice({i_time})/constraints/diamagnetic_flux` has no measurement: copy the magnetic sensors in from the `magnetics` IDS with `Equilibrium.copy_from_magnetics_ids`"
-            );
+            )));
         }
     }
 
@@ -201,9 +213,9 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
     }
     for (constraint_kind, name, n_time_greens) in &n_time_greens_tables {
         if *n_time_greens != n_time {
-            panic!(
+            return Err(PyValueError::new_err(format!(
                 "solve_grad_shafranov: `greens_tables/{constraint_kind}` has tables for {n_time_greens} time-slice(s) for `{name}`, but there are {n_time}: calculate them with `Equilibrium.greens_with_magnetics` after the time-slices are allocated"
-            );
+            )));
         }
     }
     for i_time in 0..n_time {
@@ -231,16 +243,16 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
             let n_constraint: usize = names.len();
             for i_constraint in 0..n_constraint {
                 if sources[i_constraint].is_empty() {
-                    panic!(
+                    return Err(PyValueError::new_err(format!(
                         "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{constraint_kind}`, has no points: copy them in from the `magnetics` IDS with `Equilibrium.copy_from_magnetics_ids`",
                         names[i_constraint]
-                    );
+                    )));
                 }
                 if !greens_names.contains(&names[i_constraint]) {
-                    panic!(
+                    return Err(PyValueError::new_err(format!(
                         "solve_grad_shafranov: `{}`, in `time_slice({i_time})/constraints/{constraint_kind}`, has no Greens tables in `greens_tables/{constraint_kind}`: calculate them with `Equilibrium.greens_with_magnetics`",
                         names[i_constraint]
-                    );
+                    )));
                 }
             }
         }
@@ -333,7 +345,7 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
         let grid_z: Array1<f64> = equilibrium_ids.time_slice[0].profiles_2d[0].grid.dim2.clone();
         let d_area: f64 = equilibrium_ids.time_slice[0].profiles_2d[0].grid.d_area;
         if grid_r.is_empty() || grid_z.is_empty() || d_area.is_nan() {
-            panic!("solve_grad_shafranov: `profiles_2d(0)/grid` is unset");
+            return Err(PyValueError::new_err("solve_grad_shafranov: `profiles_2d(0)/grid` is unset"));
         }
         let initial_guess_ip: f64 = settings_equilibrium.initial_guess.ip;
         let initial_guess_cur_r: f64 = settings_equilibrium.initial_guess.cur_r;
@@ -444,4 +456,6 @@ pub fn solve_grad_shafranov(mut equilibrium: PyRefMut<Equilibrium>) {
         "solve_grad_shafranov: serial finish done; {:.2}ms",
         timing_start_serial_finish.elapsed().as_secs_f64() * 1e3
     );
+
+    Ok(())
 }

@@ -38,7 +38,7 @@ class SourceFunctionPPrime:
     """
     The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 
-    :param method: The basis functions to use. Their settings are in the element of the same name, below.
+    :param method: The basis function to use.
     :param efit_polynomial: Settings for EFIT's polynomials.
     :param tensioned_cubic_b_spline: Settings for the tensioned cubic B-splines.
     """

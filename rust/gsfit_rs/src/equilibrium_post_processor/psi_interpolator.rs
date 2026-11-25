@@ -3,10 +3,9 @@
 //! Unlike most files here this fills no data-dictionary path: it is a helper shared by the
 //! calculators which need `psi`, or its derivatives, between the grid points.
 
-use crate::plasma_geometry::bicubic_interpolator::{BicubicInterpolator, BicubicValueAndDerivatives};
 use crate::plasma_geometry::hessian;
 use imas_rs::EquilibriumTimeSlice;
-use ndarray::{Array1, Array2, s};
+use ndarray::{Array1, Array2};
 
 /// Values of `grad(psi)` and the Hessian interpolated at one point.
 pub(super) struct PsiDerivatives {
@@ -15,6 +14,13 @@ pub(super) struct PsiDerivatives {
     pub(super) d2_psi_d_r2: f64,
     pub(super) d2_psi_d_r_d_z: f64,
     pub(super) d2_psi_d_z2: f64,
+}
+
+/// `psi` and its gradient at one point, both from the bicubic of `psi`.
+pub(super) struct PsiValueAndGradient {
+    pub(super) psi: f64,
+    pub(super) d_psi_d_r: f64,
+    pub(super) d_psi_d_z: f64,
 }
 
 /// Cell coordinates for one point on the rectangular grid.
@@ -29,8 +35,9 @@ struct GridCellCoordinates {
 ///
 /// `psi` itself is the bicubic built from `psi`, its two first derivatives and its mixed second
 /// derivative at the corners of the cell. Along a grid line this is the cubic Hermite interpolation
-/// `marching_squares` finds a contour's crossings with, so the vertices of a traced flux surface lie
-/// exactly on `psi(r, z) = psi_contour`.
+/// `marching_squares` finds the boundary outline's crossings with, so its vertices lie exactly on
+/// `psi(r, z) = psi_b`; the flux surfaces inside the boundary are found on the same bicubic, along rays
+/// from the magnetic axis; see `flux_surfaces`.
 ///
 /// The gradient is **not** the derivative of that bicubic: each component is a bicubic of its own.
 /// Inside the discretised current region `psi` is C1 but not C2, so differentiating the bicubic of
@@ -117,19 +124,48 @@ impl<'a> PsiInterpolator<'a> {
         assert_eq!(self.psi_2d.dim(), (self.z.len(), self.r.len()));
 
         let cell: GridCellCoordinates = self.cell_coordinates(r_point, z_point)?;
-        let i_r_left: usize = cell.i_r_left;
-        let i_z_lower: usize = cell.i_z_lower;
-
-        let psi_interpolator: BicubicInterpolator = BicubicInterpolator::new(
+        let psi: HermiteValueAndDerivatives = hermite_bicubic(
+            self.psi_2d,
+            self.d_psi_d_r_2d,
+            self.d_psi_d_z_2d,
+            self.d2_psi_d_r_d_z_2d,
+            &cell,
             self.d_r,
             self.d_z,
-            self.psi_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d_psi_d_r_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d_psi_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_r_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
         );
 
-        Some(psi_interpolator.interpolate(cell.x, cell.y))
+        Some(psi.f)
+    }
+
+    /// Interpolate `psi`, and the gradient of the same bicubic, at one point.
+    ///
+    /// The flux surfaces are contours of this bicubic, so this is the gradient to find them with. For the physics, e.g. the poloidal
+    /// field, use `derivatives`, whose gradient comes from the bicubics of the gradient's components.
+    ///
+    /// # Arguments
+    /// * `r_point`, `z_point` - the position to evaluate [metre]
+    ///
+    /// # Returns
+    /// * `psi_value_and_gradient` - `psi` [weber] and its gradient [weber / metre], or `None` when the point is off the grid
+    pub(super) fn psi_value_and_gradient(&self, r_point: f64, z_point: f64) -> Option<PsiValueAndGradient> {
+        assert_eq!(self.psi_2d.dim(), (self.z.len(), self.r.len()));
+
+        let cell: GridCellCoordinates = self.cell_coordinates(r_point, z_point)?;
+        let psi: HermiteValueAndDerivatives = hermite_bicubic(
+            self.psi_2d,
+            self.d_psi_d_r_2d,
+            self.d_psi_d_z_2d,
+            self.d2_psi_d_r_d_z_2d,
+            &cell,
+            self.d_r,
+            self.d_z,
+        );
+
+        Some(PsiValueAndGradient {
+            psi: psi.f,
+            d_psi_d_r: psi.d_f_d_x / self.d_r,
+            d_psi_d_z: psi.d_f_d_y / self.d_z,
+        })
     }
 
     /// Interpolate `grad(psi)` and the Hessian of `psi` at one point.
@@ -142,28 +178,24 @@ impl<'a> PsiInterpolator<'a> {
     ///   [weber / metre ** 2], or `None` when the point is off the grid
     pub(super) fn derivatives(&self, r_point: f64, z_point: f64) -> Option<PsiDerivatives> {
         let cell: GridCellCoordinates = self.cell_coordinates(r_point, z_point)?;
-        let i_r_left: usize = cell.i_r_left;
-        let i_z_lower: usize = cell.i_z_lower;
-
-        let d_psi_d_r_interpolator: BicubicInterpolator = BicubicInterpolator::new(
+        let d_psi_d_r: HermiteValueAndDerivatives = hermite_bicubic(
+            self.d_psi_d_r_2d,
+            self.d2_psi_d_r2_2d,
+            self.d2_psi_d_r_d_z_2d,
+            &self.d3_psi_d_r2_d_z_2d,
+            &cell,
             self.d_r,
             self.d_z,
-            self.d_psi_d_r_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_r2_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_r_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d3_psi_d_r2_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
         );
-        let d_psi_d_z_interpolator: BicubicInterpolator = BicubicInterpolator::new(
+        let d_psi_d_z: HermiteValueAndDerivatives = hermite_bicubic(
+            self.d_psi_d_z_2d,
+            self.d2_psi_d_r_d_z_2d,
+            self.d2_psi_d_z2_2d,
+            &self.d3_psi_d_r_d_z2_2d,
+            &cell,
             self.d_r,
             self.d_z,
-            self.d_psi_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_r_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_z2_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d3_psi_d_r_d_z2_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
         );
-
-        let d_psi_d_r: BicubicValueAndDerivatives = d_psi_d_r_interpolator.value_and_derivatives(cell.x, cell.y);
-        let d_psi_d_z: BicubicValueAndDerivatives = d_psi_d_z_interpolator.value_and_derivatives(cell.x, cell.y);
 
         Some(PsiDerivatives {
             d_psi_d_r: d_psi_d_r.f,
@@ -201,16 +233,6 @@ impl<'a> PsiInterpolator<'a> {
         Some((hessian_matrix, hessian_determinant, hessian_trace))
     }
 
-    pub(super) fn interpolate_bilinear(&self, values: &Array2<f64>, r_point: f64, z_point: f64) -> Option<f64> {
-        let cell: GridCellCoordinates = self.cell_coordinates(r_point, z_point)?;
-        let i_r_left: usize = cell.i_r_left;
-        let i_z_lower: usize = cell.i_z_lower;
-
-        let value_lower: f64 = (1.0 - cell.x) * values[(i_z_lower, i_r_left)] + cell.x * values[(i_z_lower, i_r_left + 1)];
-        let value_upper: f64 = (1.0 - cell.x) * values[(i_z_lower + 1, i_r_left)] + cell.x * values[(i_z_lower + 1, i_r_left + 1)];
-        Some((1.0 - cell.y) * value_lower + cell.y * value_upper)
-    }
-
     fn cell_coordinates(&self, r_point: f64, z_point: f64) -> Option<GridCellCoordinates> {
         if !r_point.is_finite()
             || !z_point.is_finite()
@@ -229,6 +251,89 @@ impl<'a> PsiInterpolator<'a> {
 
         Some(GridCellCoordinates { i_r_left, i_z_lower, x, y })
     }
+}
+
+/// A bicubic's value and first derivatives, with respect to the cell's normalised coordinates `x` and `y` in `[0, 1]`.
+struct HermiteValueAndDerivatives {
+    f: f64,
+    d_f_d_x: f64,
+    d_f_d_y: f64,
+}
+
+/// Evaluate the bicubic of one grid quantity in one cell, as the tensor product of cubic Hermite interpolations: from the quantity, its
+/// two first derivatives and its mixed derivative at the cell's four corners. It is the same bicubic as `BicubicInterpolator`'s, which
+/// builds its coefficient matrix from the same sixteen numbers; this evaluates it without allocating.
+///
+/// # Arguments
+/// * `values_2d` - the quantity on the grid, shape (n_z, n_r) [any]
+/// * `d_values_d_r_2d`, `d_values_d_z_2d` - its derivatives on the grid [any / metre]
+/// * `d2_values_d_r_d_z_2d` - its mixed derivative on the grid [any / metre ** 2]
+/// * `cell` - the cell, and the point's position in it
+/// * `d_r`, `d_z` - the grid spacing [metre]
+///
+/// # Returns
+/// * The value [any] and its derivatives with respect to the normalised cell coordinates [any]
+fn hermite_bicubic(
+    values_2d: &Array2<f64>,
+    d_values_d_r_2d: &Array2<f64>,
+    d_values_d_z_2d: &Array2<f64>,
+    d2_values_d_r_d_z_2d: &Array2<f64>,
+    cell: &GridCellCoordinates,
+    d_r: f64,
+    d_z: f64,
+) -> HermiteValueAndDerivatives {
+    let x: f64 = cell.x;
+    let y: f64 = cell.y;
+    // The cubic Hermite basis, [value at 0, value at 1, slope at 0, slope at 1], and its derivatives, in x and in y
+    let basis_x: [f64; 4] = [
+        (2.0 * x - 3.0) * x * x + 1.0,
+        (3.0 - 2.0 * x) * x * x,
+        ((x - 2.0) * x + 1.0) * x,
+        (x - 1.0) * x * x,
+    ];
+    let d_basis_x: [f64; 4] = [6.0 * (x - 1.0) * x, 6.0 * (1.0 - x) * x, (3.0 * x - 4.0) * x + 1.0, (3.0 * x - 2.0) * x];
+    let basis_y: [f64; 4] = [
+        (2.0 * y - 3.0) * y * y + 1.0,
+        (3.0 - 2.0 * y) * y * y,
+        ((y - 2.0) * y + 1.0) * y,
+        (y - 1.0) * y * y,
+    ];
+    let d_basis_y: [f64; 4] = [6.0 * (y - 1.0) * y, 6.0 * (1.0 - y) * y, (3.0 * y - 4.0) * y + 1.0, (3.0 * y - 2.0) * y];
+
+    let mut f: f64 = 0.0;
+    let mut d_f_d_x: f64 = 0.0;
+    let mut d_f_d_y: f64 = 0.0;
+    for i_corner_r in 0..2 {
+        for i_corner_z in 0..2 {
+            let i_r: usize = cell.i_r_left + i_corner_r;
+            let i_z: usize = cell.i_z_lower + i_corner_z;
+            let value: f64 = values_2d[(i_z, i_r)];
+            let slope_x: f64 = d_r * d_values_d_r_2d[(i_z, i_r)];
+            let slope_y: f64 = d_z * d_values_d_z_2d[(i_z, i_r)];
+            let twist: f64 = d_r * d_z * d2_values_d_r_d_z_2d[(i_z, i_r)];
+            // The value basis function of this corner is entry `i_corner`, its slope basis function entry `2 + i_corner`
+            let value_x: f64 = basis_x[i_corner_r];
+            let slope_basis_x: f64 = basis_x[2 + i_corner_r];
+            let d_value_x: f64 = d_basis_x[i_corner_r];
+            let d_slope_basis_x: f64 = d_basis_x[2 + i_corner_r];
+            let value_y: f64 = basis_y[i_corner_z];
+            let slope_basis_y: f64 = basis_y[2 + i_corner_z];
+            let d_value_y: f64 = d_basis_y[i_corner_z];
+            let d_slope_basis_y: f64 = d_basis_y[2 + i_corner_z];
+
+            f += value * value_x * value_y + slope_x * slope_basis_x * value_y + slope_y * value_x * slope_basis_y + twist * slope_basis_x * slope_basis_y;
+            d_f_d_x += value * d_value_x * value_y
+                + slope_x * d_slope_basis_x * value_y
+                + slope_y * d_value_x * slope_basis_y
+                + twist * d_slope_basis_x * slope_basis_y;
+            d_f_d_y += value * value_x * d_value_y
+                + slope_x * slope_basis_x * d_value_y
+                + slope_y * value_x * d_slope_basis_y
+                + twist * slope_basis_x * d_slope_basis_y;
+        }
+    }
+
+    HermiteValueAndDerivatives { f, d_f_d_x, d_f_d_y }
 }
 
 /// Differentiate a grid quantity in `z` with second-order finite differences.

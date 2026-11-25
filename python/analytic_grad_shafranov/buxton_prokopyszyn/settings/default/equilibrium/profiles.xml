@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The paper's broad order-2 profiles, p' and ff' both proportional to [0, 1, 1], with their values on the magnetic axis in the ratio of
+    Guazzotto and Freidberg's nu = 0.3: ff' = mu0 R_c**2 p' (1 - nu) / nu.
+-->
+<profiles xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/profiles.xsd">
+    <p_prime_coefficients>0.0 1.0e5 1.0e5</p_prime_coefficients>
+    <ff_prime_coefficients>0.0 0.94 0.94</ff_prime_coefficients>
+</profiles>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 2.1 T at the elongated D's r_geo, 1.7 m -->
+<vacuum_toroidal_field xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/vacuum_toroidal_field.xsd">
+    <r0>1.7</r0>
+    <b0>2.1</b0>
+</vacuum_toroidal_field>

@@ -1,15 +1,16 @@
 //! `magnetics/rogowski_coil(i1)`: the Rogowski coils, with the custom key `gaps(i2)`
 
 use crate::equilibrium::Equilibrium;
-use crate::greens::Greens;
+use crate::greens::{Conductor, ConductorModel, Greens, Sensor};
 use crate::greens_storage::GreensRogowskiCoil;
 use crate::magnetics::{Magnetics, RogowskiCoilGap};
 use crate::pf_active::PfActive;
-use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
+use crate::pf_passive::PfPassive;
 use crate::settings::settings_equilibrium::SettingsEquilibriumRogowskiCoil;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use imas_rs::ids::magnetics::{MagneticsRogowski, Rphiz0dStatic, SignalFlt1dValidity};
 use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::pf_passive::PfPassiveLoops;
 use imas_rs::{EquilibriumConstraints0d, EquilibriumConstraints0dIpLike};
 use ndarray::{Array1, Array2, Axis, s};
 use numpy::PyArrayMethods;
@@ -260,9 +261,9 @@ impl Magnetics {
     }
 }
 
-/// Rust only methods, copying the Rogowski coils into the equilibrium IDS
+/// Rust only methods, copying the Rogowski coils into the Equilibrium IDS
 impl Equilibrium {
-    /// Copy the Rogowski coils' currents from the magnetics IDS onto every time-slice of the equilibrium IDS, as
+    /// Copy the Rogowski coils' currents from the Magnetics IDS onto every time-slice of the Equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/rogowski_coil(i1)`, a custom key. This does part of the work of the Python method
     /// `copy_from_magnetics_ids`; see it for what is stored.
     ///
@@ -270,14 +271,14 @@ impl Equilibrium {
     /// * `magnetics` - the magnetic sensors, holding the Rogowski coils in `magnetics/rogowski_coil`
     ///
     /// # Errors
-    /// A Rogowski coil in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, is not in the magnetics IDS, or a Rogowski coil's
+    /// A Rogowski coil in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, is not in the Magnetics IDS, or a Rogowski coil's
     /// measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_rogowski_coil(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let rogowski_coils: &Vec<MagneticsRogowski> = &magnetics.magnetics_ids.rogowski_coil;
         let n_rogowski_coil: usize = rogowski_coils.len();
 
         // Only the Rogowski coils in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, are copied, and each of them has to
-        // be in the magnetics IDS. Checked before anything is copied
+        // be in the Magnetics IDS. Checked before anything is copied
         let settings_sensors: &Vec<SettingsEquilibriumRogowskiCoil> = &self.settings_equilibrium.constraints.rogowski_coil;
         let n_settings: usize = settings_sensors.len();
         let mut settings_names: Vec<String> = Vec::with_capacity(n_settings);
@@ -325,7 +326,7 @@ impl Equilibrium {
             current_measured.slice_mut(s![.., i_rogowski_coil]).assign(&measured);
         }
 
-        // Rebuilt from the Rogowski coils in the fit settings, in the order of the magnetics IDS, so that calling this twice replaces them
+        // Rebuilt from the Rogowski coils in the fit settings, in the order of the Magnetics IDS, so that calling this twice replaces them
         // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight` and
         // `expected_value`, found by its name
         for i_time in 0..n_time {
@@ -379,12 +380,12 @@ impl Equilibrium {
     /// * `magnetics` - the magnetic sensors, holding the Rogowski coils in `magnetics/rogowski_coil`
     /// * `pf_active` - the PF coils, in the order of `greens_tables/grid/pf_active`
     /// * `pf_passive` - the passive conductors, holding the filaments of those the equilibrium fits
-    pub fn greens_with_magnetics_rogowski_coil(&mut self, magnetics: &Magnetics, pf_active: &PfActive, pf_passive: &PfPassive) {
+    pub fn greens_with_magnetics_rogowski_coil(&mut self, magnetics: &Magnetics, pf_active: &PfActive, pf_passive: &PfPassive) -> Result<(), String> {
         let rogowski_coils: &Vec<MagneticsRogowski> = &magnetics.magnetics_ids.rogowski_coil;
         let n_rogowski_coil: usize = rogowski_coils.len();
 
         // Only the Rogowski coils in the fit settings, `equilibrium_settings/constraints/rogowski_coil`, which `copy_from_magnetics_ids` copies,
-        // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
+        // have Greens tables. `greens_with_magnetics` checked that each of them is in the Magnetics IDS
         let mut settings_names: Vec<String> = Vec::new();
         for settings_sensor in &self.settings_equilibrium.constraints.rogowski_coil {
             settings_names.push(settings_sensor.name.clone());
@@ -397,32 +398,68 @@ impl Equilibrium {
         let n_z: usize = self.settings_equilibrium.grid.n_z;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
+        let conductor_model: ConductorModel = ConductorModel::from_settings(&self.settings_equilibrium.numerics.greens)?;
+
+        // The grid's cells, `d_r` by `d_z`, centred on the grid points, flattened; as obliques, each is described from its corner at the
+        // smallest r and z
+        let d_r: f64 = mesh_r[(0, 1)] - mesh_r[(0, 0)];
+        let d_z: f64 = mesh_z[(1, 0)] - mesh_z[(0, 0)];
         let grid_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let grid_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
         let n_grid: usize = grid_r.len();
+        let grid_cell: Conductor = Conductor::from_oblique(
+            &(&grid_r - 0.5 * d_r),
+            &(&grid_z - 0.5 * d_z),
+            &Array1::from_elem(n_grid, d_r),
+            &Array1::from_elem(n_grid, d_z),
+            &Array1::zeros(n_grid),
+            &Array1::zeros(n_grid),
+        )
+        .map_err(|error: String| format!("the grid's cells: {error}"))?;
 
-        // The PF coils' filaments, which are the same for every Rogowski coil
+        // The PF coils' filaments, which are the same for every Rogowski coil: `element(i2)/geometry/rectangle`, described from their
+        // centres. As obliques they are described from their corners at the smallest r and z, with both angles zero
         let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
         let n_coil: usize = pf_active_coils.len();
-        let mut coil_filaments_r: Vec<Array1<f64>> = Vec::with_capacity(n_coil);
-        let mut coil_filaments_z: Vec<Array1<f64>> = Vec::with_capacity(n_coil);
+        let mut coil_conductors: Vec<Conductor> = Vec::with_capacity(n_coil);
         for i_coil in 0..n_coil {
-            coil_filaments_r.push(pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array());
-            coil_filaments_z.push(pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array());
+            let coil_width: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.width.to_array();
+            let coil_height: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.height.to_array();
+            let n_coil_filaments: usize = coil_width.len();
+            coil_conductors.push(
+                Conductor::from_oblique(
+                    &(pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array() - 0.5 * &coil_width),
+                    &(pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array() - 0.5 * &coil_height),
+                    &coil_width,
+                    &coil_height,
+                    &Array1::zeros(n_coil_filaments),
+                    &Array1::zeros(n_coil_filaments),
+                )
+                .map_err(|error: String| format!("PF coil `{}`: {error}", pf_active_coils[i_coil].name))?,
+            );
         }
 
         // The passive conductors the equilibrium fits, with their degrees of freedom, `constraints/pf_passive_current`, in the order of
-        // `greens_tables/grid/pf_passive`, and their filaments, which are the same for every Rogowski coil. `time_slice(0)` because the degrees of
+        // `greens_tables/grid/pf_passive`, and their elements, which are the same for every Rogowski coil. `time_slice(0)` because the degrees of
         // freedom are the same on every time-slice. `greens_with_magnetics` checked that each passive conductor is in `pf_passive`
         let pf_passive_currents: &Vec<EquilibriumConstraints0d> = &self.equilibrium_ids.time_slice[0].constraints.pf_passive_current;
         let n_loop: usize = pf_passive_currents.len();
-        let mut loop_filaments: Vec<PassiveFilaments> = Vec::with_capacity(n_loop);
+        let mut loop_conductors: Vec<Conductor> = Vec::with_capacity(n_loop);
         let mut n_dof_total: usize = 0;
         for i_loop in 0..n_loop {
-            let i_pf_passive_loop: usize = pf_passive
-                .i_loop_named(&pf_passive_currents[i_loop].name)
-                .expect("`greens_with_magnetics` checked that each passive conductor the equilibrium fits is in `pf_passive`");
-            loop_filaments.push(passive_filaments(&pf_passive.pf_passive_ids.r#loop[i_pf_passive_loop].element));
+            let i_pf_passive_loop: usize = pf_passive.i_loop_named(&pf_passive_currents[i_loop].name)?;
+            let pf_passive_loop: &PfPassiveLoops = &pf_passive.pf_passive_ids.r#loop[i_pf_passive_loop];
+            loop_conductors.push(
+                Conductor::from_oblique(
+                    &pf_passive_loop.element(..).geometry.oblique.r.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.z.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.length_alpha.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.length_beta.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.alpha.to_array(),
+                    &pf_passive_loop.element(..).geometry.oblique.beta.to_array(),
+                )
+                .map_err(|error: String| format!("passive conductor `{}`: {error}", pf_passive_loop.name))?,
+            );
             n_dof_total += pf_passive_currents[i_loop].dof.len();
         }
 
@@ -455,10 +492,11 @@ impl Equilibrium {
             );
 
             // The points along each gap, from its start to its end, and the step between them
+            let rogowski_coil_name: &str = &rogowski_coils[i_rogowski_coil].name;
+            let rogowski_coil_error = |error: String| -> String { format!("`greens_tables/rogowski_coil` of `{rogowski_coil_name}`: {error}") };
             let gaps: &Vec<RogowskiCoilGap> = &magnetics.rogowski_coil_gaps[i_rogowski_coil];
             let n_gap: usize = gaps.len();
-            let mut gaps_r: Vec<Array1<f64>> = Vec::with_capacity(n_gap);
-            let mut gaps_z: Vec<Array1<f64>> = Vec::with_capacity(n_gap);
+            let mut gaps_sensor: Vec<Sensor> = Vec::with_capacity(n_gap);
             let mut gaps_d_r: Vec<f64> = Vec::with_capacity(n_gap);
             let mut gaps_d_z: Vec<f64> = Vec::with_capacity(n_gap);
             for i_gap in 0..n_gap {
@@ -466,8 +504,7 @@ impl Equilibrium {
                 let gap_z: Array1<f64> = Array1::linspace(gaps[i_gap].z_start, gaps[i_gap].z_end, N_GAP_POINTS);
                 gaps_d_r.push(gap_r[1] - gap_r[0]);
                 gaps_d_z.push(gap_z[1] - gap_z[0]);
-                gaps_r.push(gap_r);
-                gaps_z.push(gap_z);
+                gaps_sensor.push(Sensor::new(&gap_r, &gap_z).map_err(|error: String| format!("Rogowski coil `{rogowski_coil_name}`, gap {i_gap}: {error}"))?);
             }
 
             // With the plasma: the grid cells inside the contour, less `integral(b . d_l) / mu_0` along the gaps
@@ -480,18 +517,11 @@ impl Equilibrium {
             let mut g_plasma_gaps: Array1<f64> = Array1::zeros(n_grid); // shape = [n_z * n_r]
             let mut g_d_plasma_d_z_gaps: Array1<f64> = Array1::zeros(n_grid); // shape = [n_z * n_r]
             for i_gap in 0..n_gap {
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    gaps_r[i_gap].clone(),
-                    gaps_z[i_gap].clone(),
-                    grid_r.clone(),
-                    grid_z.clone(),
-                    grid_r.clone() * 0.0, // TODO: this should be d_r not 0.0
-                    grid_z.clone() * 0.0,
-                );
-                let g_br: Array2<f64> = greens_calculator.b_r(); // shape = [N_GAP_POINTS, n_z * n_r]
-                let g_bz: Array2<f64> = greens_calculator.b_z(); // shape = [N_GAP_POINTS, n_z * n_r]
-                let g_d_br_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [N_GAP_POINTS, n_z * n_r]
-                let g_d_bz_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [N_GAP_POINTS, n_z * n_r]
+                let greens_calculator: Greens = Greens::sensor_to_conductor(&gaps_sensor[i_gap], &grid_cell, conductor_model.clone())?;
+                let g_br: Array2<f64> = greens_calculator.b_r().map_err(rogowski_coil_error)?; // shape = [N_GAP_POINTS, n_z * n_r]
+                let g_bz: Array2<f64> = greens_calculator.b_z().map_err(rogowski_coil_error)?; // shape = [N_GAP_POINTS, n_z * n_r]
+                let g_d_br_d_z: Array2<f64> = greens_calculator.d_b_r_d_z().map_err(rogowski_coil_error)?; // shape = [N_GAP_POINTS, n_z * n_r]
+                let g_d_bz_d_z: Array2<f64> = greens_calculator.d_b_z_d_z().map_err(rogowski_coil_error)?; // shape = [N_GAP_POINTS, n_z * n_r]
                 for i_gap_point in 0..N_GAP_POINTS {
                     let weight: f64 = gap_point_weights[i_gap_point];
                     g_plasma_gaps = g_plasma_gaps + &g_br.row(i_gap_point) * weight * gaps_d_r[i_gap] + &g_bz.row(i_gap_point) * weight * gaps_d_z[i_gap];
@@ -506,26 +536,22 @@ impl Equilibrium {
             // With each PF coil: its filaments inside the contour, less `integral(b . d_l) / mu_0` along the gaps
             let mut g_pf_active: Array1<f64> = Array1::from_elem(n_coil, f64::NAN); // shape = [n_coil]
             for i_coil in 0..n_coil {
-                let n_filament: usize = coil_filaments_r[i_coil].len();
+                let n_filament: usize = coil_conductors[i_coil].n_conductor;
                 let mut g_inside: f64 = 0.0;
                 for i_filament in 0..n_filament {
-                    if contour.contains(&Point::new(coil_filaments_r[i_coil][i_filament], coil_filaments_z[i_coil][i_filament])) {
+                    if contour.contains(&Point::new(
+                        coil_conductors[i_coil].centroid_r[i_filament],
+                        coil_conductors[i_coil].centroid_z[i_filament],
+                    )) {
                         g_inside += 1.0;
                     }
                 }
 
                 let mut g_gaps: f64 = 0.0;
                 for i_gap in 0..n_gap {
-                    let greens_calculator: Greens = Greens::sensor_to_conductor(
-                        gaps_r[i_gap].clone(),
-                        gaps_z[i_gap].clone(),
-                        coil_filaments_r[i_coil].clone(),
-                        coil_filaments_z[i_coil].clone(),
-                        coil_filaments_r[i_coil].clone() * 0.0, // TODO: should this be NaN instead?
-                        coil_filaments_z[i_coil].clone() * 0.0,
-                    );
-                    let g_br: Array1<f64> = greens_calculator.b_r().sum_axis(Axis(1)); // summed over the coil's filaments; shape = [N_GAP_POINTS]
-                    let g_bz: Array1<f64> = greens_calculator.b_z().sum_axis(Axis(1)); // summed over the coil's filaments; shape = [N_GAP_POINTS]
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(&gaps_sensor[i_gap], &coil_conductors[i_coil], conductor_model.clone())?;
+                    let g_br: Array1<f64> = greens_calculator.b_r().map_err(rogowski_coil_error)?.sum_axis(Axis(1)); // summed over the coil's filaments; shape = [N_GAP_POINTS]
+                    let g_bz: Array1<f64> = greens_calculator.b_z().map_err(rogowski_coil_error)?.sum_axis(Axis(1)); // summed over the coil's filaments; shape = [N_GAP_POINTS]
                     for i_gap_point in 0..N_GAP_POINTS {
                         let weight: f64 = gap_point_weights[i_gap_point];
                         g_gaps += g_br[i_gap_point] * weight * gaps_d_r[i_gap] + g_bz[i_gap_point] * weight * gaps_d_z[i_gap];
@@ -540,10 +566,13 @@ impl Equilibrium {
             let mut g_pf_passive: Array1<f64> = Array1::from_elem(n_dof_total, f64::NAN); // shape = [n_dof_total]
             let mut i_dof_total: usize = 0;
             for i_loop in 0..n_loop {
-                let n_filament: usize = loop_filaments[i_loop].r.len();
+                let n_filament: usize = loop_conductors[i_loop].n_conductor;
                 let mut filaments_inside: Array1<f64> = Array1::zeros(n_filament); // 1 for a filament inside the contour; shape = [n_filament]
                 for i_filament in 0..n_filament {
-                    if contour.contains(&Point::new(loop_filaments[i_loop].r[i_filament], loop_filaments[i_loop].z[i_filament])) {
+                    if contour.contains(&Point::new(
+                        loop_conductors[i_loop].centroid_r[i_filament],
+                        loop_conductors[i_loop].centroid_z[i_filament],
+                    )) {
                         filaments_inside[i_filament] = 1.0;
                     }
                 }
@@ -553,16 +582,9 @@ impl Equilibrium {
                 let mut gaps_g_br_filaments: Vec<Array2<f64>> = Vec::with_capacity(n_gap);
                 let mut gaps_g_bz_filaments: Vec<Array2<f64>> = Vec::with_capacity(n_gap);
                 for i_gap in 0..n_gap {
-                    let greens_calculator: Greens = Greens::sensor_to_conductor(
-                        gaps_r[i_gap].clone(),
-                        gaps_z[i_gap].clone(),
-                        loop_filaments[i_loop].r.clone(),
-                        loop_filaments[i_loop].z.clone(),
-                        loop_filaments[i_loop].r.clone() * 0.0, // TODO: should this be NaN instead?
-                        loop_filaments[i_loop].z.clone() * 0.0,
-                    );
-                    gaps_g_br_filaments.push(greens_calculator.b_r()); // shape = [N_GAP_POINTS, n_filament]
-                    gaps_g_bz_filaments.push(greens_calculator.b_z()); // shape = [N_GAP_POINTS, n_filament]
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(&gaps_sensor[i_gap], &loop_conductors[i_loop], conductor_model.clone())?;
+                    gaps_g_br_filaments.push(greens_calculator.b_r().map_err(rogowski_coil_error)?); // shape = [N_GAP_POINTS, n_filament]
+                    gaps_g_bz_filaments.push(greens_calculator.b_z().map_err(rogowski_coil_error)?); // shape = [N_GAP_POINTS, n_filament]
                 }
 
                 let n_dof: usize = pf_passive_currents[i_loop].dof.len();
@@ -600,5 +622,7 @@ impl Equilibrium {
 
         // Assigned rather than appended, so that calling this twice replaces the Rogowski coils' tables instead of repeating them
         self.greens_tables.rogowski_coil = greens_rogowski_coils;
+
+        Ok(())
     }
 }

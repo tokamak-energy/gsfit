@@ -1,4 +1,4 @@
-use crate::greens::FilamentGeometry;
+use crate::greens::Conductor;
 use crate::settings::settings_pf_passive::SettingsPfPassive;
 use imas_rs::ids::pf_passive::{Code, ObliqueStatic, Outline2dGeometryStatic, PfCoilsElements, PfPassive as PfPassiveIds, PfPassiveLoops};
 use imas_rs::python::{PickleState, PickleStateError, PyParametersInput, PyPath, PyPfPassive, read_path};
@@ -403,22 +403,18 @@ impl PfPassive {
             });
         }
 
-        // The filaments as GSFit's Greens functions describe them
-        let filaments: PassiveFilaments = passive_filaments(&elements);
-
         // The area of each parallelogram
-        let mut area: Array1<f64> = Array1::from_elem(n_element, f64::NAN);
+        let conductor: Conductor = Conductor::from_oblique(
+            &element_r,
+            &element_z,
+            &element_length_alpha,
+            &element_length_beta,
+            &element_alpha,
+            &element_beta,
+        )
+        .map_err(|error: String| format!("passive conductor `{name}`: {error}"))?;
         for i_element in 0..n_element {
-            let filament_geometry: FilamentGeometry = FilamentGeometry::new(
-                filaments.angle_1[i_element],
-                filaments.angle_2[i_element],
-                filaments.d_r[i_element],
-                filaments.d_z[i_element],
-                filaments.r[i_element],
-                filaments.z[i_element],
-            );
-            area[i_element] = filament_geometry.calculate_area();
-            elements[i_element].area = area[i_element];
+            elements[i_element].area = conductor.area[i_element];
         }
 
         self.pf_passive_ids.r#loop.push(PfPassiveLoops {
@@ -497,7 +493,7 @@ pub fn passive_filaments(elements: &[PfCoilsElements]) -> PassiveFilaments {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::settings_pf_passive::SettingsPfPassiveWorkflow;
+    use crate::settings::settings_workflow::SettingsWorkflow;
     use imas_rs::dd_support::parameters_input::ParametersInput;
 
     /// The XML schema the settings' structs are generated from
@@ -561,7 +557,7 @@ mod tests {
     fn the_settings_are_read_into_structs() {
         let settings_pf_passive: SettingsPfPassive = SettingsPfPassive::from_xml(SETTINGS_WITH_WORKFLOW_XML).expect("the settings can be read");
 
-        let workflow: &SettingsPfPassiveWorkflow = settings_pf_passive.workflow.as_ref().expect("the settings link to workflow.xml");
+        let workflow: &SettingsWorkflow = settings_pf_passive.workflow.as_ref().expect("the settings link to workflow.xml");
         assert_eq!(workflow.tree.len(), 1);
         assert_eq!(workflow.tree[0].tree_name, "ELMAG");
         assert_eq!(workflow.tree[0].pulseNo, None);

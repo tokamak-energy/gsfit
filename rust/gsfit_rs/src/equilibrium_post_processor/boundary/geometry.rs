@@ -5,7 +5,7 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
-use super::super::psi_interpolator::{PsiDerivatives, PsiInterpolator};
+use super::super::psi_interpolator::{PsiDerivatives, PsiInterpolator, PsiValueAndGradient};
 use imas_rs::EquilibriumTimeSlice;
 use imas_rs::ids::equilibrium::EquilibriumContourTreeNode;
 use ndarray::Array1;
@@ -20,11 +20,11 @@ const CRITICAL_TYPE_SADDLE: i32 = 1;
 /// that X-point [dimensionless]
 const X_POINT_TOLERANCE: f64 = 1.0e-6;
 
-/// The Newton iteration which refines the top or the bottom of a contour has converged once its
+/// The Newton iterations which refine a point of a contour onto its flux surface have converged once their
 /// step is smaller than this fraction of a grid cell [dimensionless]
 const NEWTON_TOLERANCE: f64 = 1.0e-10;
 
-/// The most Newton iterations taken to refine the top or the bottom of a contour
+/// The most Newton iterations taken to refine a point of a contour onto its flux surface
 const N_NEWTON_ITER_MAX: usize = 50;
 
 /// The Newton iteration's Jacobian is singular once the sine of the angle between its two rows is
@@ -51,23 +51,22 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let z_geo: f64 = (boundary_z.max().unwrap().to_owned() + boundary_z.min().unwrap().to_owned()) / 2.0;
 
     // Boundary shape: elongation, triangularity and squareness.
-    // The top and the bottom of the boundary are refined onto `psi_b`; see `boundary_geometry`
+    // The top and the bottom of the boundary are refined onto `psi_b`, and its extent is that of the outline; see `boundary_geometry`
     let psi_interpolator: PsiInterpolator = PsiInterpolator::new(time_slice);
     let (xpts_r, xpts_z): (Array1<f64>, Array1<f64>) = x_points(time_slice);
-    let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o): (f64, f64, f64, f64, f64, f64, f64, f64) =
-        boundary_geometry(boundary_r, boundary_z, psi_b, &psi_interpolator, &xpts_r, &xpts_z);
+    let shape: ContourShape = boundary_geometry(boundary_r, boundary_z, psi_b, &psi_interpolator, &xpts_r, &xpts_z, false);
 
     time_slice.boundary.minor_radius = r_minor;
     time_slice.boundary.geometric_axis.r = r_geo;
     time_slice.boundary.geometric_axis.z = z_geo;
-    time_slice.boundary.elongation = elongation;
-    time_slice.boundary.triangularity = triang;
-    time_slice.boundary.triangularity_lower = triang_l;
-    time_slice.boundary.triangularity_upper = triang_u;
-    time_slice.boundary.squareness_lower_inner = square_l_i;
-    time_slice.boundary.squareness_lower_outer = square_l_o;
-    time_slice.boundary.squareness_upper_inner = square_u_i;
-    time_slice.boundary.squareness_upper_outer = square_u_o;
+    time_slice.boundary.elongation = shape.elongation;
+    time_slice.boundary.triangularity = shape.triangularity;
+    time_slice.boundary.triangularity_lower = shape.triangularity_lower;
+    time_slice.boundary.triangularity_upper = shape.triangularity_upper;
+    time_slice.boundary.squareness_lower_inner = shape.squareness_lower_inner;
+    time_slice.boundary.squareness_lower_outer = shape.squareness_lower_outer;
+    time_slice.boundary.squareness_upper_inner = shape.squareness_upper_inner;
+    time_slice.boundary.squareness_upper_outer = shape.squareness_upper_outer;
 }
 
 /// The X-points of a time-slice: the saddle points of `psi` which the solver found, from
@@ -98,6 +97,26 @@ pub(in crate::equilibrium_post_processor) fn x_points(time_slice: &EquilibriumTi
     (Array1::from_vec(xpts_r), Array1::from_vec(xpts_z))
 }
 
+/// The shape of a closed poloidal contour; see `boundary_geometry`
+pub(in crate::equilibrium_post_processor) struct ContourShape {
+    /// [dimensionless]
+    pub elongation: f64,
+    /// The average of the upper and the lower triangularity [dimensionless]
+    pub triangularity: f64,
+    /// [dimensionless]
+    pub triangularity_lower: f64,
+    /// [dimensionless]
+    pub triangularity_upper: f64,
+    /// [dimensionless]
+    pub squareness_lower_inner: f64,
+    /// [dimensionless]
+    pub squareness_lower_outer: f64,
+    /// [dimensionless]
+    pub squareness_upper_inner: f64,
+    /// [dimensionless]
+    pub squareness_upper_outer: f64,
+}
+
 /// Calculate the shape of a closed poloidal contour, following the IMAS definitions:
 /// https://imas-data-dictionary.readthedocs.io/en/latest/generated/ids/equilibrium.html
 ///
@@ -108,43 +127,20 @@ pub(in crate::equilibrium_post_processor) fn x_points(time_slice: &EquilibriumTi
 /// defines the `boundary` scalars and the `profiles_1d` profiles the same way, so both go through
 /// this one function and the last point of each profile is the corresponding boundary scalar.
 ///
-/// # The top and the bottom of the contour
-///
-/// The contour's vertices are where it crosses the grid lines. Around its top the contour runs
-/// almost horizontally, so the vertices there are on the vertical grid lines, and the highest of them
-/// can be up to half a cell from the top of the flux surface. Taken from the vertices, `R_Zmax` is
-/// quantised by the grid, and the upper triangularity with it, in steps of `d_r / a`: steps of 0.04
-/// on ST40's 12.5 mm grid. So the radius of the top, and likewise of the bottom, is refined onto
-/// the flux surface itself, using the bicubic interpolation of `psi`; see `refine_top_or_bottom`.
-///
-/// An X-point is not refined. The contour has a corner there, not a horizontal top, and the X-point
-/// is already found to sub-grid accuracy, by `find_stationary_points_using_winding_number`, and put
-/// onto the contour by `marching_squares`.
-///
-/// Everything else is taken from the vertices. `R_min`, `R_max`, `Z_min` and `Z_max` are each
-/// resolved by the grid lines the contour crosses there, so their error is only second order: a
-/// vertex `delta` from the extremum of a surface with curvature `kappa` is `kappa * delta ** 2 / 2`
-/// short of it, at most 0.2 mm on ST40's grid. Keeping them is what keeps the `minor_radius`, the
-/// `geometric_axis` and the `elongation` the extent of the `outline`. The heights of the inboard and
-/// the outboard points are quantised by the horizontal grid lines in the same way `R_Zmax` was by
-/// the vertical ones, but they only enter the squareness, and are taken from the vertices too.
+/// The shape is measured from the contour's extremal points, refined onto the flux surface as `contour_extremal_points` describes, and,
+/// when `is_extent_refined`, from where the squareness diagonals cross the flux surface itself rather than the contour's straight segments;
+/// see `squareness`.
 ///
 /// # Arguments
 /// * `boundary_r` - radial coordinates of the closed contour [metre]
 /// * `boundary_z` - vertical coordinates of the closed contour [metre]
-/// * `psi_contour` - the poloidal flux on the contour, which its top and bottom are refined onto [weber]
+/// * `psi_contour` - the poloidal flux on the contour, which its points are refined onto [weber]
 /// * `psi_interpolator` - the bicubic interpolation of `psi`
 /// * `xpts_r`, `xpts_z` - the X-points, which are not refined; see `x_points` [metre]
+/// * `is_extent_refined` - whether the whole extent and the squareness diagonals are refined, as well as the radii of the top and the bottom
 ///
 /// # Returns
-/// * `elongation` - elongation of the plasma boundary [dimensionless]
-/// * `triang` - average triangularity [dimensionless]
-/// * `triang_l` - lower triangularity [dimensionless]
-/// * `triang_u` - upper triangularity [dimensionless]
-/// * `square_l_i` - lower inner squareness [dimensionless]
-/// * `square_l_o` - lower outer squareness [dimensionless]
-/// * `square_u_i` - upper inner squareness [dimensionless]
-/// * `square_u_o` - upper outer squareness [dimensionless]
+/// * `shape` - every quantity NaN for a contour which cannot be measured
 pub(in crate::equilibrium_post_processor) fn boundary_geometry(
     boundary_r: &Array1<f64>,
     boundary_z: &Array1<f64>,
@@ -152,50 +148,129 @@ pub(in crate::equilibrium_post_processor) fn boundary_geometry(
     psi_interpolator: &PsiInterpolator,
     xpts_r: &Array1<f64>,
     xpts_z: &Array1<f64>,
-) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
-    let nan_result: (f64, f64, f64, f64, f64, f64, f64, f64) = (f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN);
-
-    let Some(mut extremal_points) = extremal_points(boundary_r, boundary_z) else {
-        return nan_result;
+    is_extent_refined: bool,
+) -> ContourShape {
+    let Some(extremal_points) = contour_extremal_points(boundary_r, boundary_z, psi_contour, psi_interpolator, xpts_r, xpts_z, is_extent_refined) else {
+        return ContourShape {
+            elongation: f64::NAN,
+            triangularity: f64::NAN,
+            triangularity_lower: f64::NAN,
+            triangularity_upper: f64::NAN,
+            squareness_lower_inner: f64::NAN,
+            squareness_lower_outer: f64::NAN,
+            squareness_upper_inner: f64::NAN,
+            squareness_upper_outer: f64::NAN,
+        };
     };
 
-    let d_r: f64 = psi_interpolator.d_r;
-    let d_z: f64 = psi_interpolator.d_z;
-
-    // The top and the bottom, refined onto the flux surface, unless either is an X-point.
-    // When a refinement fails the vertex is kept, which is the best estimate there is
-    if !is_x_point(extremal_points.r_at_z_max, extremal_points.z_max, xpts_r, xpts_z, d_r, d_z)
-        && let Some((top_r, _top_z)) = refine_top_or_bottom(extremal_points.r_at_z_max, extremal_points.z_max, psi_contour, psi_interpolator)
-    {
-        extremal_points.r_at_z_max = top_r;
+    if is_extent_refined {
+        let surface_refinement: SurfaceRefinement = surface_refinement(boundary_r, boundary_z, psi_contour, psi_interpolator);
+        shape_from_extremal_points(boundary_r, boundary_z, &extremal_points, Some(&surface_refinement))
+    } else {
+        shape_from_extremal_points(boundary_r, boundary_z, &extremal_points, None)
     }
-    if !is_x_point(extremal_points.r_at_z_min, extremal_points.z_min, xpts_r, xpts_z, d_r, d_z)
-        && let Some((bottom_r, _bottom_z)) = refine_top_or_bottom(extremal_points.r_at_z_min, extremal_points.z_min, psi_contour, psi_interpolator)
-    {
-        extremal_points.r_at_z_min = bottom_r;
-    }
-
-    shape_from_extremal_points(boundary_r, boundary_z, &extremal_points)
 }
 
 /// Where a closed contour touches each side of its bounding box.
-struct ExtremalPoints {
+pub(in crate::equilibrium_post_processor) struct ExtremalPoints {
     /// Radial coordinate of the top point, `R_Zmax` [metre]
-    r_at_z_max: f64,
+    pub r_at_z_max: f64,
     /// Radial coordinate of the bottom point, `R_Zmin` [metre]
-    r_at_z_min: f64,
+    pub r_at_z_min: f64,
     /// Radial coordinate of the outboard point [metre]
-    r_max: f64,
+    pub r_max: f64,
     /// Radial coordinate of the inboard point [metre]
-    r_min: f64,
+    pub r_min: f64,
     /// Vertical coordinate of the outboard point [metre]
-    z_at_r_max: f64,
+    pub z_at_r_max: f64,
     /// Vertical coordinate of the inboard point [metre]
-    z_at_r_min: f64,
+    pub z_at_r_min: f64,
     /// Vertical coordinate of the top point [metre]
-    z_max: f64,
+    pub z_max: f64,
     /// Vertical coordinate of the bottom point [metre]
-    z_min: f64,
+    pub z_min: f64,
+}
+
+/// The extremal points of a closed contour, refined onto its flux surface.
+///
+/// # The top and the bottom
+///
+/// The contour's vertices are where it crosses the grid lines, for the boundary outline, or the rays from the magnetic axis, for a flux
+/// surface inside it. Around its top the contour runs almost horizontally, and the highest vertex can be up to half the spacing of the
+/// vertices from the top of the flux surface: taken from the vertices, `R_Zmax` is quantised, and the upper triangularity with it, in steps
+/// of `d_r / a` on the boundary, which are 0.04 on ST40's 12.5 mm grid. So the radius of the top, and likewise of the bottom, is always
+/// refined onto the flux surface itself, using the bicubic interpolation of `psi`; see `refine_extreme`.
+///
+/// An X-point is not refined. The contour has a corner there, not a horizontal top, and the X-point
+/// is already found to sub-grid accuracy, by `find_stationary_points_using_winding_number`, and put
+/// onto the contour by `marching_squares`.
+///
+/// # The extent
+///
+/// When `is_extent_refined`, the inboard and the outboard points, where the surface is vertical, are refined in the same way, and the
+/// heights of the top and the bottom are those of the refined points, so the extent is the flux surface's. Otherwise `R_min`, `R_max`,
+/// `Z_min` and `Z_max` are the vertices': each is resolved by the grid lines the boundary outline crosses there, so its error is only
+/// second order, a vertex `delta` from the extremum of a surface with curvature `kappa` being `kappa * delta ** 2 / 2` short of it, at
+/// most 0.2 mm on ST40's grid. Keeping them is what keeps the `boundary` `minor_radius`, `geometric_axis` and `elongation` the extent of
+/// the `outline`. The rays are further apart than the grid lines, which is why the flux surfaces inside the boundary refine their extent.
+///
+/// # Arguments
+/// * `boundary_r` - radial coordinates of the closed contour [metre]
+/// * `boundary_z` - vertical coordinates of the closed contour [metre]
+/// * `psi_contour` - the poloidal flux on the contour, which its points are refined onto [weber]
+/// * `psi_interpolator` - the bicubic interpolation of `psi`
+/// * `xpts_r`, `xpts_z` - the X-points, which are not refined; see `x_points` [metre]
+/// * `is_extent_refined` - whether the inboard and outboard points and the heights of the top and the bottom are refined too
+///
+/// # Returns
+/// * `extremal_points` - or `None` for a contour which cannot be measured. When a refinement fails the vertex is kept, which is the best
+///   estimate there is
+pub(in crate::equilibrium_post_processor) fn contour_extremal_points(
+    boundary_r: &Array1<f64>,
+    boundary_z: &Array1<f64>,
+    psi_contour: f64,
+    psi_interpolator: &PsiInterpolator,
+    xpts_r: &Array1<f64>,
+    xpts_z: &Array1<f64>,
+    is_extent_refined: bool,
+) -> Option<ExtremalPoints> {
+    let mut extremal_points: ExtremalPoints = extremal_points(boundary_r, boundary_z)?;
+    let surface_refinement: SurfaceRefinement = surface_refinement(boundary_r, boundary_z, psi_contour, psi_interpolator);
+    let d_r: f64 = psi_interpolator.d_r;
+    let d_z: f64 = psi_interpolator.d_z;
+
+    if !is_x_point(extremal_points.r_at_z_max, extremal_points.z_max, xpts_r, xpts_z, d_r, d_z)
+        && let Some(top) = refine_extreme(extremal_points.r_at_z_max, extremal_points.z_max, Tangent::Horizontal, &surface_refinement)
+    {
+        extremal_points.r_at_z_max = top.r;
+        if is_extent_refined {
+            extremal_points.z_max = top.z;
+        }
+    }
+    if !is_x_point(extremal_points.r_at_z_min, extremal_points.z_min, xpts_r, xpts_z, d_r, d_z)
+        && let Some(bottom) = refine_extreme(extremal_points.r_at_z_min, extremal_points.z_min, Tangent::Horizontal, &surface_refinement)
+    {
+        extremal_points.r_at_z_min = bottom.r;
+        if is_extent_refined {
+            extremal_points.z_min = bottom.z;
+        }
+    }
+    if is_extent_refined {
+        if !is_x_point(extremal_points.r_max, extremal_points.z_at_r_max, xpts_r, xpts_z, d_r, d_z)
+            && let Some(outboard) = refine_extreme(extremal_points.r_max, extremal_points.z_at_r_max, Tangent::Vertical, &surface_refinement)
+        {
+            extremal_points.r_max = outboard.r;
+            extremal_points.z_at_r_max = outboard.z;
+        }
+        if !is_x_point(extremal_points.r_min, extremal_points.z_at_r_min, xpts_r, xpts_z, d_r, d_z)
+            && let Some(inboard) = refine_extreme(extremal_points.r_min, extremal_points.z_at_r_min, Tangent::Vertical, &surface_refinement)
+        {
+            extremal_points.r_min = inboard.r;
+            extremal_points.z_at_r_min = inboard.z;
+        }
+    }
+
+    Some(extremal_points)
 }
 
 /// The extremal points of a closed contour's vertices.
@@ -262,7 +337,66 @@ fn is_x_point(point_r: f64, point_z: f64, xpts_r: &Array1<f64>, xpts_z: &Array1<
     false
 }
 
-/// Refine the top, or the bottom, of a closed flux surface onto the flux surface itself.
+/// The flux surface a contour's points are refined onto, and how far a refined point may move.
+struct SurfaceRefinement<'a> {
+    /// The poloidal flux on the surface [weber]
+    psi_contour: f64,
+    /// The bicubic interpolation of `psi`
+    psi_interpolator: &'a PsiInterpolator<'a>,
+    /// A refined point is no further than this, in `r`, from the vertex it started from: the larger of a grid cell and the longest segment
+    /// of the contour [metre]
+    reach_r: f64,
+    /// [metre]
+    reach_z: f64,
+}
+
+/// The surface a contour is refined onto; see `SurfaceRefinement`.
+///
+/// # Arguments
+/// * `boundary_r`, `boundary_z` - the closed contour [metre]
+/// * `psi_contour` - the poloidal flux on the contour [weber]
+/// * `psi_interpolator` - the bicubic interpolation of `psi`
+fn surface_refinement<'a>(
+    boundary_r: &Array1<f64>,
+    boundary_z: &Array1<f64>,
+    psi_contour: f64,
+    psi_interpolator: &'a PsiInterpolator<'a>,
+) -> SurfaceRefinement<'a> {
+    let n_boundary: usize = boundary_r.len().min(boundary_z.len());
+    let mut segment_length_max: f64 = 0.0;
+    for i_boundary in 1..n_boundary {
+        let segment_length: f64 = (boundary_r[i_boundary] - boundary_r[i_boundary - 1]).hypot(boundary_z[i_boundary] - boundary_z[i_boundary - 1]);
+        if segment_length.is_finite() {
+            segment_length_max = segment_length_max.max(segment_length);
+        }
+    }
+
+    SurfaceRefinement {
+        psi_contour,
+        psi_interpolator,
+        reach_r: psi_interpolator.d_r.abs().max(segment_length_max),
+        reach_z: psi_interpolator.d_z.abs().max(segment_length_max),
+    }
+}
+
+/// Which way the surface runs at an extremal point
+#[derive(Clone, Copy)]
+enum Tangent {
+    /// At the top or the bottom, where `d(psi)/d(r) = 0`
+    Horizontal,
+    /// At the inboard or the outboard point, where `d(psi)/d(z) = 0`
+    Vertical,
+}
+
+/// A point on a flux surface
+struct SurfacePoint {
+    /// [metre]
+    r: f64,
+    /// [metre]
+    z: f64,
+}
+
+/// Refine the top or the bottom, or the inboard or the outboard point, of a closed flux surface onto the flux surface itself.
 ///
 /// The top of the surface `psi = psi_contour` is where the surface is horizontal, `d(psi)/d(r) = 0`.
 /// Newton's method solves the two conditions together, starting from the highest vertex:
@@ -272,25 +406,25 @@ fn is_x_point(point_r: f64, point_z: f64, xpts_r: &Array1<f64>, xpts_z: &Array1<
 /// [ d2(psi)/d(r)2    d2(psi)/d(r)d(z) ] [ delta_z ]  =  - [ d(psi)/d(r)       ]
 /// ```
 ///
-/// `psi` is the bicubic of `psi`, along whose grid lines `marching_squares` finds the vertices, so
-/// the refined point is on the same surface as the vertices. `d(psi)/d(r)`, and the derivatives of it
-/// in the second row, are the bicubic of `d(psi)/d(r)` itself rather than the derivative of the
-/// bicubic of `psi`: the X-points are found the same way; see `PsiInterpolator`.
+/// The bottom is the surface's other horizontal point, and is found the same way, from the lowest vertex. The inboard and the outboard
+/// points are where the surface is vertical, `d(psi)/d(z) = 0`, whose row of the Jacobian is `[d2(psi)/d(r)d(z), d2(psi)/d(z)2]`.
 ///
-/// The bottom is the surface's other horizontal point, and is found the same way, from the lowest
-/// vertex.
+/// `psi` is the bicubic of `psi`, along whose grid lines `marching_squares` finds the vertices of the boundary outline, and whose contours
+/// the rays find the flux surfaces inside it on, so the refined point is on the same surface as the vertices. The gradient of `psi`, and
+/// its derivatives in the second row, are the bicubics of the components of `grad(psi)` rather than the derivative of the bicubic of
+/// `psi`: the X-points are found the same way; see `PsiInterpolator`.
 ///
 /// # Arguments
-/// * `start_r`, `start_z` - the highest, or the lowest, vertex of the contour [metre]
-/// * `psi_contour` - the poloidal flux on the contour [weber]
-/// * `psi_interpolator` - the bicubic interpolation of `psi`
+/// * `start_r`, `start_z` - the vertex of the contour furthest in that direction [metre]
+/// * `tangent` - which way the surface runs at the point
+/// * `surface_refinement` - the flux surface, and how far the point may move
 ///
 /// # Returns
-/// * `(refined_r, refined_z)` - the top, or the bottom, of the flux surface [metre]
-///
-/// `None` when Newton's method does not converge onto a point within a grid cell of the vertex,
-/// where the top has to be, as the vertex is the highest of the vertices.
-fn refine_top_or_bottom(start_r: f64, start_z: f64, psi_contour: f64, psi_interpolator: &PsiInterpolator) -> Option<(f64, f64)> {
+/// * The point on the flux surface; `None` when Newton's method does not converge onto a point within `surface_refinement`'s reach of the
+///   vertex, where the extremal point has to be, as the vertex is the furthest of the vertices
+fn refine_extreme(start_r: f64, start_z: f64, tangent: Tangent, surface_refinement: &SurfaceRefinement) -> Option<SurfacePoint> {
+    let psi_contour: f64 = surface_refinement.psi_contour;
+    let psi_interpolator: &PsiInterpolator = surface_refinement.psi_interpolator;
     if !start_r.is_finite() || !start_z.is_finite() || !psi_contour.is_finite() {
         return None;
     }
@@ -306,29 +440,32 @@ fn refine_top_or_bottom(start_r: f64, start_z: f64, psi_contour: f64, psi_interp
         let psi_derivatives: PsiDerivatives = psi_interpolator.derivatives(refined_r, refined_z)?;
         let d_psi_d_r: f64 = psi_derivatives.d_psi_d_r;
         let d_psi_d_z: f64 = psi_derivatives.d_psi_d_z;
-        let d2_psi_d_r2: f64 = psi_derivatives.d2_psi_d_r2;
-        let d2_psi_d_r_d_z: f64 = psi_derivatives.d2_psi_d_r_d_z;
+        // The second condition, and its row of the Jacobian
+        let (tangent_condition, d_condition_d_r, d_condition_d_z): (f64, f64, f64) = match tangent {
+            Tangent::Horizontal => (d_psi_d_r, psi_derivatives.d2_psi_d_r2, psi_derivatives.d2_psi_d_r_d_z),
+            Tangent::Vertical => (d_psi_d_z, psi_derivatives.d2_psi_d_r_d_z, psi_derivatives.d2_psi_d_z2),
+        };
 
         // The two rows of the Jacobian carry different units, so whether they are parallel is judged
-        // scale-free, by the sine of the angle between them. They are when the top of the surface is
-        // flat, `d2(psi)/d(r)2 = 0`, or at a null of `psi`, `grad(psi) = 0`
-        let jacobian_determinant: f64 = d_psi_d_r * d2_psi_d_r_d_z - d_psi_d_z * d2_psi_d_r2;
-        let jacobian_row_norms: f64 = d_psi_d_r.hypot(d_psi_d_z) * d2_psi_d_r2.hypot(d2_psi_d_r_d_z);
+        // scale-free, by the sine of the angle between them. They are when the surface is flat there,
+        // or at a null of `psi`, `grad(psi) = 0`
+        let jacobian_determinant: f64 = d_psi_d_r * d_condition_d_z - d_psi_d_z * d_condition_d_r;
+        let jacobian_row_norms: f64 = d_psi_d_r.hypot(d_psi_d_z) * d_condition_d_r.hypot(d_condition_d_z);
         if !jacobian_determinant.is_finite() || jacobian_determinant.abs() <= JACOBIAN_SINGULAR_TOLERANCE * jacobian_row_norms {
             return None;
         }
 
         // Solve for the Newton step by Cramer's rule
         let psi_residual: f64 = psi - psi_contour;
-        let delta_r: f64 = (-psi_residual * d2_psi_d_r_d_z + d_psi_d_r * d_psi_d_z) / jacobian_determinant;
-        let delta_z: f64 = (-d_psi_d_r * d_psi_d_r + psi_residual * d2_psi_d_r2) / jacobian_determinant;
+        let delta_r: f64 = (-psi_residual * d_condition_d_z + d_psi_d_z * tangent_condition) / jacobian_determinant;
+        let delta_z: f64 = (-d_psi_d_r * tangent_condition + psi_residual * d_condition_d_r) / jacobian_determinant;
         refined_r += delta_r;
         refined_z += delta_z;
 
         if delta_r.abs() <= NEWTON_TOLERANCE * d_r && delta_z.abs() <= NEWTON_TOLERANCE * d_z {
-            let is_near_vertex: bool = (refined_r - start_r).abs() <= d_r && (refined_z - start_z).abs() <= d_z;
+            let is_near_vertex: bool = (refined_r - start_r).abs() <= surface_refinement.reach_r && (refined_z - start_z).abs() <= surface_refinement.reach_z;
             if is_near_vertex {
-                return Some((refined_r, refined_z));
+                return Some(SurfacePoint { r: refined_r, z: refined_z });
             }
             return None;
         }
@@ -344,14 +481,17 @@ fn refine_top_or_bottom(start_r: f64, start_z: f64, psi_contour: f64, psi_interp
 /// * `boundary_r` - radial coordinates of the closed contour [metre]
 /// * `boundary_z` - vertical coordinates of the closed contour [metre]
 /// * `extremal_points` - where the contour touches each side of its bounding box
+/// * `surface_refinement` - the flux surface the crossings with the squareness diagonals are refined onto; `None` to take them from the
+///   contour's segments
 ///
 /// # Returns
-/// The same eight quantities as `boundary_geometry` [dimensionless]
+/// * `shape`
 fn shape_from_extremal_points(
     boundary_r: &Array1<f64>,
     boundary_z: &Array1<f64>,
     extremal_points: &ExtremalPoints,
-) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
+    surface_refinement: Option<&SurfaceRefinement>,
+) -> ContourShape {
     let r_at_z_max: f64 = extremal_points.r_at_z_max;
     let r_at_z_min: f64 = extremal_points.r_at_z_min;
     let r_max: f64 = extremal_points.r_max;
@@ -366,25 +506,25 @@ fn shape_from_extremal_points(
     // Geometric radius
     let r_geo: f64 = (r_max + r_min) / 2.0;
 
-    // Elongation
-    let elongation: f64 = (z_max - z_min) / (2.0 * r_minor);
-
     // Triangularity
-    let triang_u: f64 = (r_geo - r_at_z_max) / r_minor;
-    let triang_l: f64 = (r_geo - r_at_z_min) / r_minor;
-    let triang: f64 = (triang_u + triang_l) / 2.0;
+    let triangularity_upper: f64 = (r_geo - r_at_z_max) / r_minor;
+    let triangularity_lower: f64 = (r_geo - r_at_z_min) / r_minor;
 
     // Squareness for each quadrant.
     // Each quadrant has a bounding box spanned by two extremal points of the boundary,
     // e.g. the upper outer quadrant is spanned by the top point and the outboard point.
     // The quadrant "centre" is `(r, z) = (r_of_the_top_or_bottom_point, z_of_the_inboard_or_outboard_point)`
     // and the quadrant "corner" is the opposite corner of the bounding box.
-    let square_u_o: f64 = squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_max, r_max, z_max);
-    let square_u_i: f64 = squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_min, r_min, z_max);
-    let square_l_o: f64 = squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_max, r_max, z_min);
-    let square_l_i: f64 = squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_min, r_min, z_min);
-
-    (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o)
+    ContourShape {
+        elongation: (z_max - z_min) / (2.0 * r_minor),
+        triangularity: (triangularity_upper + triangularity_lower) / 2.0,
+        triangularity_lower,
+        triangularity_upper,
+        squareness_lower_inner: squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_min, r_min, z_min, surface_refinement),
+        squareness_lower_outer: squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_max, r_max, z_min, surface_refinement),
+        squareness_upper_inner: squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_min, r_min, z_max, surface_refinement),
+        squareness_upper_outer: squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_max, r_max, z_max, surface_refinement),
+    }
 }
 
 /// Calculate the squareness of one quadrant of the plasma boundary, using the
@@ -395,15 +535,28 @@ fn shape_from_extremal_points(
 /// extremal points would cross it (an ellipse crosses the diagonal at `1 / sqrt(2)` of its length):
 /// `squareness = 0` for an ellipse, `1` for a rectangle, and `< 0` for a more pointed shape
 ///
+/// The crossing is found on the contour's straight segments, and, with `surface_refinement`, then refined onto the flux surface itself by
+/// Newton's method on `psi(D + t * (C - D)) = psi_contour`, with `psi` and its gradient from the bicubic of `psi`. When the refinement
+/// fails, the crossing with the segments is kept.
+///
 /// # Arguments
 /// * `boundary_r` - radial coordinates of the plasma boundary contour [metre]
 /// * `boundary_z` - vertical coordinates of the plasma boundary contour [metre]
 /// * `centre_r`, `centre_z` - quadrant centre `D` [metre]
 /// * `corner_r`, `corner_z` - quadrant bounding box corner `C` [metre]
+/// * `surface_refinement` - the flux surface the crossing is refined onto; `None` to keep the crossing with the segments
 ///
 /// # Returns
 /// * `squareness` - squareness of the quadrant [dimensionless]
-fn squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: f64, centre_z: f64, corner_r: f64, corner_z: f64) -> f64 {
+fn squareness(
+    boundary_r: &Array1<f64>,
+    boundary_z: &Array1<f64>,
+    centre_r: f64,
+    centre_z: f64,
+    corner_r: f64,
+    corner_z: f64,
+    surface_refinement: Option<&SurfaceRefinement>,
+) -> f64 {
     let n_boundary: usize = boundary_r.len();
 
     // Defensive programming: when a time-slice has failed the boundary contour can be
@@ -453,6 +606,35 @@ fn squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: f64,
         return f64::NAN;
     }
 
+    // Refine the crossing onto the flux surface itself
+    if let Some(surface_refinement) = surface_refinement
+        && surface_refinement.psi_contour.is_finite()
+    {
+        let psi_interpolator: &PsiInterpolator = surface_refinement.psi_interpolator;
+        let mut t_refined: f64 = t_boundary;
+        let mut is_converged: bool = false;
+        'newton_loop: for _i_iter in 0..N_NEWTON_ITER_MAX {
+            let Some(psi_here) = psi_interpolator.psi_value_and_gradient(centre_r + t_refined * diag_r, centre_z + t_refined * diag_z) else {
+                break 'newton_loop;
+            };
+            let PsiValueAndGradient { psi, d_psi_d_r, d_psi_d_z } = psi_here;
+            let delta_t: f64 = -(psi - surface_refinement.psi_contour) / (d_psi_d_r * diag_r + d_psi_d_z * diag_z);
+            if !delta_t.is_finite() {
+                break 'newton_loop;
+            }
+            t_refined += delta_t;
+            if (delta_t * diag_r).abs() <= NEWTON_TOLERANCE * psi_interpolator.d_r && (delta_t * diag_z).abs() <= NEWTON_TOLERANCE * psi_interpolator.d_z {
+                is_converged = true;
+                break 'newton_loop;
+            }
+        }
+        let is_near_segment: bool =
+            ((t_refined - t_boundary) * diag_r).abs() <= surface_refinement.reach_r && ((t_refined - t_boundary) * diag_z).abs() <= surface_refinement.reach_z;
+        if is_converged && is_near_segment && (0.0..=1.0).contains(&t_refined) {
+            t_boundary = t_refined;
+        }
+    }
+
     // An ellipse through the two extremal points crosses the diagonal at `1 / sqrt(2)` of its length
     let t_ellipse: f64 = std::f64::consts::FRAC_1_SQRT_2;
     let squareness: f64 = (t_boundary - t_ellipse) / (1.0 - t_ellipse);
@@ -462,9 +644,9 @@ fn squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: f64,
 /// The shape of a contour from its vertices alone, without refining its top and bottom, for the
 /// analytic shapes whose extremal points are among their vertices
 #[cfg(test)]
-fn shape_of_vertices(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
+fn shape_of_vertices(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>) -> ContourShape {
     let extremal_points: ExtremalPoints = extremal_points(boundary_r, boundary_z).expect("the contour can be measured");
-    shape_from_extremal_points(boundary_r, boundary_z, &extremal_points)
+    shape_from_extremal_points(boundary_r, boundary_z, &extremal_points, None)
 }
 
 /// A time-slice on ST40's 12.5 mm grid whose `psi` is
@@ -573,16 +755,16 @@ fn test_boundary_geometry_ellipse() {
     let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(f64::cos);
     let boundary_z: Array1<f64> = z_geo + kappa * r_minor * theta.mapv(f64::sin);
 
-    let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = shape_of_vertices(&boundary_r, &boundary_z);
+    let shape: ContourShape = shape_of_vertices(&boundary_r, &boundary_z);
 
-    assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-6);
-    assert_abs_diff_eq!(triang, 0.0, epsilon = 1e-6);
-    assert_abs_diff_eq!(triang_l, 0.0, epsilon = 1e-6);
-    assert_abs_diff_eq!(triang_u, 0.0, epsilon = 1e-6);
-    assert_abs_diff_eq!(square_l_i, 0.0, epsilon = 1e-3);
-    assert_abs_diff_eq!(square_l_o, 0.0, epsilon = 1e-3);
-    assert_abs_diff_eq!(square_u_i, 0.0, epsilon = 1e-3);
-    assert_abs_diff_eq!(square_u_o, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.elongation, kappa, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.triangularity, 0.0, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.triangularity_lower, 0.0, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.triangularity_upper, 0.0, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.squareness_lower_inner, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.squareness_lower_outer, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.squareness_upper_inner, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.squareness_upper_outer, 0.0, epsilon = 1e-3);
 }
 
 #[test]
@@ -602,12 +784,12 @@ fn test_boundary_geometry_miller() {
     let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(|theta_local| (theta_local + delta.asin() * theta_local.sin()).cos());
     let boundary_z: Array1<f64> = z_geo + kappa * r_minor * theta.mapv(f64::sin);
 
-    let (elongation, triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) = shape_of_vertices(&boundary_r, &boundary_z);
+    let shape: ContourShape = shape_of_vertices(&boundary_r, &boundary_z);
 
-    assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-6);
-    assert_abs_diff_eq!(triang, delta, epsilon = 1e-6);
-    assert_abs_diff_eq!(triang_l, delta, epsilon = 1e-6);
-    assert_abs_diff_eq!(triang_u, delta, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.elongation, kappa, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.triangularity, delta, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.triangularity_lower, delta, epsilon = 1e-6);
+    assert_abs_diff_eq!(shape.triangularity_upper, delta, epsilon = 1e-6);
 }
 
 #[test]
@@ -630,25 +812,25 @@ fn test_boundary_geometry_superellipse() {
     let boundary_z: Array1<f64> =
         z_geo + kappa * r_minor * theta.mapv(|theta_local| theta_local.sin().signum() * theta_local.sin().abs().powf(2.0 / n_exponent));
 
-    let (elongation, triang, _triang_l, _triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = shape_of_vertices(&boundary_r, &boundary_z);
+    let shape: ContourShape = shape_of_vertices(&boundary_r, &boundary_z);
 
     let t_expected: f64 = (0.5f64).powf(1.0 / n_exponent);
     let squareness_expected: f64 = (t_expected - std::f64::consts::FRAC_1_SQRT_2) / (1.0 - std::f64::consts::FRAC_1_SQRT_2);
 
     // Note: the tolerances are looser than the other tests because the `powf(2.0 / n_exponent)`
     // amplifies the floating point error in `cos(pi / 2)` near the extremal points
-    assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-3);
-    assert_abs_diff_eq!(triang, 0.0, epsilon = 1e-3);
-    assert_abs_diff_eq!(square_l_i, squareness_expected, epsilon = 1e-3);
-    assert_abs_diff_eq!(square_l_o, squareness_expected, epsilon = 1e-3);
-    assert_abs_diff_eq!(square_u_i, squareness_expected, epsilon = 1e-3);
-    assert_abs_diff_eq!(square_u_o, squareness_expected, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.elongation, kappa, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.triangularity, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.squareness_lower_inner, squareness_expected, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.squareness_lower_outer, squareness_expected, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.squareness_upper_inner, squareness_expected, epsilon = 1e-3);
+    assert_abs_diff_eq!(shape.squareness_upper_outer, squareness_expected, epsilon = 1e-3);
 }
 
-/// A tilted ellipse has its top and bottom away from its centre, at analytic positions which the
+/// A tilted ellipse has its top and bottom, and its inboard and outboard points, away from its centre, at analytic positions which the
 /// refinement has to find from vertices on the grid lines either side of them
 #[test]
-fn test_refine_top_or_bottom_of_a_tilted_ellipse() {
+fn test_refine_extreme_of_a_tilted_ellipse() {
     use approx::assert_abs_diff_eq;
 
     // An ellipse 0.5 m wide, tilted by `a_rz`
@@ -659,42 +841,100 @@ fn test_refine_top_or_bottom_of_a_tilted_ellipse() {
     let a_zz: f64 = 6.25;
     let time_slice: EquilibriumTimeSlice = time_slice_with_elliptical_psi(centre_r, centre_z, a_rr, a_rz, a_zz);
     let psi_interpolator: PsiInterpolator = PsiInterpolator::new(&time_slice);
+    let d_r: f64 = psi_interpolator.d_r;
+    let d_z: f64 = psi_interpolator.d_z;
+    let surface_refinement: SurfaceRefinement = SurfaceRefinement {
+        psi_contour: 0.0,
+        psi_interpolator: &psi_interpolator,
+        reach_r: d_r,
+        reach_z: d_z,
+    };
 
-    // On `a_rr * x ** 2 + a_rz * x * y + a_zz * y ** 2 = 1` the top is where `2 * a_rr * x + a_rz * y = 0`.
-    // The bottom is the top reflected through the centre
+    // On `a_rr * x ** 2 + a_rz * x * y + a_zz * y ** 2 = 1` the top is where `2 * a_rr * x + a_rz * y = 0`, and the outboard point where
+    // `a_rz * x + 2 * a_zz * y = 0`. The bottom and the inboard point are those reflected through the centre
     let top_y: f64 = 1.0 / (a_zz - a_rz.powi(2) / (4.0 * a_rr)).sqrt();
     let top_x: f64 = -a_rz * top_y / (2.0 * a_rr);
+    let outboard_x: f64 = 1.0 / (a_rr - a_rz.powi(2) / (4.0 * a_zz)).sqrt();
+    let outboard_y: f64 = -a_rz * outboard_x / (2.0 * a_zz);
 
     // The ellipse's height at `x`, on its upper branch when `sign = 1` and its lower when `sign = -1`
     let ellipse_y =
         |x: f64, sign: f64| -> f64 { (-a_rz * x + sign * (a_rz.powi(2) * x.powi(2) - 4.0 * a_zz * (a_rr * x.powi(2) - 1.0)).sqrt()) / (2.0 * a_zz) };
+    // The ellipse's radius at `y`, on its outboard branch when `sign = 1` and its inboard when `sign = -1`
+    let ellipse_x =
+        |y: f64, sign: f64| -> f64 { (-a_rz * y + sign * (a_rz.powi(2) * y.powi(2) - 4.0 * a_rr * (a_zz * y.powi(2) - 1.0)).sqrt()) / (2.0 * a_rr) };
 
-    // Start from the vertices on the vertical grid lines either side of the top, where marching
-    // squares puts them: the grid starts at `r = 0.2`. The highest vertex is one of these two
-    let d_r: f64 = psi_interpolator.d_r;
+    // Start from the vertices on the grid lines either side of each point, where marching squares puts them: the grid starts at
+    // `r = 0.2` and `z = -0.6`. The furthest vertex is one of these two
     let start_x_on_grid_line: f64 = (centre_r + top_x - 0.2).div_euclid(d_r) * d_r + 0.2 - centre_r;
-    let starts_x: Array1<f64> = ndarray::array![start_x_on_grid_line, start_x_on_grid_line + d_r];
-    let n_start: usize = starts_x.len();
-    for i_start in 0..n_start {
-        let (top_r, top_z): (f64, f64) = refine_top_or_bottom(
-            centre_r + starts_x[i_start],
-            centre_z + ellipse_y(starts_x[i_start], 1.0),
-            0.0,
-            &psi_interpolator,
-        )
-        .expect("the top is found");
-        assert_abs_diff_eq!(top_r, centre_r + top_x, epsilon = 1e-10);
-        assert_abs_diff_eq!(top_z, centre_z + top_y, epsilon = 1e-10);
+    let start_y_on_grid_line: f64 = (centre_z + outboard_y + 0.6).div_euclid(d_z) * d_z - 0.6 - centre_z;
+    for i_start in 0..2 {
+        let start_x: f64 = start_x_on_grid_line + (i_start as f64) * d_r;
+        let top: SurfacePoint =
+            refine_extreme(centre_r + start_x, centre_z + ellipse_y(start_x, 1.0), Tangent::Horizontal, &surface_refinement).expect("the top is found");
+        assert_abs_diff_eq!(top.r, centre_r + top_x, epsilon = 1e-10);
+        assert_abs_diff_eq!(top.z, centre_z + top_y, epsilon = 1e-10);
 
-        let (bottom_r, bottom_z): (f64, f64) = refine_top_or_bottom(
-            centre_r - starts_x[i_start],
-            centre_z + ellipse_y(-starts_x[i_start], -1.0),
-            0.0,
-            &psi_interpolator,
+        let bottom: SurfacePoint = refine_extreme(
+            centre_r - start_x,
+            centre_z + ellipse_y(-start_x, -1.0),
+            Tangent::Horizontal,
+            &surface_refinement,
         )
         .expect("the bottom is found");
-        assert_abs_diff_eq!(bottom_r, centre_r - top_x, epsilon = 1e-10);
-        assert_abs_diff_eq!(bottom_z, centre_z - top_y, epsilon = 1e-10);
+        assert_abs_diff_eq!(bottom.r, centre_r - top_x, epsilon = 1e-10);
+        assert_abs_diff_eq!(bottom.z, centre_z - top_y, epsilon = 1e-10);
+
+        let start_y: f64 = start_y_on_grid_line + (i_start as f64) * d_z;
+        let outboard: SurfacePoint = refine_extreme(centre_r + ellipse_x(start_y, 1.0), centre_z + start_y, Tangent::Vertical, &surface_refinement)
+            .expect("the outboard point is found");
+        assert_abs_diff_eq!(outboard.r, centre_r + outboard_x, epsilon = 1e-10);
+        assert_abs_diff_eq!(outboard.z, centre_z + outboard_y, epsilon = 1e-10);
+
+        let inboard: SurfacePoint = refine_extreme(centre_r + ellipse_x(-start_y, -1.0), centre_z - start_y, Tangent::Vertical, &surface_refinement)
+            .expect("the inboard point is found");
+        assert_abs_diff_eq!(inboard.r, centre_r - outboard_x, epsilon = 1e-10);
+        assert_abs_diff_eq!(inboard.z, centre_z - outboard_y, epsilon = 1e-10);
+    }
+}
+
+/// A coarse polygon on an ellipse, as the rays give one, measured with its extent and its squareness diagonals refined, has the
+/// ellipse's shape: the elongation from its refined extent, and zero triangularity and squareness
+#[test]
+fn test_boundary_geometry_refines_the_extent_of_a_coarse_polygon() {
+    use approx::assert_abs_diff_eq;
+
+    let centre_r: f64 = 0.5;
+    let centre_z: f64 = 0.0;
+    let a_rr: f64 = 16.0;
+    let a_zz: f64 = 6.25;
+    let time_slice: EquilibriumTimeSlice = time_slice_with_elliptical_psi(centre_r, centre_z, a_rr, 0.0, a_zz);
+    let psi_interpolator: PsiInterpolator = PsiInterpolator::new(&time_slice);
+    let (xpts_r, xpts_z): (Array1<f64>, Array1<f64>) = (Array1::zeros(0), Array1::zeros(0));
+
+    // 30 vertices on the ellipse, none of them at an extremal point, and the closest to the top much closer than the closest to the
+    // outboard point, so the elongation of the vertices is not the ellipse's
+    let n_vertex: usize = 30;
+    let theta: Array1<f64> = Array1::linspace(0.1, 0.1 + 2.0 * PI, n_vertex + 1);
+    let polygon_r: Array1<f64> = theta.mapv(|theta_here: f64| centre_r + theta_here.cos() / a_rr.sqrt());
+    let polygon_z: Array1<f64> = theta.mapv(|theta_here: f64| centre_z + theta_here.sin() / a_zz.sqrt());
+
+    let shape_vertices: ContourShape = boundary_geometry(&polygon_r, &polygon_z, 0.0, &psi_interpolator, &xpts_r, &xpts_z, false);
+    let shape: ContourShape = boundary_geometry(&polygon_r, &polygon_z, 0.0, &psi_interpolator, &xpts_r, &xpts_z, true);
+
+    let elongation_expected: f64 = (a_rr / a_zz).sqrt();
+    assert!((shape_vertices.elongation - elongation_expected).abs() > 1e-3);
+    assert_abs_diff_eq!(shape.elongation, elongation_expected, epsilon = 1e-10);
+    assert_abs_diff_eq!(shape.triangularity_upper, 0.0, epsilon = 1e-10);
+    assert_abs_diff_eq!(shape.triangularity_lower, 0.0, epsilon = 1e-10);
+    assert!(shape_vertices.squareness_upper_outer.abs() > 1e-3);
+    for squareness_here in [
+        shape.squareness_lower_inner,
+        shape.squareness_lower_outer,
+        shape.squareness_upper_inner,
+        shape.squareness_upper_outer,
+    ] {
+        assert_abs_diff_eq!(squareness_here, 0.0, epsilon = 1e-9);
     }
 }
 
@@ -717,21 +957,19 @@ fn test_boundary_geometry_refines_the_triangularity_off_the_grid() {
     let (xpts_r, xpts_z): (Array1<f64>, Array1<f64>) = (Array1::zeros(0), Array1::zeros(0));
 
     // The vertices put the top and the bottom half a cell off the centre: a triangularity of `d_r / (2 * a)`
-    let (elongation_vertices, _triang, triang_l_vertices, triang_u_vertices, _square_l_i, _square_l_o, _square_u_i, _square_u_o) =
-        shape_of_vertices(&boundary_r, &boundary_z);
-    assert_abs_diff_eq!(triang_u_vertices.abs(), d_grid / (2.0 * r_minor), epsilon = 1e-9);
-    assert_abs_diff_eq!(triang_l_vertices.abs(), d_grid / (2.0 * r_minor), epsilon = 1e-9);
+    let shape_vertices: ContourShape = shape_of_vertices(&boundary_r, &boundary_z);
+    assert_abs_diff_eq!(shape_vertices.triangularity_upper.abs(), d_grid / (2.0 * r_minor), epsilon = 1e-9);
+    assert_abs_diff_eq!(shape_vertices.triangularity_lower.abs(), d_grid / (2.0 * r_minor), epsilon = 1e-9);
 
     // Refined, an ellipse's triangularity is zero
-    let (elongation, triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) =
-        boundary_geometry(&boundary_r, &boundary_z, 0.0, &psi_interpolator, &xpts_r, &xpts_z);
-    assert_abs_diff_eq!(triang_u, 0.0, epsilon = 1e-9);
-    assert_abs_diff_eq!(triang_l, 0.0, epsilon = 1e-9);
-    assert_abs_diff_eq!(triang, 0.0, epsilon = 1e-9);
+    let shape: ContourShape = boundary_geometry(&boundary_r, &boundary_z, 0.0, &psi_interpolator, &xpts_r, &xpts_z, false);
+    assert_abs_diff_eq!(shape.triangularity_upper, 0.0, epsilon = 1e-9);
+    assert_abs_diff_eq!(shape.triangularity_lower, 0.0, epsilon = 1e-9);
+    assert_abs_diff_eq!(shape.triangularity, 0.0, epsilon = 1e-9);
 
     // Only `R_Zmax` and `R_Zmin` are refined: the extent of the contour, and so the elongation, is
     // that of its vertices
-    assert_eq!(elongation, elongation_vertices);
+    assert_eq!(shape.elongation, shape_vertices.elongation);
 }
 
 /// An X-point is on the contour already, so it is left where it is
@@ -753,13 +991,11 @@ fn test_boundary_geometry_does_not_refine_an_x_point() {
     let xpts_r: Array1<f64> = ndarray::array![bottom_vertex.r_at_z_min];
     let xpts_z: Array1<f64> = ndarray::array![bottom_vertex.z_min];
 
-    let (_elongation_vertices, _triang, triang_l_vertices, _triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) =
-        shape_of_vertices(&boundary_r, &boundary_z);
-    let (_elongation, _triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) =
-        boundary_geometry(&boundary_r, &boundary_z, 0.0, &psi_interpolator, &xpts_r, &xpts_z);
+    let shape_vertices: ContourShape = shape_of_vertices(&boundary_r, &boundary_z);
+    let shape: ContourShape = boundary_geometry(&boundary_r, &boundary_z, 0.0, &psi_interpolator, &xpts_r, &xpts_z, false);
 
     // The bottom stays at the vertex; the top is still refined
-    assert_eq!(triang_l, triang_l_vertices);
-    assert!(triang_l.abs() > 0.01);
-    assert_abs_diff_eq!(triang_u, 0.0, epsilon = 1e-9);
+    assert_eq!(shape.triangularity_lower, shape_vertices.triangularity_lower);
+    assert!(shape.triangularity_lower.abs() > 0.01);
+    assert_abs_diff_eq!(shape.triangularity_upper, 0.0, epsilon = 1e-9);
 }

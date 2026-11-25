@@ -9,9 +9,12 @@ mod guazzotto_freidberg;
 mod matching_geometry;
 mod model_surface;
 mod radial;
+mod settings_schema;
 mod symmetry;
 
+// Flattened for the submodules
+use configuration::Configuration;
+use symmetry::Symmetry;
+
 // Public flattened exports
-pub use configuration::Configuration;
 pub use guazzotto_freidberg::GuazzottoFreidberg;
-pub use symmetry::Symmetry;

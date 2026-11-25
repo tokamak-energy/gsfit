@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Schema for magnetics.xml: how the database reader builds the magnetics IDS, the geometry and measurements of the magnetic sensors.
+    Schema for magnetics.xml: how the database reader builds the Magnetics IDS, the geometry and measurements of the magnetic sensors.
 
     The root element is `magnetics_settings`, the IDS's name followed by `_settings`.
     `workflow` links to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each.
@@ -44,7 +44,7 @@
     <xs:element name="magnetics_settings">
         <xs:annotation>
             <xs:documentation>
-                How the database reader builds the magnetics IDS: the geometry and measurements of the magnetic sensors. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`.
+                How the database reader builds the Magnetics IDS: the geometry and measurements of the magnetic sensors. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>

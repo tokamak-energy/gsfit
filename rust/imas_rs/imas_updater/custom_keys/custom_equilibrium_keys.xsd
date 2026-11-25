@@ -1,0 +1,1704 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GSFit's custom (non-IMAS) keys for the Equilibrium IDS: the keys GSFit needs which the IMAS Data Dictionary does not define.
+
+    `../build_ids.py` merges them into the IDS's structs, which it generates from the Data Dictionary's schema of the IDS,
+    `../IMAS-Data-Dictionary/schemas/equilibrium/dd_equilibrium.xsd`, so that they sit flat alongside the Data Dictionary's keys, e.g.
+    `profiles_2d.d_psi_d_r`, not `profiles_2d.custom.d_psi_d_r`. This schema is laid out as `dd_equilibrium.xsd` is, and holds only
+    GSFit's additions:
+    * An `xs:complexType` named as one of `dd_equilibrium.xsd` adds its elements to it, e.g. `equilibrium_profiles_1d`. Its
+      documentation stays the Data Dictionary's, so a note on the keys added to it is an XML comment. A type is one struct wherever it
+      is used, so a key added to it is on every element of that type, e.g. `dof` is on `constraints/flux_loop(i1)` as well as on
+      `constraints/pf_passive_current(i1)`.
+    * An `xs:complexType` with any other name is a new structure, e.g. `equilibrium_limiter`, which some key must have as its type.
+    * The `xs:element` named as the IDS, `equilibrium`, adds its elements to the IDS's root.
+    * Inside any of these, an element named as one the Data Dictionary already has there, holding an `xs:complexType`, adds that
+      complexType's elements to the existing element's structure, e.g. an element `code` inside `equilibrium` would add keys to the Data
+      Dictionary's `code`. This is how a structure declared in `dd_support.xsd` gets keys: `dd_support.xsd` is included here, so its
+      structures cannot be declared again.
+
+    The keys use the Data Dictionary's types, which `dd_support.xsd` declares, written as the Data Dictionary writes its own: a leaf
+    holds `<xs:group ref="FLT_1D"/>`, or another of its base types, and a structure names a Data Dictionary complexType in `type`, e.g.
+    `identifier_static`, or a new structure. An array of structures has `minOccurs="0" maxOccurs="unbounded"`, as it can be empty, which
+    in IMAS any array can. The Data Dictionary's own schemas never write `minOccurs`, so their arrays read as one or more, and their
+    leaves as required, though neither is. Every key is documented, and its units are written as the Data Dictionary writes them, in
+    `xs:appinfo/units`: SI symbols, e.g. `Wb.m^-1`, and `1` for dimensionless. An unset key reads as the IMAS empty value, NaN,
+    `EMPTY_INT`, or empty, as the Data Dictionary's keys do.
+
+    These keys have no IMAS counterpart, so they cannot be written to an IMAS backend. Anything written out over the standard Data
+    Dictionary must skip them.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+    <xs:include schemaLocation="../IMAS-Data-Dictionary/schemas/utilities/dd_support.xsd"/>
+
+    <xs:complexType name="equilibrium_profiles_1d_r_midplane">
+        <xs:annotation>
+            <xs:documentation>
+                Profiles along the horizontal line through the middle of the grid.
+
+                The row used is `floor(n_z / 2)`, which is the grid mid-row rather than the magnetic axis, so this is a cut through the grid rather than through the plasma.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of each point along the mid-plane, which is the grid's own radial axis
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="dpressure_dpsi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Derivative of the pressure with respect to the poloidal flux, along the mid-plane.
+                        Zero outside the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa.Wb^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="f">
+                <xs:annotation>
+                    <xs:documentation>
+                        Diamagnetic function `f = R * b_field_phi` along the mid-plane.
+                        The vacuum value outside the plasma boundary, where no poloidal current flows
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T.m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="f_df_dpsi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
+                        Zero outside the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T^2.m^2.Wb^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="j_phi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Toroidal plasma current density along the mid-plane.
+                        Zero outside the plasma boundary.
+                        Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the solved current density
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>A.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pressure">
+                <xs:annotation>
+                    <xs:documentation>
+                        Plasma pressure along the mid-plane.
+                        Zero outside the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal flux along the mid-plane: the solved grid's own values along its middle row, `profiles_2d/psi`, inside and outside the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi_norm">
+                <xs:annotation>
+                    <xs:documentation>
+                        Normalised poloidal flux along the mid-plane, `(psi - psi_axis) / (psi_boundary - psi_axis)`, which is 1 on the plasma boundary.
+                        Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma: it carries on past 1 outside the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="q">
+                <xs:annotation>
+                    <xs:documentation>
+                        Safety factor along the mid-plane.
+                        NaN outside the plasma boundary, where there is no closed flux surface to define it
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_profiles_1d_r_midplane_h">
+        <xs:annotation>
+            <xs:documentation>
+                Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`.
+
+                The purpose of this group is to map a normalised flux back to a major radius in the scrape-off layer, where a few millimetres matters.
+                The solved grid is far too coarse for that directly: with `d_r` of 12.5 mm, reading `R` off the solved grid is worth about 6 mm, so `R` here is refined by `N_R_SUBDIVISIONS_PER_CELL` and `psi` is filled by bicubic interpolation.
+
+                Unlike `profiles_1d_r_midplane`, which cuts the grid's own middle row, this cuts the row through the magnetic axis, the same height `global_quantities/delta_r_sep` and `global_quantities/f_x` use.
+                That height moves between time-slices, so only `r` is the same on every slice.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of each point along the refined mid-plane.
+                        The solved grid's radial axis subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of these, and the same on every time-slice
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
+                        NaN on a time-slice which did not converge
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi_norm">
+                <xs:annotation>
+                    <xs:documentation>
+                        Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary - psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
+
+                        Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole point of it: it carries on rising past 1 through the scrape-off layer.
+                        It is not monotonic across the full radial span, having a minimum at the magnetic axis, so inverting it for `R` means picking the inboard or outboard branch first
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_profiles_1d">
+        <xs:sequence>
+            <xs:element name="dvolume_dpsi_norm">
+                <xs:annotation>
+                    <xs:documentation>
+                        Radial derivative of the volume enclosed in the flux surface with respect to the normalised poloidal flux, `psi_norm`.
+                        This is the data dictionary's `dvolume_dpsi` multiplied by `psi_boundary - psi_axis`, so unlike it, it does not depend on the poloidal flux sign convention
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m^3</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="r_inboard_z_0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
+
+                        The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which moves between time-slices.
+                        This one is measured on the machine's mid-plane instead, so that a series of time-slices is a series of radii at one fixed height.
+
+                        The two sides are split at the major radius of the magnetic axis, which is the point every flux surface encloses.
+                        A surface which does not reach `z = 0`, or which does not enclose that point, is NaN
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="r_outboard_z_0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of each flux surface where it crosses `z = 0`, on the outboard side.
+                        The outboard counterpart of `r_inboard_z_0`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="rho_pol">
+                <xs:annotation>
+                    <xs:documentation>
+                        Normalised poloidal flux radius, `sqrt(psi_norm)`.
+                        This is the poloidal counterpart of the data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_profiles_2d">
+        <xs:sequence>
+            <xs:element name="d_psi_d_r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Radial derivative of the poloidal flux on the grid in the poloidal plane
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vertical derivative of the poloidal flux on the grid in the poloidal plane
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second radial derivative of the poloidal flux on the grid in the poloidal plane
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_r_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Mixed second derivative of the poloidal flux on the grid in the poloidal plane
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d2_psi_d_z2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Second vertical derivative of the poloidal flux on the grid in the poloidal plane
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="mask">
+                <xs:annotation>
+                    <xs:documentation>
+                        Mask for the grid in the poloidal plane
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi_norm">
+                <xs:annotation>
+                    <xs:documentation>
+                        Normalised poloidal flux on the grid, 0 at the magnetic axis and 1 at the plasma boundary
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="psi_coils">
+                <xs:annotation>
+                    <xs:documentation>
+                        Contribution to the poloidal flux from the PF coils alone
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pressure">
+                <xs:annotation>
+                    <xs:documentation>
+                        Plasma pressure on the grid in the poloidal plane.
+                        Zero outside the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_b_field_z_d_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vertical derivative of the vertical magnetic field on the grid in the poloidal plane.
+                        Used by the vertical stability control
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <!-- Keys added to the Data Dictionary's `grid`, an `equilibrium_profiles_2d_grid`, which dd_support.xsd declares -->
+            <xs:element name="grid">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="d_area">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`.
+                                    A single value, because the grid is rectangular and uniformly spaced in both directions
+                                </xs:documentation>
+                                <xs:appinfo>
+                                    <units>m^2</units>
+                                </xs:appinfo>
+                            </xs:annotation>
+                            <xs:complexType>
+                                <xs:group ref="FLT_0D"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_time_slice">
+        <xs:sequence>
+            <xs:element name="source_functions" type="equilibrium_source_functions">
+                <xs:annotation>
+                    <xs:documentation>
+                        Source functions which parameterise the plasma current profile
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="profiles_1d_r_midplane" type="equilibrium_profiles_1d_r_midplane">
+                <xs:annotation>
+                    <xs:documentation>
+                        Profiles along the horizontal line through the middle of the grid
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="profiles_1d_r_midplane_h" type="equilibrium_profiles_1d_r_midplane_h">
+                <xs:annotation>
+                    <xs:documentation>
+                        Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sol" type="equilibrium_sol">
+                <xs:annotation>
+                    <xs:documentation>
+                        Scrape-off layer: the open field lines outside the last closed flux surface
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="passive_dof_values">
+                <xs:annotation>
+                    <xs:documentation>
+                        The fitted amplitude of each passive degree of freedom, in the order of `constraints/pf_passive_current`, and then of each one's `dof`, which is the order of the Greens tables, `gsfit_rs::Equilibrium`'s `greens_tables/grid/pf_passive(:)/dof(:)`.
+                        An element's current is the sum, over its passive loop's degrees of freedom, of the amplitude times the degree of freedom's `current_distribution`.
+                        Its units are those of a current divided by the `current_distribution`'s: A.m^-2, a current density, for `constant_current_density`, and A for an eigenmode
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>mixed</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_global_quantities">
+        <xs:sequence>
+            <xs:element name="beta_pol_1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal beta normalised to the flux-surface-averaged poloidal field: `2 * mu_0 * &lt;p&gt; / &lt;&lt;b_p ** 2&gt;&gt;`, where `&lt;x&gt;` is the volume average and `&lt;&lt;x&gt;&gt;` the flux-surface average
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="beta_pol_2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal beta normalised to the magnetic axis major radius: `4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="beta_pol_3">
+                <xs:annotation>
+                    <xs:documentation>
+                        Poloidal beta normalised to the geometric major radius: `4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
+
+                        This is the closest of the three to the data dictionary's own `beta_pol`, which uses the vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="bp_omp">
+                <xs:annotation>
+                    <xs:documentation>
+                        Magnitude of the poloidal magnetic field at the outboard midplane, `sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of the magnetic axis on the outboard side.
+                        This is the same point `delta_r_sep` and `f_x` use.
+                        Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded `profiles_2d/b_field_r` and `.../b_field_z`.
+                        NaN when the boundary does not cross that height within the grid
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="bt_vac_at_r_geo">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vacuum toroidal magnetic field at the plasma geometric axis, `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`.
+                        Distinct from `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius `vacuum_toroidal_field/r0` rather than following the plasma
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="li_1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Internal inductance normalised to the flux-surface-averaged poloidal field: `&lt;b_p ** 2&gt; / &lt;&lt;b_p ** 2&gt;&gt;`, where `&lt;x&gt;` is the volume average and `&lt;&lt;x&gt;&gt;` the flux-surface average
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="li_2">
+                <xs:annotation>
+                    <xs:documentation>
+                        Internal inductance normalised to the magnetic axis major radius: `2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`
+
+                        The data dictionary's own `li_3` is the same quantity normalised to `boundary/geometric_axis/r` instead
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="delta_r_sep">
+                <xs:annotation>
+                    <xs:documentation>
+                        Radial separation of the two separatrices at the height of the magnetic axis, on the outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper X-point)`.
+                        So it is negative for a lower single null, positive for an upper single null, and passes through zero at a connected double null.
+                        NaN when the plasma is limited, or when only one X-point was found
+
+                        It is evaluated in flux rather than by differencing two traced contours: the difference in `psi` between the two X-points is mapped to the outboard midplane through `d(psi)/d(r)` there.
+                        `psi` is stationary at an X-point, so this is insensitive to the X-point positions at second order, which is what makes a sub-millimetre answer meaningful on a centimetre grid
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="f_x">
+                <xs:annotation>
+                    <xs:documentation>
+                        Flux expansion from the outboard midplane to the outboard strike point on the active X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`.
+                        The outboard midplane is at the height of the magnetic axis.
+                        This excludes the additional expansion along the target caused by the field-line incidence angle
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="v_loop">
+                <xs:annotation>
+                    <xs:documentation>
+                        Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over the reconstruction times.
+                        Distinct from the data dictionary's `v_external`, which differentiates `psi_external_average` instead
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>V</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_boundary">
+        <xs:sequence>
+            <xs:element name="bounding" type="equilibrium_boundary_bounding">
+                <xs:annotation>
+                    <xs:documentation>
+                        Point which defines the plasma boundary: the limiter point when the plasma is limited, or the X-point when it is diverted
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_boundary_bounding">
+        <xs:annotation>
+            <xs:documentation>
+                Point which defines the plasma boundary
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of the point which defines the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height of the point which defines the plasma boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_convergence">
+        <xs:sequence>
+            <xs:element name="delta_z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Vertical shift applied by the vertical feedback controller.
+                        Unset until the first inverse solve has run, and 0 while the vertical feedback is switched off
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="flux_evaluations_n">
+                <xs:annotation>
+                    <xs:documentation>
+                        Number of times the flux was calculated on the grid from the current density, each followed by the search for the magnetic axis and the plasma boundary.
+                        This is where nearly all the time goes: a Picard iteration does it once, a Newton iteration several times.
+                        Recorded whether or not the solve converged
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="INT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_constraints">
+        <xs:sequence>
+            <xs:element name="rogowski_coil" type="equilibrium_constraints_0D_ip_like" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`.
+                        The data dictionary has no constraint for them
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>A</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="isoflux" type="equilibrium_constraints_isoflux" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Set of isoflux constraints, each making a pair of points lie on the same flux surface, one for each isoflux in the fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)`.
+                        The data dictionary has no constraint for them
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="isoflux_boundary" type="equilibrium_constraints_isoflux_boundary" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Set of isoflux boundary constraints, each making a point lie on the plasma boundary.
+                        The data dictionary has no constraint for them
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="stationary_point" type="equilibrium_constraints_stationary_point" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Set of stationary point constraints, each making both derivatives of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, zero at a point: an X-point or the magnetic axis.
+                        The data dictionary has no constraint for them: its `x_point(i1)` constrains the position of an X-point, not the flux there
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_constraints_isoflux_boundary">
+        <xs:annotation>
+            <xs:documentation>
+                An isoflux boundary constraint: a point, `position`, which lies on the plasma boundary, so that the poloidal flux there minus the poloidal flux at the boundary, `boundary/psi`, is zero.
+                The point can move from one time-slice to the next, e.g. when it is read from another reconstruction's boundary; a time-slice where it is NaN is not fitted
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the isoflux boundary constraint
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="position" type="rphizpsirho0d_dynamic_aos3">
+                <xs:annotation>
+                    <xs:documentation>
+                        The point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="measured">
+                <xs:annotation>
+                    <xs:documentation>
+                        The poloidal flux at `position` minus the poloidal flux at the boundary which is fitted: zero, as the point lies on the boundary
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="source">
+                <xs:annotation>
+                    <xs:documentation>
+                        Path to the source data the point was read from
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="time_measurement">
+                <xs:annotation>
+                    <xs:documentation>
+                        Exact time slice used from the time array of the source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>s</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="weight">
+                <xs:annotation>
+                    <xs:documentation>
+                        Weight given to the constraint, from its fit settings
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude the flux difference is normalised by in the fit, from its fit settings.
+                        The fit weights the constraint by `weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="reconstructed">
+                <xs:annotation>
+                    <xs:documentation>
+                        The poloidal flux at `position` minus the poloidal flux at the boundary in the reconstructed equilibrium, `position/psi - boundary/psi`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="chi_squared">
+                <xs:annotation>
+                    <xs:documentation>
+                        Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / expected_value^2
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_constraints_stationary_point">
+        <xs:annotation>
+            <xs:documentation>
+                A stationary point constraint: a point, `position`, where both derivatives of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, are zero, either an X-point or the magnetic axis.
+                The point can move from one time-slice to the next, e.g. when it is read from another reconstruction; a time-slice where it is NaN is not fitted
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the stationary point constraint, e.g. `"MAGNETIC_AXIS"` or `"X_POINT_LOWER"`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="position" type="rphizpsirho0d_dynamic_aos3">
+                <xs:annotation>
+                    <xs:documentation>
+                        The point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="source">
+                <xs:annotation>
+                    <xs:documentation>
+                        Path to the source data the point was read from
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="time_measurement">
+                <xs:annotation>
+                    <xs:documentation>
+                        Exact time slice used from the time array of the source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>s</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="weight">
+                <xs:annotation>
+                    <xs:documentation>
+                        Weight given to the constraint, from its fit settings
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude each derivative of the poloidal flux, `d_psi_d_r` and `d_psi_d_z`, is normalised by in the fit, from its fit settings.
+                        The fit weights each derivative by `weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="d_psi_d_r" type="equilibrium_constraints_stationary_point_d_psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        The radial derivative of the poloidal flux at `position`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="d_psi_d_z" type="equilibrium_constraints_stationary_point_d_psi">
+                <xs:annotation>
+                    <xs:documentation>
+                        The vertical derivative of the poloidal flux at `position`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_constraints_stationary_point_d_psi">
+        <xs:annotation>
+            <xs:documentation>
+                One derivative of the poloidal flux at a stationary point, `d_psi_d_r` or `d_psi_d_z`
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="measured">
+                <xs:annotation>
+                    <xs:documentation>
+                        The derivative which is fitted: zero, as the poloidal flux is stationary at a stationary point
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="reconstructed">
+                <xs:annotation>
+                    <xs:documentation>
+                        The derivative at the stationary point's `position` in the reconstructed equilibrium
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb.m^-1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="chi_squared">
+                <xs:annotation>
+                    <xs:documentation>
+                        Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / expected_value^2, with the stationary point's `weight` and `expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_constraints_isoflux">
+        <xs:annotation>
+            <xs:documentation>
+                An isoflux constraint: two points, `position_1` and `position_2`, which lie on the same flux surface, so that the poloidal flux at the first minus the poloidal flux at the second is zero.
+                The points can move from one time-slice to the next, e.g. when they are read from another reconstruction's boundary; a time-slice where either point is NaN is not fitted
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the isoflux constraint, matching its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/name`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="position_1" type="rphizpsirho0d_dynamic_aos3">
+                <xs:annotation>
+                    <xs:documentation>
+                        The first point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="position_2" type="rphizpsirho0d_dynamic_aos3">
+                <xs:annotation>
+                    <xs:documentation>
+                        The second point, `r` and `z`, interpolated onto the time-slice's time, and the poloidal flux there in the reconstructed equilibrium, `psi`
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="measured">
+                <xs:annotation>
+                    <xs:documentation>
+                        The poloidal flux at `position_1` minus the poloidal flux at `position_2` which is fitted: zero, as the two points lie on the same flux surface
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="source">
+                <xs:annotation>
+                    <xs:documentation>
+                        Path to the source data the two points were read from
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="time_measurement">
+                <xs:annotation>
+                    <xs:documentation>
+                        Exact time slice used from the time array of the source data. If the time slice does not exist in the time array of the source data, it means linear interpolation has been used
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>s</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="weight">
+                <xs:annotation>
+                    <xs:documentation>
+                        Weight given to the constraint, from its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/weight`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude the flux difference is normalised by in the fit, from its fit settings, `equilibrium_settings/constraints/isoflux/isoflux(i1)/expected_value`.
+                        The fit weights the constraint by `weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="reconstructed">
+                <xs:annotation>
+                    <xs:documentation>
+                        The poloidal flux at `position_1` minus the poloidal flux at `position_2` in the reconstructed equilibrium, `position_1/psi - position_2/psi`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="chi_squared">
+                <xs:annotation>
+                    <xs:documentation>
+                        Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / expected_value^2
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!--
+        The data dictionary uses this type for `time_slice(itime)/constraints/pf_current(i1)` and `time_slice(itime)/constraints/ip`, and the custom key `time_slice(itime)/constraints/rogowski_coil(i1)` uses it too.
+        `expected_value` is filled for `rogowski_coil(i1)` only.
+    -->
+    <xs:complexType name="equilibrium_constraints_0D_ip_like">
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and `magnetics/ip(0)/method_name` for `constraints/ip`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/rogowski_coil/rogowski_coil(i1)/expected_value` for `constraints/rogowski_coil(i1)`.
+                        The fit weights the measurement by `weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>as_parent</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!--
+        The data dictionary uses this type for `time_slice(itime)/constraints/b_field_pol_probe(i1)` only.
+    -->
+    <xs:complexType name="equilibrium_constraints_0D_one_like">
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude the measurement is normalised by in the fit, from its fit settings, `equilibrium_settings/constraints/b_field_pol_probe/b_field_pol_probe(i1)/expected_value`.
+                        The fit weights the measurement by `weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>as_parent</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!--
+        The data dictionary uses this type for `time_slice(itime)/constraints/diamagnetic_flux` only.
+    -->
+    <xs:complexType name="equilibrium_constraints_0D_b0_like">
+        <xs:sequence>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude the measurement is normalised by in the fit, from its fit settings, `equilibrium_settings/constraints/diamagnetic_flux/diamagnetic_flux/expected_value`.
+                        The fit weights the measurement by `weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>as_parent</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!--
+        The data dictionary uses this type for `time_slice(itime)/constraints/pressure(i1)`, `pressure_rotational(i1)`, `q(i1)`,
+        `j_phi(i1)`, `j_parallel(i1)` and `n_e(i1)`. Of those, only `pressure(i1)` and `j_parallel(i1)` are filled: their `name` and
+        `expected_value`, and, for `j_parallel(i1)` only, `position/psi_norm`, `f` and `gm5`. The rest are left empty.
+    -->
+    <xs:complexType name="equilibrium_constraints_0D_position">
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the constraint, e.g. `"PRESSURE05"` for `constraints/pressure(i1)`: the prefix
+                        `equilibrium_settings/constraints/pressure/pressure/sensor_name_prefix` followed by the two-digit number of the point it
+                        was measured at, from 1, in the order of the points of the source IDS, e.g. `core_profiles/profiles_2d(itime)/grid/dim1`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/pressure/pressure/expected_value` for `constraints/pressure(i1)`.
+                        The fit weights the measurement by `weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>as_parent</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="f">
+                <xs:annotation>
+                    <xs:documentation>
+                        For `constraints/j_parallel(i1)` only: the diamagnetic function, `F = R B_phi`, on the flux surface `position/psi_norm` of
+                        the equilibrium which `measured` was calculated on, `profiles_1d/f` there. With `gm5` it makes the constraint linear in the
+                        source functions: the fit takes `&lt;J . B&gt; = 2 pi (F p' + gm5 F F' / (mu_0 F))` with them held at these values
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T.m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="gm5">
+                <xs:annotation>
+                    <xs:documentation>
+                        For `constraints/j_parallel(i1)` only: the flux-surface average of the magnetic field squared, `&lt;B ** 2&gt;`, on the flux
+                        surface `position/psi_norm` of the equilibrium which `measured` was calculated on, `profiles_1d/gm5` there; see `f`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>T^2</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <!-- Keys added to the Data Dictionary's `position`, an `rphizpsirho0d_dynamic_aos3`, which dd_support.xsd declares, so they are
+                 on every position of that type, e.g. `constraints/isoflux(i1)/position_1` too -->
+            <xs:element name="position">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="psi_norm">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Normalised poloidal flux, `(psi - psi_magnetic_axis) / (psi_boundary - psi_magnetic_axis)`: 0 on the magnetic
+                                    axis and 1 on the boundary. For `constraints/j_parallel(i1)` it is where the constraint is, as it is a flux
+                                    function: the fit applies it on the surface with this `psi_norm` of each iteration's flux
+                                </xs:documentation>
+                                <xs:appinfo>
+                                    <units>1</units>
+                                </xs:appinfo>
+                            </xs:annotation>
+                            <xs:complexType>
+                                <xs:group ref="FLT_0D"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!--
+        The keys below are for `time_slice(itime)/constraints/pf_passive_current(i1)`, the current in a passive loop of `pf_passive/loop`, the one with the same `name`.
+        GSFit holds one for each passive conductor in the fit settings, `equilibrium_settings/pf_passive_dof/passive`, in their order, as it does for the magnetic sensors.
+        GSFit does not measure that current: it fits it, as an amplitude for each of the loop's degrees of freedom, and the regularisations are what constrain the fit.
+        `Equilibrium.copy_from_pf_passive_ids` makes them, from the fit settings and the loop's filaments, the same on every time-slice.
+
+        The data dictionary also uses this type for `b_field_tor_vacuum_r`, `faraday_angle(i1)`, `flux_loop(i1)`, `iron_core_segment(i1)/magnetization_r` and `.../magnetization_z`, `mse_polarization_angle(i1)` and `n_e_line(i1)`, so the keys below are on all of those too.
+        Of those, only `flux_loop(i1)/name` and `flux_loop(i1)/expected_value` are filled; the rest are left empty.
+    -->
+    <xs:complexType name="equilibrium_constraints_0D">
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of what was measured or fitted, matching its name in the source IDS, e.g. the `name` of a `pf_passive/loop` for `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="expected_value">
+                <xs:annotation>
+                    <xs:documentation>
+                        The magnitude the measurement is normalised by in the fit, from its fit settings, e.g. `equilibrium_settings/constraints/flux_loop/flux_loop(i1)/expected_value` for `constraints/flux_loop(i1)`.
+                        The fit weights a flux loop's measurement by `2 pi weight / expected_value`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>as_parent</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="dof" type="equilibrium_constraints_0D_dof" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        The degrees of freedom the passive loop's current is fitted with: `constant_current_density`, or the loop's `n_dof` slowest decaying eigenmodes, `eig_01`, `eig_02`, ..., as its fit settings, `equilibrium_settings/pf_passive_dof/passive`, say
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="regularisations">
+                <xs:annotation>
+                    <xs:documentation>
+                        The regularisations of the degrees of freedom, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations`: one row of coefficients for each regularisation, one coefficient for each `dof`; no rows for none.
+                        Shape = `(n_regularisations, n_dof)`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_2D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="regularisations_weight">
+                <xs:annotation>
+                    <xs:documentation>
+                        The weight of each regularisation in the fit, from the fit settings, `equilibrium_settings/pf_passive_dof/passive/regularisations_weight`, one for each row of `regularisations`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_constraints_0D_dof">
+        <xs:annotation>
+            <xs:documentation>
+                One degree of freedom of a passive loop's current: a current distribution over the loop's elements, whose amplitude the reconstruction fits
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="current_distribution">
+                <xs:annotation>
+                    <xs:documentation>
+                        The current in each element of the passive loop, `pf_passive/loop(:)/element`, in their order, for a unit amplitude of this degree of freedom.
+                        For `constant_current_density` it is each element's area, in m^2, so that the amplitude, `passive_dof_values`, is the current density.
+                        For an eigenmode it is 100 times the eigenvector, normalised to a length of 1, and so dimensionless, so that the amplitude is a current
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>mixed</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="time_constant">
+                <xs:annotation>
+                    <xs:documentation>
+                        The eigenmode's time constant, the ratio of its inductance to its resistance, from the loop's mutual inductances and resistances.
+                        Unset for `constant_current_density`
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>s</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_sol">
+        <xs:annotation>
+            <xs:documentation>
+                Scrape-off layer, for a diverted plasma.
+
+                Traced from the active X-point outwards along the separatrix, one leg on each side of the machine.
+                Both legs are empty when the plasma is limited rather than diverted.
+
+                Stored per time-slice, so each leg is its own length.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="hfs" type="equilibrium_sol_leg">
+                <xs:annotation>
+                    <xs:documentation>
+                        High field side leg, on the inboard side of the machine
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="lfs" type="equilibrium_sol_leg">
+                <xs:annotation>
+                    <xs:documentation>
+                        Low field side leg, on the outboard side of the machine
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_sol_leg">
+        <xs:annotation>
+            <xs:documentation>
+                One leg of the scrape-off layer
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="contour" type="equilibrium_sol_contour">
+                <xs:annotation>
+                    <xs:documentation>
+                        The field line itself, traced from the X-point to where it meets the wall
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="strike_point" type="equilibrium_sol_strike_point">
+                <xs:annotation>
+                    <xs:documentation>
+                        Where the leg meets the wall, which is the last point of the contour
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_sol_contour">
+        <xs:annotation>
+            <xs:documentation>
+                The path of one scrape-off layer leg through the poloidal plane
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of each point along the leg
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height of each point along the leg
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_sol_strike_point">
+        <xs:annotation>
+            <xs:documentation>
+                Where a scrape-off layer leg meets the wall
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of the strike point
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height of the strike point
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_source_functions">
+        <xs:annotation>
+            <xs:documentation>
+                Source functions which parameterise the plasma current profile
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="p_prime" type="equilibrium_source_function">
+                <xs:annotation>
+                    <xs:documentation>
+                        The p' source function, dp/dpsi
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ff_prime" type="equilibrium_source_function">
+                <xs:annotation>
+                    <xs:documentation>
+                        The FF' source function, F dF/dpsi
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_source_function">
+        <xs:annotation>
+            <xs:documentation>
+                A source function, as fitted by the equilibrium reconstruction
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="coefficients">
+                <xs:annotation>
+                    <xs:documentation>
+                        Fitted degrees of freedom of the source function, in the basis the source function defines
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_limiter">
+        <xs:annotation>
+            <xs:documentation>
+                The limiter: the immobile surfaces which bound the plasma.
+
+                A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, with the same layout, so that `unit(i)` here is `unit(i)` there.
+                The data dictionary has no place for the limiter in the Equilibrium IDS, but an equilibrium cannot be found without one.
+
+                It is geometry, so it is the same for every time-slice.
+                That is why it hangs off the IDS root rather than off `time_slice`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="unit" type="equilibrium_limiter_unit" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`.
+                        The order is part of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region the plasma is allowed to occupy, and only `unit(0)` is used as the vessel.
+                        `unit(1)`, `unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the vessel contour.
+                        The points of every unit are candidate limit points, so a plasma may be limited on the vessel or on any of the tiles
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_limiter_unit">
+        <xs:annotation>
+            <xs:documentation>
+                One limiter unit, a copy of `wall/description_2d(0)/limiter/unit(i)`
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:annotation>
+                    <xs:documentation>
+                        Short identifier for the unit, e.g. `"vacuum_vessel"`
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="STR_0D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="outline" type="equilibrium_limiter_unit_outline">
+                <xs:annotation>
+                    <xs:documentation>
+                        Outline of the limiting surface
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="equilibrium_limiter_unit_outline">
+        <xs:annotation>
+            <xs:documentation>
+                Outline of one limiter unit, a copy of `wall/description_2d(0)/limiter/unit(i)/outline`
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="r">
+                <xs:annotation>
+                    <xs:documentation>
+                        Major radius of each point along the outline
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="z">
+                <xs:annotation>
+                    <xs:documentation>
+                        Height of each point along the outline
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_1D"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- `limiter` hangs off the IDS's root rather than off `time_slice`, because it is geometry and so is the same for every time-slice -->
+    <xs:element name="equilibrium">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="limiter" type="equilibrium_limiter">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The limiter: the immobile surfaces which bound the plasma.
+                            A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and the post-processor read it from the Equilibrium IDS rather than from the `wall` IDS
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
