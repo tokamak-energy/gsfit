@@ -14060,6 +14060,25 @@ static NODES_TIME_SLICE_SOURCE_FUNCTIONS: &[Node] = &[
         units: "",
         kind: NodeKind::Structure(NODES_TIME_SLICE_SOURCE_FUNCTIONS_FF_PRIME),
     },
+    Node {
+        name: "pressure_edge",
+        documentation: "The pressure on the plasma boundary, `p(psi_norm = 1)`: the constant of integration of p'. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating FF' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`.\nIt is fitted when the settings' `source_function_p_prime/pressure_edge/free` is true, and is 0 otherwise",
+        units: "Pa",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    no_names,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].source_functions.pressure_edge.clone() },
+                )
+            },
+        }),
+    },
 ];
 
 static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[

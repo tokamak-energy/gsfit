@@ -41,6 +41,7 @@ class SourceFunctionPPrime:
     :param method: The basis function to use.
     :param efit_polynomial: Settings for EFIT's polynomials.
     :param tensioned_cubic_b_spline: Settings for the tensioned cubic B-splines.
+    :param pressure_edge: The pressure on the plasma boundary: zero, or a free parameter of the fit.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -49,6 +50,7 @@ class SourceFunctionPPrime:
     method: SourceFunctionMethod
     efit_polynomial: EfitPolynomial | None = None
     tensioned_cubic_b_spline: TensionedCubicBSpline | None = None
+    pressure_edge: PressureEdge
 
 
 @dataclass(kw_only=True)
@@ -106,3 +108,16 @@ class RegularisationBuilder:
     left_boundary_weight: float  # [dimensionless]
     right_boundary_condition: BoundaryCondition
     right_boundary_weight: float  # [dimensionless]
+
+
+@dataclass(kw_only=True)
+class PressureEdge:
+    """
+    The pressure on the plasma boundary, `p(psi_norm = 1)`: p''s constant of integration. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating ff' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`. It is written to the Equilibrium IDS's `time_slice(itime)/source_functions/pressure_edge`.
+
+    :param free: Whether the edge pressure is a free parameter of the fit, which only the pressure constraints constrain. When false it is zero, which is how GSFit has always fixed p''s constant of integration.
+    :param regularisation_weight: Weight of the prior which pulls the fitted edge pressure towards zero, the fit's row `regularisation_weight * pressure_edge = 0`. It keeps the fit well posed when no pressure constraint lies inside the plasma. Not used when `free` is false. [1 / pascal]
+    """
+
+    free: bool
+    regularisation_weight: float  # [1 / pascal]

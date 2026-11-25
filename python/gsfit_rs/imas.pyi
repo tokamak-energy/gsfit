@@ -4305,6 +4305,13 @@ class _EquilibriumSourceFunctionsItem:
     @property
     def ff_prime(self) -> _EquilibriumSourceFunctionItem:
         """The FF' source function, F dF/dpsi"""
+    @property
+    def pressure_edge(self) -> Path[float]:
+        """The pressure on the plasma boundary, `p(psi_norm = 1)`: the constant of integration of p'. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating FF' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`.
+        It is fitted when the settings' `source_function_p_prime/pressure_edge/free` is true, and is 0 otherwise
+
+        Units: Pa
+        """
 
 class _EquilibriumSourceFunctionsMany:
     """Source functions which parameterise the plasma current profile
@@ -4317,6 +4324,13 @@ class _EquilibriumSourceFunctionsMany:
     @property
     def ff_prime(self) -> _EquilibriumSourceFunctionMany:
         """The FF' source function, F dF/dpsi"""
+    @property
+    def pressure_edge(self) -> Path[npt.NDArray[np.float64]]:
+        """The pressure on the plasma boundary, `p(psi_norm = 1)`: the constant of integration of p'. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating FF' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`.
+        It is fitted when the settings' `source_function_p_prime/pressure_edge/free` is true, and is 0 otherwise
+
+        Units: Pa
+        """
 
 class _EquilibriumTimeSliceItem:
     """Equilibrium at a given time slice"""

@@ -12,7 +12,7 @@ use ndarray::Array1;
 ///
 /// Every pressure constraint in `constraints/pressure` gets one. The poloidal flux is interpolated at the constraint's `position/r`,
 /// `position/z`. Inside the plasma the pressure is the p' source function, `source_functions/p_prime/coefficients`, integrated from the
-/// boundary, where the pressure is zero; outside it, or off the grid, `reconstructed` is NaN. `chi_squared` is the data dictionary's,
+/// boundary, where the pressure is `source_functions/pressure_edge`; outside it, or off the grid, `reconstructed` is NaN. `chi_squared` is the data dictionary's,
 /// `weight ** 2 * (reconstructed - measured) ** 2 / sigma ** 2`, with the constraint's `expected_value` as `sigma`, which is the residual
 /// the solver fitted, as its least-squares weight is `weight / expected_value`.
 ///
@@ -30,6 +30,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let psi_axis: f64 = time_slice.global_quantities.psi_magnetic_axis;
     let psi_boundary: f64 = time_slice.boundary.psi;
     let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.to_owned();
+    // The pressure on the boundary, p''s constant of integration: fitted, or zero
+    let pressure_edge: f64 = time_slice.source_functions.pressure_edge;
 
     // The poloidal flux and the pressure at each constraint's position
     let mut psi_at_position: Array1<f64> = Array1::from_elem(n_pressure, f64::NAN);
@@ -50,11 +52,12 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
                 continue;
             }
 
-            // `source_function_integral` integrates p'(psi_norm) from psi_norm = 1, where the pressure is zero
+            // `source_function_integral` integrates p'(psi_norm) from psi_norm = 1, where the pressure is `pressure_edge`
             reconstructed[i_pressure] = constant_values
                 .p_prime_source_function
                 .source_function_integral(&Array1::from_vec(vec![psi_norm]), &p_prime_dof_values)[0]
-                * (psi_boundary - psi_axis);
+                * (psi_boundary - psi_axis)
+                + pressure_edge;
         }
     }
 

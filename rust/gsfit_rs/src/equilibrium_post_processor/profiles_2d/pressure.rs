@@ -12,12 +12,13 @@ use ndarray::{Array1, Array2, array};
 /// 1D profile evaluated at the normalised flux of each grid point:
 ///
 /// ```text
-/// p(R, Z) = (psi_b - psi_a) * integral_1^{psi_norm(R, Z)} p'(psi_norm') d(psi_norm')
+/// p(R, Z) = p_edge + (psi_b - psi_a) * integral_1^{psi_norm(R, Z)} p'(psi_norm') d(psi_norm')
 /// ```
 ///
 /// where `(psi_b - psi_a)` is `d(psi)/d(psi_norm)`, converting the source function's integral from
-/// normalised to physical flux. The mask zeroes everything outside the plasma boundary, where
-/// `p(psi)` has no meaning.
+/// normalised to physical flux, and `p_edge` is `source_functions/pressure_edge`, the constant of
+/// integration. The mask zeroes everything outside the plasma boundary, where `p(psi)` has no
+/// meaning.
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_2d(0)/pressure` is written into it
@@ -34,8 +35,9 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     let psi_b: f64 = time_slice.boundary.psi;
+    let pressure_edge: f64 = time_slice.source_functions.pressure_edge;
 
-    // p = (d(psi)/d(psi_norm)) * integral_1^{psi_norm} p'(psi_norm') d(psi_norm'),
+    // p = p_edge + (d(psi)/d(psi_norm)) * integral_1^{psi_norm} p'(psi_norm') d(psi_norm'),
     // where d(psi)/d(psi_norm) = psi_b - psi_a
     let d_psi_d_psi_norm: f64 = psi_b - psi_a;
 
@@ -52,7 +54,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
             let pressure_local: f64 = pressure_local_ndarray[0];
 
             // Apply the mask, and store the pressure
-            pressure_2d[(i_z, i_r)] = pressure_local * mask_2d[(i_z, i_r)] * d_psi_d_psi_norm;
+            pressure_2d[(i_z, i_r)] = (pressure_local * d_psi_d_psi_norm + pressure_edge) * mask_2d[(i_z, i_r)];
         }
     }
 

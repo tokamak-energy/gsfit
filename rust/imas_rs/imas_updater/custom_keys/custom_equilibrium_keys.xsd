@@ -1574,6 +1574,20 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
+            <xs:element name="pressure_edge">
+                <xs:annotation>
+                    <xs:documentation>
+                        The pressure on the plasma boundary, `p(psi_norm = 1)`: the constant of integration of p'. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating FF' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`.
+                        It is fitted when the settings' `source_function_p_prime/pressure_edge/free` is true, and is 0 otherwise
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa</units>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:group ref="FLT_0D"/>
+                </xs:complexType>
+            </xs:element>
         </xs:sequence>
     </xs:complexType>
 

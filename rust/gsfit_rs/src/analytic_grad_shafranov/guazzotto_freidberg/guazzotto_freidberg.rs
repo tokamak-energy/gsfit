@@ -937,6 +937,8 @@ impl GuazzottoFreidberg {
         time_slice.source_functions.p_prime.coefficients = array![2.0 * problem.p_0 * psi_a_analytic / psi_0_squared];
         time_slice.source_functions.ff_prime.coefficients =
             array![2.0 * r_geo * r_geo * problem.bt_vac_at_r_geo * solution.bt_diamagnetic_shift * psi_a_analytic / psi_0_squared];
+        // GF's pressure, p_0 psi_hat ** 2, is zero on the boundary, where p' is integrated from
+        time_slice.source_functions.pressure_edge = 0.0;
 
         time_slice.global_quantities.magnetic_axis.r = mag_r;
         time_slice.global_quantities.magnetic_axis.z = mag_z;

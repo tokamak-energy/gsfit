@@ -1918,12 +1918,26 @@ impl Default for EquilibriumSolStrikePoint {
 
 /// Source functions which parameterise the plasma current profile
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.xsd
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct EquilibriumSourceFunctions {
     /// The p' source function, dp/dpsi
     pub p_prime: EquilibriumSourceFunction,
     /// The FF' source function, F dF/dpsi
     pub ff_prime: EquilibriumSourceFunction,
+    /// The pressure on the plasma boundary, `p(psi_norm = 1)`: the constant of integration of p'. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating FF' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`.
+    /// It is fitted when the settings' `source_function_p_prime/pressure_edge/free` is true, and is 0 otherwise
+    /// Units: Pa
+    pub pressure_edge: FLT_0D,
+}
+
+impl Default for EquilibriumSourceFunctions {
+    fn default() -> Self {
+        Self {
+            p_prime: EquilibriumSourceFunction::default(),
+            ff_prime: EquilibriumSourceFunction::default(),
+            pressure_edge: f64::NAN,
+        }
+    }
 }
 
 /// A source function, as fitted by the equilibrium reconstruction
@@ -5323,6 +5337,7 @@ impl<'a, D: Dimension> EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a, D> {
 pub struct EquilibriumTimeSliceSourceFunctionsView<'a, D> {
     pub p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView<'a, D>,
     pub ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a, D>,
+    pub pressure_edge: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
@@ -5331,6 +5346,7 @@ impl<'a, D: Dimension> EquilibriumTimeSliceSourceFunctionsView<'a, D> {
         Self {
             p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView::new(elements.clone()),
             ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView::new(elements.clone()),
+            pressure_edge: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.source_functions.pressure_edge),
             slice_elements: elements,
         }
     }

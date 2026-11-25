@@ -265,6 +265,8 @@ pub struct SettingsEquilibriumSourceFunctionPPrime {
     /// Settings for the tensioned cubic B-splines.
     /// `None` when the element is left out.
     pub tensioned_cubic_b_spline: Option<SettingsEquilibriumTensionedCubicBSpline>,
+    /// The pressure on the plasma boundary: zero, or a free parameter of the fit.
+    pub pressure_edge: SettingsEquilibriumPressureEdge,
 }
 
 /// Settings for EFIT's polynomials.
@@ -324,6 +326,17 @@ pub struct SettingsEquilibriumRegularisationBuilder {
     pub right_boundary_condition: String,
     /// Weight of the boundary condition at psi_n = 1. Not used when it is free. [dimensionless]
     pub right_boundary_weight: f64,
+}
+
+/// The pressure on the plasma boundary, `p(psi_norm = 1)`: p''s constant of integration. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating ff' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`. It is written to the Equilibrium IDS's `time_slice(itime)/source_functions/pressure_edge`.
+///
+/// Read from the element `equilibrium_settings/source_function_p_prime/pressure_edge`, of the XML schema type `PressureEdge`, declared in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SettingsEquilibriumPressureEdge {
+    /// Whether the edge pressure is a free parameter of the fit, which only the pressure constraints constrain. When false it is zero, which is how GSFit has always fixed p''s constant of integration.
+    pub free: bool,
+    /// Weight of the prior which pulls the fitted edge pressure towards zero, the fit's row `regularisation_weight * pressure_edge = 0`. It keeps the fit well posed when no pressure constraint lies inside the plasma. Not used when `free` is false. [1 / pascal]
+    pub regularisation_weight: f64,
 }
 
 /// The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
@@ -1298,6 +1311,7 @@ fn read_settings_equilibrium_source_function_p_prime(node: Node<'_, '_>, path: &
     let mut method: Option<String> = None;
     let mut efit_polynomial: Option<SettingsEquilibriumEfitPolynomial> = None;
     let mut tensioned_cubic_b_spline: Option<SettingsEquilibriumTensionedCubicBSpline> = None;
+    let mut pressure_edge: Option<SettingsEquilibriumPressureEdge> = None;
     for child in child_elements(node, path)? {
         let child_name: &str = child.tag_name().name();
         let child_path: String = format!("{path}/{child_name}");
@@ -1320,6 +1334,12 @@ fn read_settings_equilibrium_source_function_p_prime(node: Node<'_, '_>, path: &
                 }
                 tensioned_cubic_b_spline = Some(read_settings_equilibrium_tensioned_cubic_b_spline(child, &child_path)?);
             }
+            "pressure_edge" => {
+                if pressure_edge.is_some() {
+                    return Err(repeated_element(&child_path));
+                }
+                pressure_edge = Some(read_settings_equilibrium_pressure_edge(child, &child_path)?);
+            }
             _ => return Err(unexpected_element(&child_path, GENERATOR_PATH)),
         }
     }
@@ -1328,6 +1348,7 @@ fn read_settings_equilibrium_source_function_p_prime(node: Node<'_, '_>, path: &
         method: method.ok_or_else(|| missing_element(&format!("{path}/method")))?,
         efit_polynomial,
         tensioned_cubic_b_spline,
+        pressure_edge: pressure_edge.ok_or_else(|| missing_element(&format!("{path}/pressure_edge")))?,
     })
 }
 
@@ -1490,6 +1511,36 @@ fn read_settings_equilibrium_regularisation_builder(node: Node<'_, '_>, path: &s
         left_boundary_weight: left_boundary_weight.ok_or_else(|| missing_element(&format!("{path}/left_boundary_weight")))?,
         right_boundary_condition: right_boundary_condition.ok_or_else(|| missing_element(&format!("{path}/right_boundary_condition")))?,
         right_boundary_weight: right_boundary_weight.ok_or_else(|| missing_element(&format!("{path}/right_boundary_weight")))?,
+    })
+}
+
+/// Read `SettingsEquilibriumPressureEdge` from its XML element, whose path is `path`
+fn read_settings_equilibrium_pressure_edge(node: Node<'_, '_>, path: &str) -> Result<SettingsEquilibriumPressureEdge, String> {
+    let mut free: Option<bool> = None;
+    let mut regularisation_weight: Option<f64> = None;
+    for child in child_elements(node, path)? {
+        let child_name: &str = child.tag_name().name();
+        let child_path: String = format!("{path}/{child_name}");
+        match child_name {
+            "free" => {
+                if free.is_some() {
+                    return Err(repeated_element(&child_path));
+                }
+                free = Some(read_boolean(child, &child_path)?);
+            }
+            "regularisation_weight" => {
+                if regularisation_weight.is_some() {
+                    return Err(repeated_element(&child_path));
+                }
+                regularisation_weight = Some(read_double(child, &child_path)?);
+            }
+            _ => return Err(unexpected_element(&child_path, GENERATOR_PATH)),
+        }
+    }
+
+    Ok(SettingsEquilibriumPressureEdge {
+        free: free.ok_or_else(|| missing_element(&format!("{path}/free")))?,
+        regularisation_weight: regularisation_weight.ok_or_else(|| missing_element(&format!("{path}/regularisation_weight")))?,
     })
 }
 

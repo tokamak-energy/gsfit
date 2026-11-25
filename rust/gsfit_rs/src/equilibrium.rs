@@ -2023,7 +2023,7 @@ mod tests {
         </numerics>
         <grid><n_r>5</n_r><n_z>4</n_z><r_min>0.2</r_min><r_max>1.0</r_max><z_min>-1.0</z_min><z_max>1.0</z_max><n_psi_norm>11</n_psi_norm></grid>
         <initial_guess><ip>3.0e5</ip><cur_r>0.5</cur_r><cur_z>0.0</cur_z><minor_radius>0.2</minor_radius><elongation>1.2</elongation></initial_guess>
-        <source_function_p_prime><method>efit_polynomial</method><efit_polynomial><n_dof>2</n_dof><regularisations/></efit_polynomial></source_function_p_prime>
+        <source_function_p_prime><method>efit_polynomial</method><efit_polynomial><n_dof>2</n_dof><regularisations/></efit_polynomial><pressure_edge><free>false</free><regularisation_weight>1.0e-4</regularisation_weight></pressure_edge></source_function_p_prime>
         <source_function_ff_prime>
             <method>efit_polynomial</method><efit_polynomial><n_dof>3</n_dof><regularisations><row>1.0 0.0 0.0</row></regularisations></efit_polynomial>
         </source_function_ff_prime>

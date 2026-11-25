@@ -19,22 +19,24 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     let psi_b: f64 = time_slice.boundary.psi;
+    let pressure_edge: f64 = time_slice.source_functions.pressure_edge;
 
     // ψ_N = (ψ_A − ψ) / (ψ_A − ψ_B), so:
     //   ψ = ψ_A − (ψ_A − ψ_B)·ψ_N
     //   dψ/dψ_N = ψ_B − ψ_A
     //
-    // Pressure is zero at the boundary (ψ_N = 1) and satisfies:
-    //   p(ψ) = ∫_{ψ_B}^{ψ} p′(ψ′) dψ′
-    //        = ∫_1^{ψ_N} p′(ψ_N′) · (dψ/dψ_N) dψ_N′
-    //        = (ψ_B − ψ_A) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′
+    // The pressure at the boundary (ψ_N = 1) is `source_functions/pressure_edge`, which is either
+    // a fitted free parameter or zero, and satisfies:
+    //   p(ψ) = p_edge + ∫_{ψ_B}^{ψ} p′(ψ′) dψ′
+    //        = p_edge + ∫_1^{ψ_N} p′(ψ_N′) · (dψ/dψ_N) dψ_N′
+    //        = p_edge + (ψ_B − ψ_A) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′
     // Note: `source_function_integral` integrates from 1 to ψ_N and is zero at ψ_N = 1.
 
     // dψ/dψ_N = ψ_B − ψ_A
     let d_psi_d_psi_norm: f64 = psi_b - psi_a;
 
-    // p = (dψ/dψ_N) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′
-    let p_profile: Array1<f64> = p_prime_source_function.source_function_integral(psi_norm, p_prime_dof_values) * d_psi_d_psi_norm;
+    // p = p_edge + (dψ/dψ_N) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′
+    let p_profile: Array1<f64> = p_prime_source_function.source_function_integral(psi_norm, p_prime_dof_values) * d_psi_d_psi_norm + pressure_edge;
 
     time_slice.profiles_1d.pressure = p_profile;
 }

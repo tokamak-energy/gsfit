@@ -15,7 +15,7 @@ use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points_using_winding_number;
-use crate::settings::settings_equilibrium::{SettingsEquilibrium, SettingsEquilibriumEquilibriumConstraints};
+use crate::settings::settings_equilibrium::{SettingsEquilibrium, SettingsEquilibriumEquilibriumConstraints, SettingsEquilibriumPressureEdge};
 use crate::source_functions::SourceFunctionTraits;
 use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
@@ -415,6 +415,7 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.convergence.grad_shafranov_deviation_value = f64::NAN;
         self.time_slice.source_functions.ff_prime.coefficients *= f64::NAN;
         self.time_slice.source_functions.p_prime.coefficients *= f64::NAN;
+        self.time_slice.source_functions.pressure_edge = f64::NAN;
         self.passive_dof_values *= f64::NAN;
         self.time_slice.profiles_2d[0].psi *= f64::NAN;
         self.time_slice.profiles_2d[0].d_psi_d_r *= f64::NAN;
@@ -649,6 +650,16 @@ impl<'a> EquilibriumSolver<'a> {
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
         let p_prime_exact_dof_values: Option<Array1<f64>> = p_prime_source_function.source_function_exact_dof_values();
         let ff_prime_exact_dof_values: Option<Array1<f64>> = ff_prime_source_function.source_function_exact_dof_values();
+        // The pressure on the plasma boundary, `source_functions/pressure_edge`. The Grad-Shafranov equation only involves `p'`, so
+        // integrating it leaves the pressure defined up to a constant, in the same way that integrating `ff'` leaves `f ** 2 / 2` defined
+        // up to `f_vac ** 2 / 2`. That constant is fixed so that `p(psi_norm = 1) = 0`, unless the settings,
+        // `equilibrium_settings/source_function_p_prime/pressure_edge`, make it a free parameter of the fit
+        let settings_pressure_edge: &SettingsEquilibriumPressureEdge = &self.settings_equilibrium.source_function_p_prime.pressure_edge;
+        let pressure_edge_free: bool = settings_pressure_edge.free;
+        let n_pressure_edge_dof: usize = if pressure_edge_free { 1 } else { 0 };
+        // The edge pressure's column is empty when no pressure constraint lies inside the plasma, so it always has a prior pulling it
+        // towards zero
+        let n_pressure_edge_regularisation: usize = n_pressure_edge_dof;
 
         // Constraints
         // The magnetic sensors fitted: those whose fit settings, `equilibrium_settings/constraints/<sensor>/<sensor>(i1)`, include them,
@@ -767,6 +778,7 @@ impl<'a> EquilibriumSolver<'a> {
             + n_p_prime_regularisation
             + n_ff_prime_regularisation
             + n_passive_regularisation
+            + n_pressure_edge_regularisation
             + n_delta_z_regularisation;
 
         // With nothing to fit in `p_prime` or `ff_prime` (a forward solve) the Picard iteration is
@@ -843,7 +855,10 @@ impl<'a> EquilibriumSolver<'a> {
 
         let n_vertical_stabilisation: usize = if vertical_feedback { 1 } else { 0 };
 
-        let n_dof: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation + n_exact_amplitude_dof;
+        let n_dof: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation + n_pressure_edge_dof + n_exact_amplitude_dof;
+        // The edge pressure's degree of freedom follows `delta_z`'s, whose presence depends on the iteration, and comes before the exact
+        // source functions' amplitude, which is always the last
+        let i_dof_pressure_edge: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation;
         // Create the fitting matrix
         let mut fitting_matrix: Array2<f64> = Array2::zeros((n_constraints, n_dof));
         let mut constraint_weights: Array1<f64> = Array1::zeros(n_constraints);
@@ -1290,6 +1305,12 @@ impl<'a> EquilibriumSolver<'a> {
                 constraint_values_from_exact_source_functions[i_constraint] = definite_integral_p_prime / d_psi_d_psi_norm;
             }
 
+            // The edge pressure's degree of freedom. The integral above is taken from the boundary to the constraint, so the constant of
+            // integration, the pressure on the boundary, adds to the pressure at every constraint equally
+            if pressure_edge_free {
+                fitting_matrix[(i_constraint, i_dof_pressure_edge)] = 1.0;
+            }
+
             // Vertical stability (not for pressure sensors)
             // TODO: should there be vertical stability for pressure sensors? I don't think so?
 
@@ -1465,6 +1486,16 @@ impl<'a> EquilibriumSolver<'a> {
             i_passive_dof_start += n_dof_this_loop;
         }
 
+        // Add the edge pressure's prior to the fitting matrix, the row `regularisation_weight * pressure_edge = 0`. It stops the edge pressure
+        // running away when no pressure constraint lies inside the plasma, when its column would otherwise be empty and the least-squares
+        // problem rank-deficient
+        if pressure_edge_free {
+            fitting_matrix[(i_constraint, i_dof_pressure_edge)] = 1.0;
+
+            // Store weights; it is the last row written
+            constraint_weights[i_constraint] = settings_pressure_edge.regularisation_weight;
+        }
+
         // The exact source functions are known, so either their contribution is the column of
         // their fitted amplitude, or it moves to the right hand side, alongside the PF coils
         let mut b: Array1<f64> = &constraint_weights * &s_measured - &constraint_weights * &constraint_values_from_coils;
@@ -1579,6 +1610,9 @@ impl<'a> EquilibriumSolver<'a> {
         };
 
         self.time_slice.convergence.delta_z = delta_z;
+
+        // Extract the edge pressure. When it is not a free parameter of the fit, `p'` is integrated with `p(psi_norm = 1) = 0`, as it always was
+        self.time_slice.source_functions.pressure_edge = if pressure_edge_free { dof_values[i_dof_pressure_edge] } else { 0.0 };
 
         // Calculate j_2d
         self.calculate_j();

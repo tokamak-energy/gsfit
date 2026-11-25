@@ -56,6 +56,14 @@ def setup_plasma(
     newton_picard_contraction_threshold = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_picard"]["contraction_threshold"]
     newton_picard_finite_difference_step = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_picard"]["finite_difference_step"]
     newton_picard_verbose = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_picard"]["verbose"]
+    # The pressure at the plasma boundary. Integrating `p'` leaves the pressure defined up to a constant, which
+    # GSFit historically fixed by demanding zero pressure at the boundary. Setting `free` makes it a degree of
+    # freedom of the fit instead. `.get` is used so that older settings directories keep working
+    pressure_edge_settings = settings["source_function_p_prime.json"].get(
+        "pressure_edge", settings["GSFIT_code_settings.json"]["numerics"].get("pressure_edge", {})
+    )
+    pressure_edge_free = pressure_edge_settings.get("free", False)
+    pressure_edge_regularisation_weight = pressure_edge_settings.get("regularisation_weight", 1.0e-4)
 
     # Set the source functions types
     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.TensionedCubicBSpline
@@ -163,6 +171,8 @@ def setup_plasma(
         newton_picard_finite_difference_step,
         newton_picard_verbose,
         times_to_reconstruct,
+        pressure_edge_free,
+        pressure_edge_regularisation_weight,
     )
 
     return plasma

@@ -33,4 +33,8 @@
             <right_boundary_weight>1e10</right_boundary_weight>
         </regularisation_builder>
     </tensioned_cubic_b_spline>
+    <pressure_edge>
+        <free>false</free>
+        <regularisation_weight>1.0e-4</regularisation_weight>
+    </pressure_edge>
 </source_function_p_prime>

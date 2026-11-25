@@ -2020,6 +2020,8 @@ impl BuxtonProkopyszyn {
         let (_, ff_prime_dofs): (SharedSourceFunction, Array1<f64>) = source_function_and_dofs(&scale.ff_prime_coefficients, is_with_constant);
         time_slice.source_functions.p_prime.coefficients = p_prime_dofs;
         time_slice.source_functions.ff_prime.coefficients = ff_prime_dofs;
+        // The pressure is zero on the LCFS, where p' is integrated from
+        time_slice.source_functions.pressure_edge = 0.0;
 
         time_slice.global_quantities.magnetic_axis.r = mag_r;
         time_slice.global_quantities.magnetic_axis.z = mag_z;

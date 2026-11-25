@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Schema for source_function_p_prime.xml: the basis functions of p', and their regularisation.
+    Schema for source_function_p_prime.xml: the basis functions of p', their regularisation, and the pressure on the boundary.
 
-    The types are the same as in source_function_ff_prime.xsd; change both together.
+    The types are the same as in source_function_ff_prime.xsd; change both together. Only p' has `FinitePositiveDouble` and `PressureEdge`.
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
@@ -114,6 +114,17 @@
             </xs:documentation>
         </xs:annotation>
         <xs:list itemType="FiniteDouble"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+        </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="FiniteNonNegativeDoubleList">
@@ -305,6 +316,33 @@
         </xs:all>
     </xs:complexType>
 
+    <xs:complexType name="PressureEdge">
+        <xs:annotation>
+            <xs:documentation>
+                The pressure on the plasma boundary, `p(psi_norm = 1)`: p''s constant of integration. The Grad-Shafranov equation only involves p', so it leaves the pressure defined up to a constant, as integrating ff' leaves `f ** 2 / 2` defined up to `f_vac ** 2 / 2`. It is written to the Equilibrium IDS's `time_slice(itime)/source_functions/pressure_edge`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="free" type="TrueOrFalse">
+                <xs:annotation>
+                    <xs:documentation>
+                        Whether the edge pressure is a free parameter of the fit, which only the pressure constraints constrain. When false it is zero, which is how GSFit has always fixed p''s constant of integration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="regularisation_weight" type="FinitePositiveDouble">
+                <xs:annotation>
+                    <xs:documentation>
+                        Weight of the prior which pulls the fitted edge pressure towards zero, the fit's row `regularisation_weight * pressure_edge = 0`. It keeps the fit well posed when no pressure constraint lies inside the plasma. Not used when `free` is false.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>1 / pascal</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="source_function_p_prime">
@@ -333,6 +371,13 @@
                     <xs:annotation>
                         <xs:documentation>
                             Settings for the tensioned cubic B-splines.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="pressure_edge" type="PressureEdge">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The pressure on the plasma boundary: zero, or a free parameter of the fit.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

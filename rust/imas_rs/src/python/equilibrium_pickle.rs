@@ -4137,7 +4137,7 @@ impl PickleState for equilibrium::EquilibriumSolStrikePoint {
 
 impl PickleState for equilibrium::EquilibriumSourceFunctions {
     fn is_unset(&self) -> bool {
-        self.p_prime.is_unset() && self.ff_prime.is_unset()
+        self.p_prime.is_unset() && self.ff_prime.is_unset() && self.pressure_edge.is_unset()
     }
 
     fn to_pickle_state<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -4147,6 +4147,9 @@ impl PickleState for equilibrium::EquilibriumSourceFunctions {
         }
         if !self.ff_prime.is_unset() {
             state.set_item("ff_prime", self.ff_prime.to_pickle_state(py)?)?;
+        }
+        if !self.pressure_edge.is_unset() {
+            state.set_item("pressure_edge", self.pressure_edge.to_pickle_state(py)?)?;
         }
         Ok(state.into_any())
     }
@@ -4163,6 +4166,9 @@ impl PickleState for equilibrium::EquilibriumSourceFunctions {
                 }
                 "ff_prime" => {
                     structure.ff_prime = PickleState::from_pickle_state(node_state).map_err(|error: PickleStateError| error.in_node("ff_prime"))?;
+                }
+                "pressure_edge" => {
+                    structure.pressure_edge = PickleState::from_pickle_state(node_state).map_err(|error: PickleStateError| error.in_node("pressure_edge"))?;
                 }
                 _ => return Err(PickleStateError::unknown_node(name)),
             }
