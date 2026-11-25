@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraints__pressure xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/constraints_pressure.xsd">
+    <pressure>
+        <include>false</include>
+    </pressure>
+</constraints__pressure>

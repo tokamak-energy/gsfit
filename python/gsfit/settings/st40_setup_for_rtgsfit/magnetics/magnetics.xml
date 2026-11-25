@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<magnetics_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/magnetics/magnetics.xsd">
+    <workflow href="../workflow.xml"/>
+</magnetics_settings>

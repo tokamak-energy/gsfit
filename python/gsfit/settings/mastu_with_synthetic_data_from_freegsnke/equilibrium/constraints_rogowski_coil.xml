@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraints__rogowski_coil xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd">
+    <rogowski_coil>
+        <name>plasma_current_rogowski</name>
+        <expected_value>500000.0</expected_value>
+        <weight>100.0</weight>
+        <include>true</include>
+        <comment/>
+    </rogowski_coil>
+</constraints__rogowski_coil>

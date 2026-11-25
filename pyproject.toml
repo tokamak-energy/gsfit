@@ -56,7 +56,11 @@ with_st40_mdsplus = [
 with_freegs_and_freegsnke = [
     "freegs",
     "freegsnke",
-    "freegs4e"
+    "freegs4e",
+    # FreeGS 0.8.2 fails with numpy >= 2.4, which no longer converts an array with ndim > 0 to a scalar.
+    # FreeGS fixed this issue in their `master` branch, but haven't built the PyPI release.
+    # This pyproject.toml is used for GSFit's release, so can't pin GitHub `master` branch, as PyPI rejects packages which depend on a git URL.
+    "numpy<2.4",
 ]
 with_imas = [
     "imas-core",

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rtgsfit_code_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/rtgsfit_code_settings.xsd">
+    <thresh>100.0e-12</thresh>
+    <frac>0.999</frac>
+    <n_intrp>4</n_intrp>
+    <n_xpt_max>50</n_xpt_max>
+    <n_lcfs_max>500</n_lcfs_max>
+</rtgsfit_code_settings>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<database_reader xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/database_reader.xsd">
+    <method>st40_mdsplus_with_digital_filter</method>
+</database_reader>

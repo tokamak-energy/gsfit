@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- No flux-surface averaged parallel current constraints: they are calculated from a previous equilibrium, and set from Python -->
+<constraints__j_parallel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/constraints_j_parallel.xsd"/>

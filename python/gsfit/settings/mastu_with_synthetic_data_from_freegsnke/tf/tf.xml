@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tf_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/tf/tf.xsd">
+    <vacuum_toroidal_field_reference_radius>0.85</vacuum_toroidal_field_reference_radius>
+</tf_settings>

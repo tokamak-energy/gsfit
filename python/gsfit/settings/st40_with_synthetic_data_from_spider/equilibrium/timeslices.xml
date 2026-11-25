@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<timeslices xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/timeslices.xsd">
+    <method>user_defined</method>
+    <arange>
+        <time_start>0.01</time_start>
+        <time_end>0.19</time_end>
+        <dt>0.001</dt>
+    </arange>
+    <linspace>
+        <time_start>0.005</time_start>
+        <time_end>0.25</time_end>
+        <n_time>20</n_time>
+    </linspace>
+    <user_defined>0.25 0.75</user_defined>
+</timeslices>

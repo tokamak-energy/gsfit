@@ -385,6 +385,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         self.magnetics = database_reader.setup_magnetics(
             pulseNo=self.pulseNo,
             settings=self.settings_xml.ids.magnetics,
+            **kwargs,
         )
         self.equilibrium.copy_from_magnetics_ids(self.magnetics)
         toc = time_py.time()

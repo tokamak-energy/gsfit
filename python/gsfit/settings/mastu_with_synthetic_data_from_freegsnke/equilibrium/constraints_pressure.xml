@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraints__pressure xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/constraints_pressure.xsd">
+    <pressure>
+        <include>false</include>
+        <sensor_name_prefix>SYNTHETIC_PRESSURE</sensor_name_prefix>
+        <weight>1.0</weight>
+        <comment>Synthetic pressure sensor, generated from the FreeGSNKE truth equilibrium</comment>
+        <synthetic>
+            <r_start>0.0</r_start>
+            <r_end>0.6</r_end>
+            <n_sensors>10</n_sensors>
+            <minimum_pressure>500.0</minimum_pressure>
+        </synthetic>
+    </pressure>
+</constraints__pressure>

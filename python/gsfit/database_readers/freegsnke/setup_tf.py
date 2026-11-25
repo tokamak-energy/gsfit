@@ -3,59 +3,66 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from diagnostic_and_simulation_base.xml_reader_and_writer import serialise_python_dataclass_to_imas_parameters_input
 from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium
 from gsfit_rs import Tf
 from gsfit_rs.dd_support import ParametersInput
-from scipy.constants import mu_0
+
+from ...settings_schema import XSD_DIRECTORY_PATH
+from ...settings_schema.python.tf.tf import TfSettings
 
 if TYPE_CHECKING:
     from . import DatabaseReader
-
-# There is no toroidal field circuit in the synthetic data, so a constant rod current stands in
-SYNTHETIC_ROD_CURRENT = 1.0e6  # [ampere]
 
 
 def setup_tf(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
+    settings: TfSettings,
     time: npt.NDArray[np.float64],
     freegsnke_eqs: list[FreeGsnkeEquilibrium],
+    **kwargs: typing.Any,
 ) -> Tf:
     """
     This method initialises the Rust `Tf` class, which holds an IMAS `tf` IDS.
 
-    :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
-    :param time: Times the equilibrium will be solved at [second]
-    :param freegsnke_eqs: The forward-solved equilibria the synthetic measurements come from
+    :param pulseNo: Pulse number. Not used: the toroidal field is read from the FreeGSNKE equilibria
+    :param settings: `TfSettings` object containing the XML settings read from the `settings` directory
+    :param time: The timebase of `freegsnke_eqs` [second]
+    :param freegsnke_eqs: The FreeGSNKE equilibria the synthetic measurements are made from, one for each time
+    :param kwargs: The other keyword arguments of `Gsfit.run`, e.g. `isofluxes`, which only `setup_magnetics` reads
 
-    **This method is specific to synthetic data from FreeGSNKE.**
+    **This method is specific to FreeGSNKE.**
 
     Two nodes are filled:
-    1. `tf/r0`, the reference major radius the vacuum toroidal field is quoted at
-    2. `tf/b_field_phi_vacuum_r`, the vacuum field times major radius, on the **experimental**
-       timebase. `Plasma.copy_from_tf_ids` interpolates it onto the reconstruction times itself, so
-       do not interpolate it here.
+    1. `tf/r0`, the reference major radius the vacuum toroidal field is quoted at, which `Tf` sets from the settings
+    2. `tf/b_field_phi_vacuum_r`, the vacuum field times major radius, on the timebase of `freegsnke_eqs`. `Equilibrium.copy_from_tf_ids`
+       interpolates it onto the reconstruction times itself, so do not interpolate it here.
 
-    `b_field_phi_vacuum_r` is signed: positive means counter-clockwise viewed from above.
+    `b_field_phi_vacuum_r` is each equilibrium's vacuum poloidal-current function, `f_vac = R * B_phi`, which FreeGSNKE's profiles hold. It
+    is signed: positive means counter-clockwise viewed from above, as in FreeGSNKE.
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
 
-    # Initialise the Tf Rust class
-    # This reader still reads the JSON settings, so has no XML settings to record in `tf/code/parameters` yet
-    tf = Tf(ParametersInput())
+    # Serialise the settings, which the toroidal field records in `tf/code/parameters`
+    settings_xml: ParametersInput = serialise_python_dataclass_to_imas_parameters_input(
+        settings=settings,
+        xsd_directory_path=XSD_DIRECTORY_PATH,
+    )
 
-    tf.set_r0(settings["GSFIT_code_settings.json"]["vacuum_toroidal_field_reference_radius"])
+    # Initialise the Tf Rust class, which sets the reference major radius for the vacuum toroidal field from the settings
+    tf: Tf = Tf(settings_xml)
 
-    # `f_vac = R0 * B_phi0 = mu_0 * i_rod / (2 * pi)`, the poloidal-current function in vacuum
-    f_vac = mu_0 * SYNTHETIC_ROD_CURRENT / (2.0 * np.pi)
+    # The vacuum `f_vac = R * B_phi` of each equilibrium
+    n_time: int = len(time)
+    f_vac: npt.NDArray[np.float64] = np.full(n_time, np.nan)  # [tesla * metre]
+    for i_time in range(n_time):
+        f_vac[i_time] = freegsnke_eqs[i_time].fvac()
 
-    # Constant in time, so two points are enough to interpolate from
     tf.set_b_field_phi_vacuum_r(
-        time=np.array([0.0, 1.0]),
-        data=np.array([f_vac, f_vac]),
+        time=time,
+        data=f_vac,
     )
 
     return tf

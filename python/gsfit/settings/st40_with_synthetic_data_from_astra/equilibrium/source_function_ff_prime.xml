@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<source_function_ff_prime xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/source_function_ff_prime.xsd">
+    <method>efit_polynomial</method>
+    <efit_polynomial>
+        <n_dof>2</n_dof>
+        <regularisations>
+            <row>0.0 20.0</row>
+        </regularisations>
+        <exact>false</exact>
+    </efit_polynomial>
+</source_function_ff_prime>

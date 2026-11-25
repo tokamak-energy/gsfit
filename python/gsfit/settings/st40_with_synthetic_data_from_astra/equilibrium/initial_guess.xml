@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<initial_guess xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/initial_guess.xsd">
+    <ip>425.0e3</ip>
+    <cur_r>0.45</cur_r>
+    <cur_z>0.0</cur_z>
+    <minor_radius>0.2</minor_radius>
+    <elongation>1.2</elongation>
+</initial_guess>

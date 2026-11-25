@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- No passive conductors: the freegsnke database reader does not add FreeGSNKE's passive structures yet -->
+<pf_passive_dof xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/pf_passive_dof.xsd"/>

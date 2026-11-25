@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The central list of the MDSplus trees which the database reader reads from, and which run of each to read, one `tree` per tree.
+
+    Each IDS's file links to this file, e.g. <workflow href="../workflow.xml"/> in pf_active/pf_active.xml,
+    so a tree's run is set here once, however many IDSs are built from it.
+    A tree is added, or removed, here alone.
+    See ../../settings_schema/xsd/workflow.xsd.
+-->
+<workflow xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/workflow.xsd">
+    <tree>
+        <tree_name>DIALOOP</tree_name>
+        <pulseNo xsi:nil="true"/>
+        <run_name>BEST</run_name>
+        <usage>Diamagnetic flux measured value</usage>
+    </tree>
+    <tree>
+        <tree_name>ELMAG</tree_name>
+        <pulseNo xsi:nil="true"/>
+        <run_name>RUN16</run_name>
+        <usage>PF and vessel geometry and resistance</usage>
+    </tree>
+    <tree>
+        <tree_name>MAG</tree_name>
+        <pulseNo xsi:nil="true"/>
+        <run_name>RUN16</run_name>
+        <usage>Magnetic sensors geometry and measured values</usage>
+    </tree>
+    <tree>
+        <tree_name>PPTS</tree_name>
+        <pulseNo xsi:nil="true"/>
+        <run_name>BEST</run_name>
+        <usage>Pressure sensor good time-slices (BAD_MA flag)</usage>
+    </tree>
+    <tree>
+        <tree_name>PSU2COIL</tree_name>
+        <pulseNo xsi:nil="true"/>
+        <run_name>BEST</run_name>
+        <usage>PF and TF coil currents</usage>
+    </tree>
+    <tree>
+        <tree_name>TS</tree_name>
+        <pulseNo xsi:nil="true"/>
+        <run_name>BEST</run_name>
+        <usage>Thomson scattering geometry and electron pressure</usage>
+    </tree>
+</workflow>

@@ -21,8 +21,8 @@ def make_settings_from_xml_xsd(
     The string holds one entry per file, its path -> its contents:
     ```
     {
-      "settings/st40_P2p3_calibrations_new_xml_schema/GSFIT_code_settings.xml": "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>\\n<gsfit_code_settings ...",
-      "settings/st40_P2p3_calibrations_new_xml_schema/equilibrium/equilibrium.xml": "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>\\n<equilibrium_settings ...",
+      "settings/default/GSFIT_code_settings.xml": "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>\\n<gsfit_code_settings ...",
+      "settings/default/equilibrium/equilibrium.xml": "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>\\n<equilibrium_settings ...",
       ...
       "settings_schema/xsd/GSFIT_code_settings.xsd": "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>\\n<!--\\n    Schema for GSFIT_code_settings.xml ...",
       ...
@@ -35,12 +35,12 @@ def make_settings_from_xml_xsd(
 
     The files are named by relative paths, laid out as the code's package is, so that the relative paths inside them still lead to each other:
     * an XML file by its path relative to the directory holding the settings directory, below `settings/`, e.g.
-      `settings/st40_P2p3_calibrations_new_xml_schema/wall/wall.xml`, or `settings/default/wall/wall.xml` for `href="../default/wall/wall.xml"`
+      `settings/default/wall/wall.xml`, or `settings/st40_P2p3_calibrations/wall/wall.xml` for `href="../st40_P2p3_calibrations/wall/wall.xml"`
     * an XML schema by its `XSD_PATH`, below `settings_schema/xsd/`, e.g. `settings_schema/xsd/wall/wall.xsd`. Only those of the XML files written are kept
     * each XML file's links, and the path of its XML schema in `xsi:noNamespaceSchemaLocation`, are relative to it, as in a settings directory, e.g.
-      `xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/wall/wall.xsd"` in `settings/st40_P2p3_calibrations_new_xml_schema/wall/wall.xml`
+      `xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/wall/wall.xsd"` in `settings/default/wall/wall.xml`
     So the files can be written out under their paths, and the settings read back from the root XML file,
-    e.g. `settings/st40_P2p3_calibrations_new_xml_schema/GSFIT_code_settings.xml`.
+    e.g. `settings/default/GSFIT_code_settings.xml`.
 
     Each XML file is checked against its XML schema before it is kept, so that what is recorded can always be read back.
 
@@ -56,7 +56,7 @@ def make_settings_from_xml_xsd(
     """
 
     root_xml_file_path: Path = settings_xml_file_paths[()]
-    # e.g. `python/gsfit/settings/`, holding the settings directory `st40_P2p3_calibrations_new_xml_schema/`
+    # e.g. `python/gsfit/settings/`, holding the settings directory `default/`
     settings_directories_path: Path = root_xml_file_path.parent.parent
 
     files: dict[str, str] = {}  # path -> contents
@@ -69,7 +69,7 @@ def make_settings_from_xml_xsd(
 
         :param settings: The dataclass of the XML file's root element, e.g. `WallSettings`
         :param location: Where `settings` are in `settings_xml`, e.g. `("ids", "wall")`, or `()` for `settings_xml` itself
-        :return: The XML file's path, e.g. "settings/st40_P2p3_calibrations_new_xml_schema/wall/wall.xml"
+        :return: The XML file's path, e.g. "settings/default/wall/wall.xml"
         """
 
         xsd_relative_path: object = getattr(type(settings), "XSD_PATH", None)

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sensor_replacement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/sensor_replacement.xsd">
+    <constraint>
+        <name>I_ROG_DIVPSRB</name>
+        <replacements>V_FLOOP_024 V_FLOOP_022 V_FLOOP_020</replacements>
+        <coefficients>-164.0 1532.88 1467.12</coefficients>
+    </constraint>
+    <constraint>
+        <name>I_ROG_DIVPSRT</name>
+        <replacements>V_FLOOP_007 V_FLOOP_009 V_FLOOP_011</replacements>
+        <coefficients>-164.0 1532.88 1467.12</coefficients>
+    </constraint>
+    <constraint>
+        <name>I_ROG_GASBFLB</name>
+        <replacements>V_FLOOP_024</replacements>
+        <coefficients>2000.0</coefficients>
+    </constraint>
+    <constraint>
+        <name>I_ROG_GASBFLT</name>
+        <replacements>V_FLOOP_007</replacements>
+        <coefficients>2000.0</coefficients>
+    </constraint>
+    <constraint>
+        <name>I_ROG_HFSPSRB</name>
+        <replacements>V_FLOOP_020</replacements>
+        <coefficients>7000.0</coefficients>
+    </constraint>
+    <constraint>
+        <name>I_ROG_HFSPSRT</name>
+        <replacements>V_FLOOP_011</replacements>
+        <coefficients>7000.0</coefficients>
+    </constraint>
+</sensor_replacement>
